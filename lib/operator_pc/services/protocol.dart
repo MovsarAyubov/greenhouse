@@ -4,6 +4,8 @@ const int kProtoMagic = 0xA55A;
 const int kProtoVersion = 1;
 const int kHeaderSize = 14;
 const int kSensorCount = 150;
+const int kMaxPayloadSize = 4096;
+const int kMaxParserBuffer = 65536;
 
 class MsgType {
   static const int hello = 1;
@@ -20,6 +22,8 @@ class MsgType {
   static const int setpointsValidateAck = 12;
   static const int setpointsApplyReq = 13;
   static const int setpointsApplyAck = 14;
+  static const int getBlockLayoutReq = 15;
+  static const int blockLayoutResp = 16;
 }
 
 class ProtocolFrame {
@@ -44,6 +48,11 @@ class FrameCodec {
     required int seq,
     required Uint8List payload,
   }) {
+    if (payload.length > kMaxPayloadSize) {
+      throw ArgumentError(
+        'Payload too large: ${payload.length} bytes (max $kMaxPayloadSize)',
+      );
+    }
     final bytes = Uint8List(kHeaderSize + payload.length);
     final h = ByteData.sublistView(bytes, 0, kHeaderSize);
     h.setUint16(0, kProtoMagic, Endian.little);
@@ -62,6 +71,14 @@ class FrameParser {
 
   List<ProtocolFrame> addBytes(Uint8List bytes) {
     _buffer.addAll(bytes);
+    if (_buffer.length > kMaxParserBuffer) {
+      final keep = kHeaderSize - 1;
+      final start = _buffer.length - keep;
+      final tail = _buffer.sublist(start > 0 ? start : 0);
+      _buffer
+        ..clear()
+        ..addAll(tail);
+    }
     final frames = <ProtocolFrame>[];
 
     while (_buffer.length >= kHeaderSize) {
@@ -83,6 +100,10 @@ class FrameParser {
       final seq = h.getUint32(4, Endian.little);
       final len = h.getUint16(8, Endian.little);
       final crc = h.getUint32(10, Endian.little);
+      if (len > kMaxPayloadSize) {
+        _buffer.removeAt(0);
+        continue;
+      }
       final fullLen = kHeaderSize + len;
       if (_buffer.length < fullLen) {
         break;

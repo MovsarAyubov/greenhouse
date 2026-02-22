@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../models/operator_models.dart';
 import '../services/app_controller.dart';
+import '../services/protocol.dart';
 
 class OperatorApp extends StatefulWidget {
   const OperatorApp({super.key});
@@ -38,7 +39,7 @@ class _OperatorAppState extends State<OperatorApp> {
         animation: controller,
         builder: (context, _) {
           return DefaultTabController(
-            length: 5,
+            length: 6,
             child: Scaffold(
               appBar: AppBar(
                 title: const Text('Greenhouse Operator PC'),
@@ -46,6 +47,7 @@ class _OperatorAppState extends State<OperatorApp> {
                   isScrollable: true,
                   tabs: [
                     Tab(text: 'Dashboard'),
+                    Tab(text: 'Blocks'),
                     Tab(text: 'Sensors'),
                     Tab(text: 'Setpoints'),
                     Tab(text: 'Events'),
@@ -56,6 +58,7 @@ class _OperatorAppState extends State<OperatorApp> {
               body: TabBarView(
                 children: [
                   _DashboardTab(controller: controller),
+                  _BlocksTab(controller: controller),
                   _SensorsTab(controller: controller),
                   _SetpointsTab(controller: controller),
                   _EventsTab(controller: controller),
@@ -78,6 +81,11 @@ class _DashboardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = controller.status;
+    final modeLabel = switch (s.controlMode) {
+      0 => 'REMOTE',
+      1 => 'AUTONOMOUS',
+      _ => 'UNKNOWN',
+    };
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -87,8 +95,31 @@ class _DashboardTab extends StatelessWidget {
           Text('RTT: ${s.rttMs} ms'),
           Text('Active config: v${s.activeConfigVersion}'),
           Text('Last error code: ${s.lastErrorCode}'),
+          Text('TCP connect count: ${s.tcpConnectCount}'),
+          Text('TCP disconnect count: ${s.tcpDisconnectCount}'),
+          Text('Control mode: $modeLabel'),
+          Text('Autonomous reason: ${s.autonomousReason}'),
+          Text('Last master seen (ms): ${s.lastMasterSeenMs}'),
+          Text('Last snapshot id: ${s.lastSnapshotId}'),
           Text(
             'Last telemetry: ${s.lastSnapshotAt == null ? '-' : DateFormat('yyyy-MM-dd HH:mm:ss').format(s.lastSnapshotAt!)}',
+          ),
+          Text(
+            'Last RX: ${controller.lastRxAt == null ? '-' : DateFormat('yyyy-MM-dd HH:mm:ss').format(controller.lastRxAt!)} '
+            '(type=${controller.lastRxMsgType}, len=${controller.lastRxPayloadLen})',
+          ),
+          Text(
+            'RX counts: HELLO_ACK=${controller.rxByType[MsgType.helloAck] ?? 0}, '
+            'STATUS_RESP=${controller.rxByType[MsgType.statusResp] ?? 0}, '
+            'SNAPSHOT=${controller.rxByType[MsgType.snapshot] ?? 0}, '
+            'EVENT=${controller.rxByType[MsgType.event] ?? 0}, '
+            'HEARTBEAT=${controller.rxByType[MsgType.heartbeat] ?? 0}',
+          ),
+          Text(
+            'Raw RX: bytes=${controller.rawRxBytes}, chunks=${controller.rawRxChunks}, parsedFrames=${controller.parsedFrames}',
+          ),
+          Text(
+            'Raw TX: bytes=${controller.rawTxBytes}, frames=${controller.rawTxFrames}',
           ),
           const SizedBox(height: 12),
           Text('Events in memory: ${controller.events.length}'),
@@ -108,27 +139,92 @@ class _SensorsTab extends StatefulWidget {
 }
 
 class _SensorsTabState extends State<_SensorsTab> {
+  int? blockFilter;
+  int? channelFilter;
   SensorQuality? qualityFilter;
 
   @override
   Widget build(BuildContext context) {
+    final c = widget.controller;
     var items = widget.controller.sensors;
+    if (blockFilter != null) {
+      items = items
+          .where((s) => c.resolveSensorByLayout(s.id)?.blockNo == blockFilter)
+          .toList();
+    }
+    if (channelFilter != null) {
+      items = items
+          .where(
+            (s) => c.resolveSensorByLayout(s.id)?.channelIndex == channelFilter,
+          )
+          .toList();
+    }
     if (qualityFilter != null) {
       items = items.where((s) => s.quality == qualityFilter).toList();
     }
+    items.sort((a, b) => a.id.compareTo(b.id));
+
+    final availableBlocks = c.availableBlocks;
+    final channelCount = c.channelsPerBlock > 0
+        ? c.channelsPerBlock
+        : kChannelsPerBlock;
+    final fallbackCount = (kSensorCount + channelCount - 1) ~/ channelCount;
+    final fallbackBlocks = List<int>.generate(fallbackCount, (i) => i + 1);
+    final blockOptions = availableBlocks.isNotEmpty
+        ? availableBlocks
+        : fallbackBlocks;
+    final channelOptions = List<int>.generate(channelCount, (i) => i);
 
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
         children: [
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 8,
             children: [
-              const Text('Filter by quality: '),
-              const SizedBox(width: 8),
+              DropdownButton<int?>(
+                value: blockFilter,
+                hint: const Text('Block'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('All blocks'),
+                  ),
+                  ...blockOptions.map(
+                    (blockNo) => DropdownMenuItem<int?>(
+                      value: blockNo,
+                      child: Text('Block $blockNo'),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() => blockFilter = v),
+              ),
+              DropdownButton<int?>(
+                value: channelFilter,
+                hint: const Text('Channel'),
+                items: [
+                  const DropdownMenuItem<int?>(
+                    value: null,
+                    child: Text('All channels'),
+                  ),
+                  ...channelOptions.map(
+                    (i) => DropdownMenuItem<int?>(
+                      value: i,
+                      child: Text(c.channelNameByIndex(i)),
+                    ),
+                  ),
+                ],
+                onChanged: (v) => setState(() => channelFilter = v),
+              ),
               DropdownButton<SensorQuality?>(
                 value: qualityFilter,
+                hint: const Text('Quality'),
                 items: [
-                  const DropdownMenuItem<SensorQuality?>(value: null, child: Text('All')),
+                  const DropdownMenuItem<SensorQuality?>(
+                    value: null,
+                    child: Text('All quality'),
+                  ),
                   ...SensorQuality.values.map(
                     (q) => DropdownMenuItem<SensorQuality?>(
                       value: q,
@@ -142,17 +238,42 @@ class _SensorsTabState extends State<_SensorsTab> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (context, i) {
-                final s = items[i];
-                return ListTile(
-                  dense: true,
-                  title: Text('Sensor ${s.id.toString().padLeft(3, '0')}'),
-                  subtitle: Text('q=${s.quality.name.toUpperCase()}  t=${DateFormat('HH:mm:ss').format(s.timestamp)}'),
-                  trailing: Text(s.value.toStringAsFixed(2)),
-                );
-              },
+            child: SingleChildScrollView(
+              child: DataTable(
+                columns: const [
+                  DataColumn(label: Text('SensorId')),
+                  DataColumn(label: Text('Block')),
+                  DataColumn(label: Text('ChannelName')),
+                  DataColumn(label: Text('Value')),
+                  DataColumn(label: Text('Quality')),
+                  DataColumn(label: Text('Time')),
+                ],
+                rows: items.map((s) {
+                  final mapped = c.resolveSensorByLayout(s.id);
+                  final blockLabel = mapped == null ? '-' : '${mapped.blockNo}';
+                  final channelLabel = mapped == null
+                      ? 'UNKNOWN'
+                      : c.channelNameByIndex(mapped.channelIndex);
+                  return DataRow(
+                    cells: [
+                      DataCell(Text('${s.id}')),
+                      DataCell(Text(blockLabel)),
+                      DataCell(Text(channelLabel)),
+                      DataCell(
+                        Text(
+                          s.quality == SensorQuality.offline
+                              ? 'N/A'
+                              : s.value.toStringAsFixed(2),
+                        ),
+                      ),
+                      DataCell(Text(s.quality.name.toUpperCase())),
+                      DataCell(
+                        Text(DateFormat('HH:mm:ss').format(s.timestamp)),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ],
@@ -172,9 +293,12 @@ class _SetpointsTab extends StatefulWidget {
 
 class _SetpointsTabState extends State<_SetpointsTab> {
   final TextEditingController _versionCtrl = TextEditingController(text: '1');
-  final TextEditingController _userCtrl = TextEditingController(text: 'operator');
+  final TextEditingController _userCtrl = TextEditingController(
+    text: 'operator',
+  );
   final TextEditingController _payloadCtrl = TextEditingController(
-    text: '24.5,70.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
+    text:
+        '24.5,70.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
   );
 
   @override
@@ -194,7 +318,9 @@ class _SetpointsTabState extends State<_SetpointsTab> {
         children: [
           Text('Active version on master: v${c.status.activeConfigVersion}'),
           const SizedBox(height: 8),
-          Text('Current config[0..3]: ${c.currentConfig.take(4).map((v) => v.toStringAsFixed(2)).join(', ')}'),
+          Text(
+            'Current config[0..3]: ${c.currentConfig.take(4).map((v) => v.toStringAsFixed(2)).join(', ')}',
+          ),
           const SizedBox(height: 8),
           Text('Apply status: ${c.setpointStatus}'),
           const SizedBox(height: 12),
@@ -228,14 +354,20 @@ class _SetpointsTabState extends State<_SetpointsTab> {
                     try {
                       values = _parseFloatList(_payloadCtrl.text);
                       if (values.length != 32) {
-                        throw const FormatException('Expected exactly 32 values');
+                        throw const FormatException(
+                          'Expected exactly 32 values',
+                        );
                       }
                     } catch (_) {
                       if (!context.mounted) {
                         return;
                       }
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invalid payload, expected 32 float values')),
+                        const SnackBar(
+                          content: Text(
+                            'Invalid payload, expected 32 float values',
+                          ),
+                        ),
                       );
                       return;
                     }
@@ -312,8 +444,13 @@ class _EventsTabState extends State<_EventsTab> {
                 final e = events[i];
                 return Card(
                   child: ListTile(
-                    title: Text('#${e.eventId} ${e.severity.name.toUpperCase()} code=${e.code} source=${e.source}'),
-                    subtitle: Text(DateFormat('yyyy-MM-dd HH:mm:ss').format(e.timestamp)),
+                    title: Text(
+                      '#${e.eventId} ${e.severity.name.toUpperCase()} code=${e.code} source=${e.source}',
+                    ),
+                    subtitle: Text(
+                      '${widget.controller.decodeSourceByLayout(e.source)}\n${DateFormat('yyyy-MM-dd HH:mm:ss').format(e.timestamp)}',
+                    ),
+                    isThreeLine: true,
                     trailing: Text(e.value.toStringAsFixed(2)),
                   ),
                 );
@@ -322,6 +459,92 @@ class _EventsTabState extends State<_EventsTab> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _BlocksTab extends StatelessWidget {
+  const _BlocksTab({required this.controller});
+
+  final AppController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final layout = controller.blockLayoutItems;
+    if (layout.isEmpty) {
+      return const Center(child: Text('No block layout received yet'));
+    }
+
+    final now = DateTime.now();
+    final channelCount = controller.channelsPerBlock > 0
+        ? controller.channelsPerBlock
+        : kChannelsPerBlock;
+    final sortedLayout = [...layout]
+      ..sort((a, b) => a.blockNo.compareTo(b.blockNo));
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: sortedLayout.length,
+      itemBuilder: (context, i) {
+        final item = sortedLayout[i];
+        final blockNo = item.blockNo;
+        final mappedSensors = <SensorPoint>[];
+        for (var ch = 0; ch < item.sensorCount; ch++) {
+          final sensorId = item.sensorBase + ch;
+          if (sensorId >= 0 && sensorId < controller.sensors.length) {
+            mappedSensors.add(controller.sensors[sensorId]);
+          }
+        }
+
+        final nonOffline = mappedSensors
+            .where((s) => s.quality != SensorQuality.offline)
+            .length;
+        final status = nonOffline == 0
+            ? 'OFFLINE'
+            : (nonOffline == mappedSensors.length ? 'ONLINE' : 'PARTIAL');
+        final lastUpdate = mappedSensors.isEmpty
+            ? DateTime.fromMillisecondsSinceEpoch(0)
+            : mappedSensors
+                  .map((s) => s.timestamp)
+                  .reduce((a, b) => a.isAfter(b) ? a : b);
+        final age = now.difference(lastUpdate).inSeconds;
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Block $blockNo (slave ${item.slaveId})  |  $status  |  last update ${age}s ago',
+                ),
+                const SizedBox(height: 8),
+                ...List<Widget>.generate(channelCount, (ch) {
+                  final bool active = ch < item.sensorCount;
+                  SensorPoint? s;
+                  if (active) {
+                    final sensorId = item.sensorBase + ch;
+                    if (sensorId >= 0 && sensorId < controller.sensors.length) {
+                      s = controller.sensors[sensorId];
+                    }
+                  }
+                  final q = s?.quality.name.toUpperCase() ?? 'OFFLINE';
+                  final value =
+                      (s == null || s.quality == SensorQuality.offline)
+                      ? 'N/A'
+                      : s.value.toStringAsFixed(2);
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      '${controller.channelNameByIndex(ch)}: $value ($q)',
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

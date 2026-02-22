@@ -6,6 +6,54 @@ enum SensorQuality { ok, stale, fault, offline }
 
 enum Severity { info, warn, alarm, crit }
 
+const int kChannelsPerBlock = 9;
+const List<String> kChannelNames = <String>[
+  'AIR_TEMP',
+  'AIR_HUM',
+  'WATER_RAIL',
+  'WATER_GROW',
+  'WATER_UNDERTRAY',
+  'WATER_UPPER_HEAT',
+  'WINDOWS_POS_A',
+  'WINDOWS_POS_B',
+  'CURTAIN_POS',
+];
+
+int sensorIdToBlockNo(int sensorId) => (sensorId ~/ kChannelsPerBlock) + 1;
+int sensorIdToChannelIndex(int sensorId) => sensorId % kChannelsPerBlock;
+String sensorIdToChannelName(int sensorId) =>
+    kChannelNames[sensorIdToChannelIndex(sensorId)];
+bool isMappedSource(int source) => source >= 0 && source < kSensorCount;
+String displayChannelName(int sensorId) =>
+    isMappedSource(sensorId) ? sensorIdToChannelName(sensorId) : 'UNKNOWN';
+String displayBlockLabel(int sensorId) =>
+    isMappedSource(sensorId) ? '${sensorIdToBlockNo(sensorId)}' : '-';
+
+String decodeSource(int source) {
+  if (!isMappedSource(source)) {
+    return 'Unknown source';
+  }
+  final blockNo = sensorIdToBlockNo(source);
+  final channelName = sensorIdToChannelName(source);
+  return 'Block $blockNo / $channelName';
+}
+
+class BlockLayoutItem {
+  const BlockLayoutItem({
+    required this.blockNo,
+    required this.slaveId,
+    required this.startReg,
+    required this.sensorCount,
+    required this.sensorBase,
+  });
+
+  final int blockNo;
+  final int slaveId;
+  final int startReg;
+  final int sensorCount;
+  final int sensorBase;
+}
+
 class SensorPoint {
   SensorPoint({
     required this.id,
@@ -55,29 +103,53 @@ class MasterStatus {
     required this.connected,
     required this.rttMs,
     required this.lastSnapshotAt,
+    required this.lastSnapshotId,
     required this.activeConfigVersion,
     required this.lastErrorCode,
+    required this.tcpConnectCount,
+    required this.tcpDisconnectCount,
+    required this.controlMode,
+    required this.autonomousReason,
+    required this.lastMasterSeenMs,
   });
 
   final bool connected;
   final int rttMs;
   final DateTime? lastSnapshotAt;
+  final int lastSnapshotId;
   final int activeConfigVersion;
   final int lastErrorCode;
+  final int tcpConnectCount;
+  final int tcpDisconnectCount;
+  final int controlMode;
+  final int autonomousReason;
+  final int lastMasterSeenMs;
 
   MasterStatus copyWith({
     bool? connected,
     int? rttMs,
     DateTime? lastSnapshotAt,
+    int? lastSnapshotId,
     int? activeConfigVersion,
     int? lastErrorCode,
+    int? tcpConnectCount,
+    int? tcpDisconnectCount,
+    int? controlMode,
+    int? autonomousReason,
+    int? lastMasterSeenMs,
   }) {
     return MasterStatus(
       connected: connected ?? this.connected,
       rttMs: rttMs ?? this.rttMs,
       lastSnapshotAt: lastSnapshotAt ?? this.lastSnapshotAt,
+      lastSnapshotId: lastSnapshotId ?? this.lastSnapshotId,
       activeConfigVersion: activeConfigVersion ?? this.activeConfigVersion,
       lastErrorCode: lastErrorCode ?? this.lastErrorCode,
+      tcpConnectCount: tcpConnectCount ?? this.tcpConnectCount,
+      tcpDisconnectCount: tcpDisconnectCount ?? this.tcpDisconnectCount,
+      controlMode: controlMode ?? this.controlMode,
+      autonomousReason: autonomousReason ?? this.autonomousReason,
+      lastMasterSeenMs: lastMasterSeenMs ?? this.lastMasterSeenMs,
     );
   }
 
@@ -85,8 +157,14 @@ class MasterStatus {
     connected: false,
     rttMs: 0,
     lastSnapshotAt: null,
+    lastSnapshotId: 0,
     activeConfigVersion: 0,
     lastErrorCode: 0,
+    tcpConnectCount: 0,
+    tcpDisconnectCount: 0,
+    controlMode: 255,
+    autonomousReason: 0,
+    lastMasterSeenMs: 0,
   );
 }
 

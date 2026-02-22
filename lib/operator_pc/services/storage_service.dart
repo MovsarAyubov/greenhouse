@@ -139,6 +139,9 @@ class StorageService {
   Future<String> exportCsv({
     required DateTime from,
     required DateTime to,
+    required ({int blockNo, int channelIndex})? Function(int sensorId) resolveSensor,
+    required String Function(int channelIndex) channelNameByIndex,
+    required String Function(int source) decodeSource,
   }) async {
     final telemetry = await telemetryBetween(from, to);
     final events = await eventsBetween(from, to);
@@ -152,12 +155,23 @@ class StorageService {
     final outPath = p.join(outDir.path, 'report_$stamp.csv');
     final sb = StringBuffer();
 
-    sb.writeln('section,time_utc,sensor_id,value,quality,event_id,severity,code,source');
+    sb.writeln('section,TimeUtc,sensor_id,BlockNo,ChannelName,Value,Quality,event_id,severity,code,source,source_decoded');
     for (final row in telemetry) {
-      sb.writeln('telemetry,${row['time_utc']},${row['sensor_id']},${row['value']},${row['quality']},,,,');
+      final sensorId = (row['sensor_id'] as int?) ?? -1;
+      final mapped = sensorId >= 0 ? resolveSensor(sensorId) : null;
+      final blockNo = mapped?.blockNo ?? -1;
+      final channelName = mapped == null
+          ? 'UNKNOWN'
+          : channelNameByIndex(mapped.channelIndex);
+      sb.writeln(
+        'telemetry,${row['time_utc']},$sensorId,$blockNo,$channelName,${row['value']},${row['quality']},,,,,',
+      );
     }
     for (final row in events) {
-      sb.writeln('event,${row['time_utc']},,,${row['value']},${row['event_id']},${row['severity']},${row['code']},${row['source']}');
+      final source = (row['source'] as int?) ?? -1;
+      sb.writeln(
+        'event,${row['time_utc']},,,,,${row['value']},,${row['event_id']},${row['severity']},${row['code']},$source,${decodeSource(source)}',
+      );
     }
 
     await File(outPath).writeAsString(sb.toString());
@@ -167,6 +181,9 @@ class StorageService {
   Future<String> exportXlsx({
     required DateTime from,
     required DateTime to,
+    required ({int blockNo, int channelIndex})? Function(int sensorId) resolveSensor,
+    required String Function(int channelIndex) channelNameByIndex,
+    required String Function(int source) decodeSource,
   }) async {
     final telemetry = await telemetryBetween(from, to);
     final events = await eventsBetween(from, to);
@@ -176,16 +193,26 @@ class StorageService {
     final eventSheet = excel['events'];
 
     telemetrySheet.appendRow([
-      TextCellValue('time_utc'),
-      TextCellValue('sensor_id'),
-      TextCellValue('value'),
-      TextCellValue('quality'),
+      TextCellValue('TimeUtc'),
+      TextCellValue('SensorId'),
+      TextCellValue('BlockNo'),
+      TextCellValue('ChannelName'),
+      TextCellValue('Value'),
+      TextCellValue('Quality'),
     ]);
 
     for (final row in telemetry) {
+      final sensorId = (row['sensor_id'] as int?) ?? -1;
+      final mapped = sensorId >= 0 ? resolveSensor(sensorId) : null;
+      final blockNo = mapped?.blockNo ?? -1;
+      final channelName = mapped == null
+          ? 'UNKNOWN'
+          : channelNameByIndex(mapped.channelIndex);
       telemetrySheet.appendRow([
         TextCellValue(row['time_utc'].toString()),
-        IntCellValue((row['sensor_id'] as int?) ?? 0),
+        IntCellValue(sensorId),
+        IntCellValue(blockNo),
+        TextCellValue(channelName),
         DoubleCellValue((row['value'] as num?)?.toDouble() ?? 0),
         IntCellValue((row['quality'] as int?) ?? 0),
       ]);
@@ -197,16 +224,19 @@ class StorageService {
       TextCellValue('severity'),
       TextCellValue('code'),
       TextCellValue('source'),
+      TextCellValue('source_decoded'),
       TextCellValue('value'),
     ]);
 
     for (final row in events) {
+      final source = (row['source'] as int?) ?? -1;
       eventSheet.appendRow([
         TextCellValue(row['time_utc'].toString()),
         IntCellValue((row['event_id'] as int?) ?? 0),
         IntCellValue((row['severity'] as int?) ?? 0),
         IntCellValue((row['code'] as int?) ?? 0),
-        IntCellValue((row['source'] as int?) ?? 0),
+        IntCellValue(source),
+        TextCellValue(decodeSource(source)),
         DoubleCellValue((row['value'] as num?)?.toDouble() ?? 0),
       ]);
     }
