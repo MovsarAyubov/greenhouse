@@ -1,8 +1,8 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import '../widgets/co2_control_card.dart';
-import '../widgets/lighting_control_card.dart';
-import '../widgets/sensor_card.dart';
 import '../widgets/co2_schedule_manager.dart';
 
 class InternalClimateScreen extends StatelessWidget {

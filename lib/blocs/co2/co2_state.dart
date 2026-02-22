@@ -1,12 +1,5 @@
 import 'package:equatable/equatable.dart';
 import '../../models/co2_schedule_item.dart';
-import 'co2_event.dart'; // For Co2CycleStatus enum if I put it there, or I can move it here or separate file.
-// Actually I put Co2CycleStatus in co2_event.dart, let's move it to state or keep it consistent.
-// I'll redefine it here or import it. Let's import it if possible, but usually enums are better in state or separate.
-// I'll put the enum in state file for clarity this time or just use the one from event if I exported it?
-// Wait, I defined it in event file. Let's move it to a separate file or just redefine/move to state.
-// To avoid circular deps or confusion, I will put the enum in the state file and remove from event file in next edit if needed,
-// or just put it here.
 
 enum Co2OperationStatus { idle, dosing, pausing }
 

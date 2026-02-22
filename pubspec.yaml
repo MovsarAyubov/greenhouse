@@ -42,6 +42,10 @@ dependencies:
   uuid: ^4.5.2
   shared_preferences: ^2.5.3
   flutter_libserialport: ^0.6.0
+  sqflite_common_ffi: ^2.3.4+4
+  path: ^1.9.1
+  intl: ^0.20.2
+  excel: ^4.0.6
 
 dev_dependencies:
   flutter_test:

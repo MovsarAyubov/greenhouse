@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 enum TankType { acid, base, fertilizerA, fertilizerB }
 
-class Tank {
+class Tank extends Equatable {
   final String id;
   final String name;
   final TankType type;
