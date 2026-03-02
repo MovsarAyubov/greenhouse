@@ -1071,3 +1071,5 @@ d=0 timeout_streak=0
 2026-03-02T12:13:32.812815,send op=points@0 start=0 count=72 attempt=1/2
 2026-03-02T12:13:34.615393,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
 2026-03-02T12:13:34.881141,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:36.267066,poll ok #224 duration_ms=3455 degraded=0 timeout_streak=0
+2026-03-02T12:13:37.815158,send op=points@0 start=0 count=72 attempt=1/2
