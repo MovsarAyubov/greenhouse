@@ -29,6 +29,13 @@ class RegisterMap {
     this.expectedTopologyGeneration = 8,
     this.expectedTopologyActiveFlag = 1,
     this.directoryPointCountAddress = 1444,
+    this.rtcHourAddress = 1454,
+    this.rtcMinuteAddress = 1455,
+    this.rtcSetHourAddress = 1456,
+    this.rtcSetMinuteAddress = 1457,
+    this.rtcSetTokenAddress = 1458,
+    this.rtcSetAppliedTokenAddress = 1459,
+    this.rtcSetResultAddress = 1460,
     this.expectedPointCount = 12,
     this.weatherExpectedModuleId = 201,
     this.weatherPublishStartIndex = 3,
@@ -81,6 +88,13 @@ class RegisterMap {
   final int expectedTopologyGeneration;
   final int expectedTopologyActiveFlag;
   final int directoryPointCountAddress;
+  final int rtcHourAddress;
+  final int rtcMinuteAddress;
+  final int rtcSetHourAddress;
+  final int rtcSetMinuteAddress;
+  final int rtcSetTokenAddress;
+  final int rtcSetAppliedTokenAddress;
+  final int rtcSetResultAddress;
   final int expectedPointCount;
   final int weatherExpectedModuleId;
   final int weatherPublishStartIndex;

@@ -1245,3 +1245,14 @@ alid sensor value
 2026-03-02T12:06:10.640888,1,offline,raise,Zone 1 is offline
 2026-03-02T12:06:18.333143,1,invalidSensor,raise,Zone 1: invalid sensor value
 2026-03-02T12:06:39.156673,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-02T13:45:18.193530,1,offline,raise,Zone 1 is offline
+2026-03-02T13:45:23.328831,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-02T13:45:48.024140,1,offline,raise,Zone 1 is offline
+2026-03-02T13:45:53.326380,1,offline,clear,Zone 1 is offline
+2026-03-02T13:46:06.651010,1,stale,raise,Zone 1: stale data
+2026-03-02T13:49:18.207513,1,offline,raise,Zone 1 is offline
+2026-03-02T13:49:23.974355,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-02T13:49:36.771396,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-02T14:15:45.286654,1,offline,raise,Zone 1 is offline
+2026-03-02T14:15:52.961631,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-02T14:16:06.817289,1,stale,raise,Zone 1: stale data

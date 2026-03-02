@@ -97,6 +97,27 @@ class _DashboardTab extends StatelessWidget {
       child: ListView(
         children: [
           Card(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Server Time',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text('RTC: ${controller.serverRtcText}'),
+                  Text(
+                    'Last update: ${controller.serverRtcLastUpdate?.toIso8601String() ?? '-'}',
+                  ),
+                  if (controller.serverRtcLastError != null)
+                    Text('Last error: ${controller.serverRtcLastError}'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
             color: w.online ? Colors.white : Colors.red.shade50,
             child: Padding(
               padding: const EdgeInsets.all(10),
@@ -816,7 +837,11 @@ class _SettingsTabState extends State<_SettingsTab> {
   late final TextEditingController _pollCtrl;
   late final TextEditingController _staleCtrl;
   late final TextEditingController _logCtrl;
+  late final TextEditingController _rtcHourCtrl;
+  late final TextEditingController _rtcMinuteCtrl;
   String _status = '';
+  String _rtcStatus = '';
+  bool _settingRtc = false;
 
   @override
   void initState() {
@@ -827,6 +852,11 @@ class _SettingsTabState extends State<_SettingsTab> {
     _pollCtrl = TextEditingController(text: '${c.pollPeriodMs}');
     _staleCtrl = TextEditingController(text: '${c.staleThresholdSec}');
     _logCtrl = TextEditingController(text: '${c.logPeriodSec}');
+    final now = DateTime.now();
+    final rtcHour = widget.controller.serverRtcHour ?? now.hour;
+    final rtcMinute = widget.controller.serverRtcMinute ?? now.minute;
+    _rtcHourCtrl = TextEditingController(text: '$rtcHour');
+    _rtcMinuteCtrl = TextEditingController(text: '$rtcMinute');
   }
 
   @override
@@ -836,6 +866,8 @@ class _SettingsTabState extends State<_SettingsTab> {
     _pollCtrl.dispose();
     _staleCtrl.dispose();
     _logCtrl.dispose();
+    _rtcHourCtrl.dispose();
+    _rtcMinuteCtrl.dispose();
     super.dispose();
   }
 
@@ -892,8 +924,82 @@ class _SettingsTabState extends State<_SettingsTab> {
           ),
           const SizedBox(height: 8),
           Text(_status),
+          const Divider(height: 24),
+          const Text(
+            'Server RTC (1456..1460)',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          Text('Current server time: ${widget.controller.serverRtcText}'),
+          if (widget.controller.serverRtcLastUpdate != null)
+            Text(
+              'RTC last update: ${widget.controller.serverRtcLastUpdate!.toIso8601String()}',
+            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _rtcHourCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Hour (0..23)'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _rtcMinuteCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Minute (0..59)',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: _settingRtc
+                ? null
+                : () async {
+                    final hour = int.tryParse(_rtcHourCtrl.text.trim());
+                    final minute = int.tryParse(_rtcMinuteCtrl.text.trim());
+                    if (hour == null || minute == null) {
+                      setState(() => _rtcStatus = 'Invalid RTC input');
+                      return;
+                    }
+                    setState(() {
+                      _settingRtc = true;
+                      _rtcStatus = 'Applying RTC_SET...';
+                    });
+                    try {
+                      await widget.controller.setServerRtcTime(
+                        hour: hour,
+                        minute: minute,
+                      );
+                      if (mounted) {
+                        setState(() {
+                          _rtcStatus =
+                              'Applied. Server time: ${widget.controller.serverRtcText}';
+                        });
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() => _rtcStatus = 'RTC_SET failed: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _settingRtc = false);
+                      }
+                    }
+                  },
+            child: Text(_settingRtc ? 'Applying...' : 'Set server time'),
+          ),
+          const SizedBox(height: 6),
+          Text(_rtcStatus),
           if (widget.controller.lastError != null)
             Text('Last error: ${widget.controller.lastError}'),
+          if (widget.controller.serverRtcLastError != null)
+            Text('RTC error: ${widget.controller.serverRtcLastError}'),
           const SizedBox(height: 8),
           const Text('Register map is configured for current server spec.'),
           const SizedBox(height: 12),

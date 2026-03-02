@@ -30,6 +30,10 @@ class ScadaController extends ChangeNotifier {
   bool polling = false;
   String? lastError;
   int selectedZoneId = 1;
+  int? serverRtcHour;
+  int? serverRtcMinute;
+  DateTime? serverRtcLastUpdate;
+  String? serverRtcLastError;
 
   final List<ZoneState> zones = List<ZoneState>.generate(
     1,
@@ -69,6 +73,7 @@ class ScadaController extends ChangeNotifier {
   DateTime _lastSuccessfulPollAt = DateTime.fromMillisecondsSinceEpoch(0);
   int _connectivityPolicyState = 0; // 0=normal,1=stale,2=offline
   int _pollSeq = 0;
+  int _rtcSetTokenCounter = 0;
 
   List<AlarmEntry> get activeAlarms =>
       _activeAlarms.values.toList()
@@ -76,6 +81,14 @@ class ScadaController extends ChangeNotifier {
 
   ZoneState get selectedZone => zones[selectedZoneId - 1];
   List<String> get clientTrace => List<String>.unmodifiable(_clientTrace);
+  String get serverRtcText {
+    final hour = serverRtcHour;
+    final minute = serverRtcMinute;
+    if (hour == null || minute == null) {
+      return '--:--';
+    }
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
 
   Future<void> init() async {
     final loaded = await _configStore.load();
@@ -197,6 +210,85 @@ class ScadaController extends ChangeNotifier {
     _pendingApplyTriggerByZone.remove(zoneId);
   }
 
+  Future<void> setServerRtcTime({
+    required int hour,
+    required int minute,
+  }) async {
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      throw RangeError(
+        'RTC_SET out of range: hour=$hour minute=$minute (expected 0..23 / 0..59)',
+      );
+    }
+
+    serverRtcLastError = null;
+    final token = await _nextRtcSetToken();
+    _addClientTrace('rtc_set start hour=$hour minute=$minute token=$token');
+    notifyListeners();
+
+    try {
+      await _writeSingleWithRetry(
+        address: _registerMap.rtcSetHourAddress,
+        value: hour,
+        operationName: 'rtc_set_hour',
+      );
+      await _writeSingleWithRetry(
+        address: _registerMap.rtcSetMinuteAddress,
+        value: minute,
+        operationName: 'rtc_set_minute',
+      );
+      await _writeSingleWithRetry(
+        address: _registerMap.rtcSetTokenAddress,
+        value: token,
+        operationName: 'rtc_set_token',
+      );
+
+      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      var lastAppliedToken = -1;
+      var lastResult = -1;
+      while (DateTime.now().isBefore(deadline)) {
+        final regs = await _readHoldingWithRetry(
+          startAddress: _registerMap.rtcSetAppliedTokenAddress,
+          count: 2,
+          operationName: 'rtc_set_state',
+          maxAttempts: 1,
+        );
+        if (regs.length < 2) {
+          throw StateError('RTC_SET state read too short: ${regs.length}/2');
+        }
+
+        lastAppliedToken = regs[0] & 0xFFFF;
+        lastResult = regs[1] & 0xFFFF;
+
+        if (lastResult == 3) {
+          throw StateError('RTC_SET rejected: REJECT_RANGE');
+        }
+        if (lastResult == 4) {
+          throw StateError('RTC_SET failed: FAILED');
+        }
+        if (lastAppliedToken == token && (lastResult == 2 || lastResult == 0)) {
+          await _pollServerRtc();
+          _addClientTrace(
+            'rtc_set applied token=$token result=${_rtcSetResultLabel(lastResult)}',
+          );
+          notifyListeners();
+          return;
+        }
+
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      }
+
+      throw TimeoutException(
+        'RTC_SET not confirmed: token=$token '
+        'applied=$lastAppliedToken result=${_rtcSetResultLabel(lastResult)}',
+      );
+    } catch (e) {
+      serverRtcLastError = e.toString();
+      _addClientTrace('rtc_set error token=$token: $e');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   List<TrendPoint> trendPoints({
     required int zoneId,
     required Set<int> sensors,
@@ -293,6 +385,7 @@ class ScadaController extends ChangeNotifier {
       }
 
       await _ensureDirectoryReady();
+      await _pollServerRtc();
       final rows = await _readPointsRowsWithRetry();
       final groupedRows = _groupRowsByModule(rows);
 
@@ -470,6 +563,30 @@ class ScadaController extends ChangeNotifier {
       ).copyWith(lastUpdate: DateTime.now(), clearLastError: true);
     } catch (e) {
       weather = weather.copyWith(online: false, lastError: e.toString());
+    }
+  }
+
+  Future<void> _pollServerRtc() async {
+    try {
+      final regs = await _readHoldingAtCandidates(
+        startCandidates: <int>[_registerMap.rtcHourAddress],
+        count: 2,
+        operationName: 'rtc_hhmm',
+      );
+      if (regs.length < 2) {
+        throw StateError('RTC read too short: ${regs.length}/2');
+      }
+      final hour = regs[0] & 0xFFFF;
+      final minute = regs[1] & 0xFFFF;
+      if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+        throw StateError('RTC out of range: hour=$hour minute=$minute');
+      }
+      serverRtcHour = hour;
+      serverRtcMinute = minute;
+      serverRtcLastUpdate = DateTime.now();
+      serverRtcLastError = null;
+    } catch (e) {
+      serverRtcLastError = e.toString();
     }
   }
 
@@ -878,6 +995,93 @@ class ScadaController extends ChangeNotifier {
     return false;
   }
 
+  Future<void> _writeSingleWithRetry({
+    required int address,
+    required int value,
+    required String operationName,
+    int? maxAttempts,
+  }) async {
+    Object? last;
+    final attemptLimit = maxAttempts ?? (_readRetryBackoffMs.length + 1);
+    for (var attempt = 0; attempt < attemptLimit; attempt++) {
+      try {
+        if (!_client.isConnected) {
+          await _ensureConnected();
+        }
+        if (!_client.isConnected) {
+          throw StateError('not connected');
+        }
+        _addClientTrace(
+          'send write op=$operationName addr=$address value=$value '
+          'attempt=${attempt + 1}/$attemptLimit',
+        );
+        await _client.writeSingleRegister(
+          unitId: _registerMap.unitId,
+          address: address,
+          value: value & 0xFFFF,
+        );
+        _addClientTrace(
+          'write ok op=$operationName attempt=${attempt + 1}/$attemptLimit',
+        );
+        return;
+      } catch (e) {
+        last = e;
+        _addClientTrace(
+          'write error op=$operationName attempt=${attempt + 1}/$attemptLimit: $e',
+        );
+        if (_isModbusException(e)) {
+          rethrow;
+        }
+        final mustForceDisconnect = _shouldForceDisconnectAfterReadError(e);
+        if (mustForceDisconnect && _client.isConnected) {
+          _addClientTrace('disconnect after write error op=$operationName: $e');
+          await _client.disconnect();
+        }
+        if (attempt < _readRetryBackoffMs.length &&
+            attempt < (attemptLimit - 1)) {
+          await Future<void>.delayed(
+            Duration(milliseconds: _readRetryBackoffMs[attempt]),
+          );
+          continue;
+        }
+      }
+    }
+    if (last != null) {
+      throw StateError('Write failed: $operationName: $last');
+    }
+    throw StateError('Write failed: $operationName');
+  }
+
+  Future<int> _nextRtcSetToken() async {
+    var next = (_rtcSetTokenCounter + 1) & 0xFFFF;
+    if (next == 0) {
+      next = 1;
+    }
+
+    try {
+      final regs = await _readHoldingWithRetry(
+        startAddress: _registerMap.rtcSetAppliedTokenAddress,
+        count: 1,
+        operationName: 'rtc_set_applied_token_precheck',
+        maxAttempts: 1,
+      );
+      if (regs.isNotEmpty) {
+        final applied = regs[0] & 0xFFFF;
+        if (next == applied) {
+          next = (next + 1) & 0xFFFF;
+          if (next == 0) {
+            next = 1;
+          }
+        }
+      }
+    } catch (_) {
+      // Best effort: token generation should not fail the write path.
+    }
+
+    _rtcSetTokenCounter = next;
+    return next;
+  }
+
   Future<List<int>> _readHoldingWithRetry({
     required int startAddress,
     required int count,
@@ -1001,6 +1205,23 @@ class ScadaController extends ChangeNotifier {
 
   bool _isModbusException(Object error) {
     return error.toString().toLowerCase().contains('modbus exception code:');
+  }
+
+  String _rtcSetResultLabel(int code) {
+    switch (code) {
+      case 0:
+        return 'IDLE';
+      case 1:
+        return 'QUEUED';
+      case 2:
+        return 'APPLIED';
+      case 3:
+        return 'REJECT_RANGE';
+      case 4:
+        return 'FAILED';
+      default:
+        return 'UNKNOWN($code)';
+    }
   }
 
   bool _isIllegalDataAddress(Object error) {
