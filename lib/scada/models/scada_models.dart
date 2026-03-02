@@ -44,11 +44,62 @@ class ScadaConfig {
   static ScadaConfig defaults() => ScadaConfig(
     masterIp: '192.168.50.20',
     masterPort: 502,
-    pollPeriodMs: 1000,
+    pollPeriodMs: 5000,
     staleThresholdSec: 5,
     logPeriodSec: 10,
     sensorNames: List<String>.generate(9, (i) => 'Sensor ${i + 1}'),
     outputNames: List<String>.generate(16, (i) => 'Output ${i + 1}'),
+  );
+}
+
+class WeatherStationState {
+  const WeatherStationState({
+    required this.values,
+    required this.qualityCodes,
+    required this.ageSec,
+    required this.flags,
+    required this.online,
+    required this.lastUpdate,
+    required this.lastError,
+  });
+
+  final List<double?> values; // 0..8 weather profile fields
+  final List<int> qualityCodes;
+  final List<int> ageSec;
+  final List<int> flags;
+  final bool online;
+  final DateTime? lastUpdate;
+  final String? lastError;
+
+  WeatherStationState copyWith({
+    List<double?>? values,
+    List<int>? qualityCodes,
+    List<int>? ageSec,
+    List<int>? flags,
+    bool? online,
+    DateTime? lastUpdate,
+    String? lastError,
+    bool clearLastError = false,
+  }) {
+    return WeatherStationState(
+      values: values ?? this.values,
+      qualityCodes: qualityCodes ?? this.qualityCodes,
+      ageSec: ageSec ?? this.ageSec,
+      flags: flags ?? this.flags,
+      online: online ?? this.online,
+      lastUpdate: lastUpdate ?? this.lastUpdate,
+      lastError: clearLastError ? null : (lastError ?? this.lastError),
+    );
+  }
+
+  static WeatherStationState initial() => WeatherStationState(
+    values: List<double?>.filled(9, null),
+    qualityCodes: List<int>.filled(9, 3),
+    ageSec: List<int>.filled(9, 0),
+    flags: List<int>.filled(9, 0),
+    online: false,
+    lastUpdate: null,
+    lastError: null,
   );
 }
 
@@ -57,6 +108,9 @@ class ZoneState {
     required this.zoneId,
     required this.sensors,
     required this.sensorValidMask,
+    required this.sensorQualityCodes,
+    required this.sensorAgeSec,
+    required this.sensorFlags,
     required this.outputs,
     required this.outputCommandMask,
     required this.mode,
@@ -76,6 +130,9 @@ class ZoneState {
   final int zoneId;
   final List<double> sensors;
   final int sensorValidMask;
+  final List<int> sensorQualityCodes;
+  final List<int> sensorAgeSec;
+  final List<int> sensorFlags;
   final List<bool> outputs;
   final int outputCommandMask;
   final ZoneMode mode;
@@ -97,6 +154,9 @@ class ZoneState {
   ZoneState copyWith({
     List<double>? sensors,
     int? sensorValidMask,
+    List<int>? sensorQualityCodes,
+    List<int>? sensorAgeSec,
+    List<int>? sensorFlags,
     List<bool>? outputs,
     int? outputCommandMask,
     ZoneMode? mode,
@@ -116,6 +176,9 @@ class ZoneState {
       zoneId: zoneId,
       sensors: sensors ?? this.sensors,
       sensorValidMask: sensorValidMask ?? this.sensorValidMask,
+      sensorQualityCodes: sensorQualityCodes ?? this.sensorQualityCodes,
+      sensorAgeSec: sensorAgeSec ?? this.sensorAgeSec,
+      sensorFlags: sensorFlags ?? this.sensorFlags,
       outputs: outputs ?? this.outputs,
       outputCommandMask: outputCommandMask ?? this.outputCommandMask,
       mode: mode ?? this.mode,
@@ -137,6 +200,9 @@ class ZoneState {
     zoneId: zoneId,
     sensors: List<double>.filled(9, 0),
     sensorValidMask: 0,
+    sensorQualityCodes: List<int>.filled(9, 3),
+    sensorAgeSec: List<int>.filled(9, 0),
+    sensorFlags: List<int>.filled(9, 0),
     outputs: List<bool>.filled(16, false),
     outputCommandMask: 0,
     mode: ZoneMode.auto,
@@ -175,10 +241,7 @@ class AlarmEntry {
 
   bool get isActive => clearedAt == null;
 
-  AlarmEntry copyWith({
-    DateTime? clearedAt,
-    bool? acknowledged,
-  }) {
+  AlarmEntry copyWith({DateTime? clearedAt, bool? acknowledged}) {
     return AlarmEntry(
       id: id,
       zoneId: zoneId,

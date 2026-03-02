@@ -103,3 +103,1145 @@ alid sensor value
 2026-02-22T14:01:33.841480,18,stale,raise,Zone 18: stale data
 
 2026-02-22T14:01:39.882307,1,offline,raise,Zone 1 is offline
+2026-02-23T09:34:17.800419,3,offline,raise,Zone 3 is offline
+e
+2026-02-23T09:35:44.285321,1,offline,raise,Zone 1 is offline
+2026-02-23T09:35:57.431538,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-23T14:02:20.798972,1,offline,clear,Zone 1 is offline
+lid sensor value
+2026-02-23T14:21:08.552918,1,stale,raise,Zone 1: stale data
+
+2026-02-23T14:21:23.549123,1,offline,clear,Zone 1 is offline
+2026-02-23T14:31:53.513350,1,stale,raise,Zone 1: stale data
+
+2026-02-23T14:32:08.538569,1,stale,clear,Zone 1: stale data
+
+2026-02-23T14:34:27.742552,1,stale,raise,Zone 1: stale data
+2026-02-23T14:34:32.755973,1,stale,clear,Zone 1: stale data
+2026-02-23T14:37:38.539007,1,stale,raise,Zone 1: stale data
+2026-02-23T14:37:43.546679,1,stale,clear,Zone 1: stale data
+2026-02-23T14:48:23.496499,1,stale,raise,Zone 1: stale data
+
+2026-02-23T14:48:38.526335,1,offline,clear,Zone 1 is offline
+2026-02-23T14:48:38.527431,1,stale,clear,Zone 1: stale data
+2026-02-23T14:54:08.600089,1,stale,raise,Zone 1: stale data
+2026-02-23T14:54:13.597489,1,stale,clear,Zone 1: stale data
+2026-02-23T14:59:42.685390,1,stale,raise,Zone 1: stale data
+2026-02-23T14:59:47.706046,1,stale,clear,Zone 1: stale data
+2026-02-23T15:02:53.456673,1,stale,raise,Zone 1: stale data
+2026-02-23T15:02:58.451881,1,stale,clear,Zone 1: stale data
+2026-02-23T15:17:25.788169,1,stale,raise,Zone 1: stale data
+
+2026-02-23T15:17:37.664259,1,stale,clear,Zone 1: stale data
+
+2026-02-23T15:21:43.906190,1,offline,raise,Zone 1 is offline
+2026-02-23T15:21:46.444291,1,stale,clear,Zone 1: stale data
+
+2026-02-23T15:28:17.849335,1,stale,raise,Zone 1: stale data
+2026-02-23T15:28:22.852992,1,stale,clear,Zone 1: stale data
+2026-02-23T15:31:27.831405,1,offline,raise,Zone 1 is offline
+2026-02-24T08:01:39.492504,1,offline,raise,Zone 1 is offline
+2026-02-24T08:05:40.210255,1,offline,raise,Zone 1 is offline
+2026-02-24T08:34:03.712616,1,offline,raise,Zone 1 is offline
+2026-02-24T09:24:54.999434,1,offline,raise,Zone 1 is offline
+2026-02-24T09:48:11.569496,1,offline,clear,Zone 1 is offline
+2026-02-24T09:48:29.603799,1,stale,raise,Zone 1: stale data
+
+2026-02-24T09:48:32.341559,1,offline,clear,Zone 1 is offline
+2026-02-24T09:48:32.341559,1,stale,clear,Zone 1: stale data
+2026-02-24T09:53:53.481010,1,stale,raise,Zone 1: stale data
+2026-02-24T09:53:57.438953,1,stale,clear,Zone 1: stale data
+2026-02-24T10:00:52.396971,1,stale,raise,Zone 1: stale data
+2026-02-24T10:00:56.514709,1,stale,clear,Zone 1: stale data
+2026-02-24T10:01:02.892234,1,offline,raise,Zone 1 is offline
+2026-02-24T10:01:09.982108,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T10:10:51.521694,1,offline,clear,Zone 1 is offline
+2026-02-24T10:10:51.522220,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T10:11:04.601879,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:11:07.360911,1,offline,clear,Zone 1 is offline
+2026-02-24T10:11:07.361936,1,stale,clear,Zone 1: stale data
+2026-02-24T10:22:47.101021,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:22:54.110313,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T10:24:29.526084,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-24T10:24:29.526084,1,stale,clear,Zone 1: stale data
+2026-02-24T10:24:36.513228,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:35:31.512912,1,stale,clear,Zone 1: stale data
+
+2026-02-24T10:35:39.602430,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:43:41.525508,1,offline,clear,Zone 1 is offline
+2026-02-24T10:43:41.526047,1,stale,clear,Zone 1: stale data
+2026-02-24T10:43:50.180789,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-24T10:44:06.509911,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-24T10:44:11.506435,1,stale,clear,Zone 1: stale data
+2026-02-24T10:44:19.603514,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:44:22.355882,1,stale,clear,Zone 1: stale data
+
+2026-02-24T10:50:44.624333,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:50:47.067266,1,offline,clear,Zone 1 is offline
+2026-02-24T10:50:47.067266,1,stale,clear,Zone 1: stale data
+2026-02-24T10:53:54.999664,1,offline,raise,Zone 1 is offline
+2026-02-24T10:55:44.584221,1,offline,raise,Zone 1 is offline
+2026-02-24T10:57:17.161123,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-24T10:57:36.093471,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T10:57:44.186675,1,stale,raise,Zone 1: stale data
+
+2026-02-24T10:59:36.111772,1,stale,clear,Zone 1: stale data
+
+2026-02-24T10:59:54.202113,1,offline,raise,Zone 1 is offline
+2026-02-24T10:59:56.941535,1,stale,clear,Zone 1: stale data
+
+2026-02-24T11:03:44.215429,1,stale,raise,Zone 1: stale data
+2026-02-24T11:03:44.214273,1,offline,raise,Zone 1 is offline
+2026-02-24T11:16:18.754275,1,offline,raise,Zone 1 is offline
+2026-02-24T11:19:42.664449,1,offline,raise,Zone 1 is offline
+2026-02-24T11:35:11.441223,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-24T11:35:29.174506,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T11:36:17.660025,1,offline,raise,Zone 1 is offline
+2026-02-24T11:48:56.954125,1,stale,raise,Zone 1: stale data
+
+2026-02-24T11:48:59.668684,1,stale,clear,Zone 1: stale data
+
+2026-02-24T11:49:21.923029,1,stale,raise,Zone 1: stale data
+
+2026-02-24T12:29:43.835200,1,stale,clear,Zone 1: stale data
+
+2026-02-24T12:30:01.924822,1,offline,raise,Zone 1 is offline
+2026-02-24T12:30:04.674882,1,stale,clear,Zone 1: stale data
+
+2026-02-24T12:30:52.323076,1,offline,raise,Zone 1 is offline
+2026-02-24T12:32:43.837407,1,offline,clear,Zone 1 is offline
+2026-02-24T12:33:39.141421,1,stale,raise,Zone 1: stale data
+
+2026-02-24T13:05:58.849670,1,stale,clear,Zone 1: stale data
+
+2026-02-24T13:10:51.925644,1,stale,raise,Zone 1: stale data
+
+2026-02-24T13:10:54.550442,1,stale,clear,Zone 1: stale data
+
+2026-02-24T13:11:06.923098,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:29:15.329280,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:29:18.183417,1,stale,clear,Zone 1: stale data
+
+2026-02-24T14:29:55.722221,1,offline,raise,Zone 1 is offline
+2026-02-24T14:30:15.326378,1,stale,raise,Zone 1: stale data
+2026-02-24T14:32:37.232217,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T14:32:42.234758,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T14:32:55.324243,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:32:58.097601,1,stale,clear,Zone 1: stale data
+
+2026-02-24T14:33:25.722394,1,offline,raise,Zone 1 is offline
+2026-02-24T14:33:32.240894,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-24T14:33:37.226322,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T14:33:50.322850,1,offline,raise,Zone 1 is offline
+2026-02-24T14:33:53.100685,1,offline,clear,Zone 1 is offline
+2026-02-24T14:33:53.101192,1,stale,clear,Zone 1: stale data
+2026-02-24T14:34:43.098068,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:46:37.139202,1,offline,raise,Zone 1 is offline
+2026-02-24T14:47:08.649176,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-02-24T14:47:13.654036,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-24T14:47:26.739313,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:47:29.511410,1,stale,clear,Zone 1: stale data
+
+2026-02-24T14:47:58.313783,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:48:33.655931,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T14:48:43.646769,1,offline,clear,Zone 1 is offline
+2026-02-24T14:48:43.646769,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-24T14:48:51.737855,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:48:54.520669,1,stale,clear,Zone 1: stale data
+
+2026-02-24T14:56:28.320045,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:56:48.653834,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T14:56:53.655902,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-02-24T14:57:06.739285,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:57:09.484681,1,offline,clear,Zone 1 is offline
+2026-02-24T14:57:28.501969,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:58:03.659395,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-24T14:58:13.644644,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-24T14:58:21.738506,1,stale,raise,Zone 1: stale data
+
+2026-02-24T14:58:24.512162,1,stale,clear,Zone 1: stale data
+
+2026-02-24T15:09:35.392129,1,offline,raise,Zone 1 is offline
+2026-02-24T15:09:46.910676,1,offline,clear,Zone 1 is offline
+2026-02-24T15:10:04.992397,1,stale,raise,Zone 1: stale data
+
+2026-02-24T15:10:07.758465,1,stale,clear,Zone 1: stale data
+
+2026-02-24T15:14:16.922375,1,stale,raise,Zone 1: stale data
+2026-02-24T15:14:39.541037,1,stale,clear,Zone 1: stale data
+2026-02-24T15:14:47.510878,1,stale,raise,Zone 1: stale data
+2026-02-24T15:14:59.584372,1,stale,clear,Zone 1: stale data
+2026-02-24T15:15:17.591785,1,stale,raise,Zone 1: stale data
+2026-02-24T15:15:21.897634,1,stale,clear,Zone 1: stale data
+2026-02-24T15:41:44.989621,1,stale,raise,Zone 1: stale data
+
+2026-02-24T15:41:47.525738,1,stale,clear,Zone 1: stale data
+
+2026-02-24T15:55:09.990720,1,stale,raise,Zone 1: stale data
+
+2026-02-24T15:55:11.999587,1,stale,clear,Zone 1: stale data
+
+2026-02-24T15:57:53.749610,1,stale,raise,Zone 1: stale data
+2026-02-24T15:57:57.714914,1,stale,clear,Zone 1: stale data
+2026-02-24T16:01:54.990676,1,stale,raise,Zone 1: stale data
+
+2026-02-24T16:01:57.614607,1,stale,clear,Zone 1: stale data
+
+2026-02-24T16:03:23.696263,1,stale,raise,Zone 1: stale data
+2026-02-24T16:03:29.753522,1,stale,clear,Zone 1: stale data
+2026-02-24T16:03:33.755156,1,stale,raise,Zone 1: stale data
+2026-02-24T16:03:57.748192,1,stale,clear,Zone 1: stale data
+2026-02-24T16:04:18.821144,1,stale,raise,Zone 1: stale data
+2026-02-24T16:04:23.832724,1,stale,clear,Zone 1: stale data
+2026-02-24T16:08:39.989712,1,offline,raise,Zone 1 is offline
+2026-02-24T16:08:39.990731,1,stale,raise,Zone 1: stale data
+2026-02-24T16:08:42.697455,1,stale,clear,Zone 1: stale data
+
+2026-02-24T16:09:28.766860,1,stale,raise,Zone 1: stale data
+2026-02-24T16:09:32.710582,1,stale,clear,Zone 1: stale data
+2026-02-24T16:09:43.781285,1,stale,raise,Zone 1: stale data
+2026-02-24T16:10:02.755074,1,stale,clear,Zone 1: stale data
+2026-02-24T16:10:13.822101,1,stale,raise,Zone 1: stale data
+2026-02-24T16:10:28.826391,1,stale,clear,Zone 1: stale data
+2026-02-24T16:16:03.768055,1,stale,raise,Zone 1: stale data
+2026-02-24T16:16:08.774898,1,stale,clear,Zone 1: stale data
+2026-02-24T16:16:13.780808,1,stale,raise,Zone 1: stale data
+2026-02-24T16:16:22.744605,1,stale,clear,Zone 1: stale data
+2026-02-24T16:16:33.812781,1,stale,raise,Zone 1: stale data
+2026-02-24T16:16:43.830434,1,stale,clear,Zone 1: stale data
+2026-02-24T16:21:28.814761,1,stale,raise,Zone 1: stale data
+2026-02-24T16:21:42.789660,1,stale,clear,Zone 1: stale data
+2026-02-24T16:21:53.874128,1,stale,raise,Zone 1: stale data
+2026-02-24T16:22:07.850394,1,stale,clear,Zone 1: stale data
+2026-02-24T16:22:28.925025,1,stale,raise,Zone 1: stale data
+2026-02-24T16:22:42.891232,1,stale,clear,Zone 1: stale data
+2026-02-24T16:22:53.975242,1,stale,raise,Zone 1: stale data
+2026-02-24T16:22:58.972433,1,stale,clear,Zone 1: stale data
+2026-02-24T16:27:48.988250,1,stale,raise,Zone 1: stale data
+2026-02-24T16:27:53.996668,1,stale,clear,Zone 1: stale data
+2026-02-24T16:35:44.991222,1,offline,raise,Zone 1 is offline
+2026-02-24T16:35:47.699008,1,offline,clear,Zone 1 is offline
+2026-02-24T16:35:47.699524,1,stale,clear,Zone 1: stale data
+2026-02-24T16:40:13.991622,1,stale,raise,Zone 1: stale data
+2026-02-24T16:40:19.017487,1,stale,clear,Zone 1: stale data
+2026-02-24T16:42:29.989110,1,offline,raise,Zone 1 is offline
+2026-02-24T16:42:29.989627,1,stale,raise,Zone 1: stale data
+2026-02-24T16:42:32.686460,1,stale,clear,Zone 1: stale data
+
+2026-02-24T16:46:18.964456,1,stale,raise,Zone 1: stale data
+2026-02-24T16:46:23.966630,1,stale,clear,Zone 1: stale data
+2026-02-24T16:46:43.994986,1,stale,raise,Zone 1: stale data
+2026-02-24T16:46:51.964062,1,stale,clear,Zone 1: stale data
+2026-02-24T17:21:14.991152,1,stale,raise,Zone 1: stale data
+
+2026-02-24T17:21:16.961743,1,stale,clear,Zone 1: stale data
+
+2026-02-24T17:23:19.714723,1,stale,raise,Zone 1: stale data
+2026-02-24T17:23:24.728427,1,stale,clear,Zone 1: stale data
+2026-02-24T17:23:29.728572,1,stale,raise,Zone 1: stale data
+2026-02-24T17:23:43.753158,1,stale,clear,Zone 1: stale data
+2026-02-24T17:29:29.699181,1,stale,raise,Zone 1: stale data
+2026-02-24T17:29:31.898290,1,stale,clear,Zone 1: stale data
+2026-02-24T17:29:44.707517,1,stale,raise,Zone 1: stale data
+2026-02-24T17:30:13.766459,1,stale,clear,Zone 1: stale data
+2026-02-24T17:46:34.991467,1,stale,raise,Zone 1: stale data
+
+2026-02-24T17:46:37.841685,1,stale,clear,Zone 1: stale data
+
+2026-02-24T17:53:49.693384,1,stale,raise,Zone 1: stale data
+2026-02-24T17:53:52.638963,1,stale,clear,Zone 1: stale data
+2026-02-24T17:54:04.691529,1,stale,raise,Zone 1: stale data
+2026-02-24T17:54:38.703403,1,stale,clear,Zone 1: stale data
+2026-02-24T17:54:44.734975,1,stale,raise,Zone 1: stale data
+2026-02-24T17:54:47.683754,1,stale,clear,Zone 1: stale data
+2026-02-24T17:58:54.991137,1,stale,raise,Zone 1: stale data
+
+2026-02-24T17:58:57.021075,1,stale,clear,Zone 1: stale data
+
+2026-02-24T17:59:59.606809,1,stale,raise,Zone 1: stale data
+2026-02-24T18:00:04.622454,1,stale,clear,Zone 1: stale data
+2026-02-24T18:00:09.632552,1,stale,raise,Zone 1: stale data
+2026-02-24T18:00:37.632755,1,stale,clear,Zone 1: stale data
+2026-02-24T18:00:49.707152,1,stale,raise,Zone 1: stale data
+2026-02-24T18:01:02.660402,1,stale,clear,Zone 1: stale data
+2026-02-24T18:01:14.725692,1,stale,raise,Zone 1: stale data
+2026-02-24T18:01:24.734641,1,stale,clear,Zone 1: stale data
+2026-02-24T18:05:09.990248,1,stale,raise,Zone 1: stale data
+
+2026-02-24T18:05:12.024838,1,stale,clear,Zone 1: stale data
+
+2026-02-24T18:06:14.566688,1,stale,raise,Zone 1: stale data
+2026-02-24T18:06:52.565103,1,stale,clear,Zone 1: stale data
+2026-02-24T18:07:04.625465,1,stale,raise,Zone 1: stale data
+2026-02-24T18:07:17.594791,1,stale,clear,Zone 1: stale data
+2026-02-24T18:07:29.651282,1,stale,raise,Zone 1: stale data
+2026-02-24T18:07:34.653043,1,stale,clear,Zone 1: stale data
+2026-02-24T18:12:29.584652,1,stale,raise,Zone 1: stale data
+2026-02-24T18:13:07.595955,1,stale,clear,Zone 1: stale data
+2026-02-24T18:13:19.661669,1,stale,raise,Zone 1: stale data
+2026-02-24T18:13:44.689732,1,stale,clear,Zone 1: stale data
+2026-02-24T18:18:34.661460,1,stale,raise,Zone 1: stale data
+2026-02-24T18:19:07.664370,1,stale,clear,Zone 1: stale data
+2026-02-24T18:19:19.724929,1,stale,raise,Zone 1: stale data
+2026-02-24T18:19:33.752038,1,stale,clear,Zone 1: stale data
+2026-02-24T18:24:04.991681,1,stale,raise,Zone 1: stale data
+
+2026-02-24T18:24:07.549660,1,stale,clear,Zone 1: stale data
+
+2026-02-24T18:24:39.583583,1,stale,raise,Zone 1: stale data
+2026-02-24T18:24:47.537426,1,stale,clear,Zone 1: stale data
+2026-02-24T18:24:59.599078,1,stale,raise,Zone 1: stale data
+2026-02-24T18:25:37.572342,1,stale,clear,Zone 1: stale data
+2026-02-24T18:25:49.630653,1,stale,raise,Zone 1: stale data
+2026-02-24T18:25:59.630418,1,stale,clear,Zone 1: stale data
+2026-02-24T18:38:09.556800,1,stale,raise,Zone 1: stale data
+2026-02-24T18:38:14.562057,1,stale,clear,Zone 1: stale data
+2026-02-24T18:43:44.530901,1,stale,raise,Zone 1: stale data
+2026-02-24T18:43:49.529934,1,stale,clear,Zone 1: stale data
+2026-02-24T18:43:54.549497,1,stale,raise,Zone 1: stale data
+2026-02-24T18:44:04.552347,1,stale,clear,Zone 1: stale data
+2026-02-24T18:44:09.561927,1,stale,raise,Zone 1: stale data
+2026-02-24T18:44:14.571198,1,stale,clear,Zone 1: stale data
+2026-02-24T18:49:09.990463,1,stale,raise,Zone 1: stale data
+
+2026-02-24T18:49:11.987374,1,stale,clear,Zone 1: stale data
+
+2026-02-24T18:50:09.537703,1,stale,raise,Zone 1: stale data
+2026-02-24T18:50:19.564190,1,stale,clear,Zone 1: stale data
+2026-02-24T18:50:24.576185,1,stale,raise,Zone 1: stale data
+2026-02-24T18:50:29.578570,1,stale,clear,Zone 1: stale data
+2026-02-24T19:07:23.964366,1,stale,raise,Zone 1: stale data
+2026-02-24T19:07:28.971146,1,stale,clear,Zone 1: stale data
+2026-02-24T19:07:33.968856,1,stale,raise,Zone 1: stale data
+2026-02-24T19:07:56.893411,1,stale,clear,Zone 1: stale data
+2026-02-24T19:08:08.994353,1,stale,raise,Zone 1: stale data
+2026-02-24T19:08:46.961591,1,stale,clear,Zone 1: stale data
+2026-02-24T19:13:48.752606,1,stale,raise,Zone 1: stale data
+2026-02-24T19:14:16.897240,1,stale,clear,Zone 1: stale data
+2026-02-24T19:14:24.994222,1,stale,raise,Zone 1: stale data
+
+2026-02-24T19:14:27.812339,1,stale,clear,Zone 1: stale data
+
+2026-02-24T19:14:33.821869,1,stale,raise,Zone 1: stale data
+2026-02-24T19:14:58.847545,1,stale,clear,Zone 1: stale data
+2026-02-24T19:19:58.762389,1,stale,raise,Zone 1: stale data
+2026-02-24T19:20:31.896418,1,stale,clear,Zone 1: stale data
+2026-02-24T19:20:43.819381,1,stale,raise,Zone 1: stale data
+2026-02-24T19:20:53.833617,1,stale,clear,Zone 1: stale data
+2026-02-24T19:25:33.762430,1,stale,raise,Zone 1: stale data
+2026-02-24T19:25:38.767433,1,stale,clear,Zone 1: stale data
+2026-02-24T19:25:43.780314,1,stale,raise,Zone 1: stale data
+2026-02-24T19:26:02.763660,1,stale,clear,Zone 1: stale data
+2026-02-24T19:26:13.828315,1,stale,raise,Zone 1: stale data
+2026-02-24T19:26:49.989104,1,offline,raise,Zone 1 is offline
+2026-02-24T19:26:52.924936,1,stale,clear,Zone 1: stale data
+
+2026-02-24T19:31:38.831034,1,stale,raise,Zone 1: stale data
+2026-02-24T19:31:43.838803,1,stale,clear,Zone 1: stale data
+2026-02-24T19:31:48.861514,1,stale,raise,Zone 1: stale data
+2026-02-24T19:32:17.833043,1,stale,clear,Zone 1: stale data
+2026-02-24T19:32:28.895447,1,stale,raise,Zone 1: stale data
+2026-02-24T19:32:58.941189,1,stale,clear,Zone 1: stale data
+2026-02-24T19:38:53.756862,1,stale,raise,Zone 1: stale data
+2026-02-24T19:39:08.757321,1,stale,clear,Zone 1: stale data
+2026-02-24T19:58:19.989543,1,stale,raise,Zone 1: stale data
+
+2026-02-24T19:58:22.629102,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:04:39.991480,1,stale,raise,Zone 1: stale data
+
+2026-02-24T20:04:41.967061,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:19:24.988423,1,offline,raise,Zone 1 is offline
+2026-02-24T20:19:27.660087,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:38:44.991667,1,stale,raise,Zone 1: stale data
+
+2026-02-24T20:38:47.576324,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:42:11.905272,1,stale,raise,Zone 1: stale data
+2026-02-24T20:42:19.729170,1,stale,clear,Zone 1: stale data
+2026-02-24T20:42:49.991299,1,stale,raise,Zone 1: stale data
+
+2026-02-24T20:42:52.755298,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:43:32.732866,1,stale,raise,Zone 1: stale data
+2026-02-24T20:43:43.783708,1,stale,clear,Zone 1: stale data
+2026-02-24T20:44:17.770996,1,stale,raise,Zone 1: stale data
+2026-02-24T20:44:28.828782,1,stale,clear,Zone 1: stale data
+2026-02-24T20:49:09.989917,1,stale,raise,Zone 1: stale data
+
+2026-02-24T20:49:12.952842,1,stale,clear,Zone 1: stale data
+
+2026-02-24T20:55:29.988824,1,stale,raise,Zone 1: stale data
+
+2026-02-24T20:55:32.610215,1,stale,clear,Zone 1: stale data
+
+2026-02-24T21:06:14.990469,1,stale,raise,Zone 1: stale data
+
+2026-02-24T21:06:17.621228,1,offline,clear,Zone 1 is offline
+2026-02-24T21:06:17.621978,1,stale,clear,Zone 1: stale data
+2026-02-24T21:10:19.990586,1,offline,raise,Zone 1 is offline
+2026-02-24T21:10:19.991094,1,stale,raise,Zone 1: stale data
+2026-02-24T21:10:22.872392,1,stale,clear,Zone 1: stale data
+
+2026-02-24T21:21:04.989745,1,stale,raise,Zone 1: stale data
+
+2026-02-24T21:21:07.505399,1,stale,clear,Zone 1: stale data
+
+2026-02-24T21:25:09.991164,1,stale,raise,Zone 1: stale data
+
+2026-02-24T21:25:12.653980,1,stale,clear,Zone 1: stale data
+
+2026-02-24T21:44:24.988787,1,stale,raise,Zone 1: stale data
+
+2026-02-24T21:44:26.998764,1,stale,clear,Zone 1: stale data
+
+2026-02-24T21:45:39.545732,1,stale,raise,Zone 1: stale data
+2026-02-24T21:45:42.484643,1,stale,clear,Zone 1: stale data
+2026-02-24T21:45:54.553223,1,stale,raise,Zone 1: stale data
+2026-02-24T21:45:59.553101,1,stale,clear,Zone 1: stale data
+2026-02-24T21:46:04.560131,1,stale,raise,Zone 1: stale data
+2026-02-24T21:46:21.906090,1,stale,clear,Zone 1: stale data
+2026-02-24T21:46:34.571642,1,stale,raise,Zone 1: stale data
+2026-02-24T21:47:07.548668,1,stale,clear,Zone 1: stale data
+2026-02-24T21:48:29.991460,1,stale,raise,Zone 1: stale data
+
+2026-02-24T21:48:32.647510,1,stale,clear,Zone 1: stale data
+
+2026-02-24T22:03:53.927288,1,stale,raise,Zone 1: stale data
+2026-02-24T22:03:58.943478,1,stale,clear,Zone 1: stale data
+2026-02-24T22:04:13.942944,1,stale,raise,Zone 1: stale data
+2026-02-24T22:04:46.911750,1,stale,clear,Zone 1: stale data
+2026-02-24T22:04:58.972860,1,stale,raise,Zone 1: stale data
+2026-02-24T22:05:26.891748,1,stale,clear,Zone 1: stale data
+2026-02-24T22:07:44.988944,1,stale,raise,Zone 1: stale data
+
+2026-02-24T22:07:47.549820,1,stale,clear,Zone 1: stale data
+
+2026-02-24T22:11:49.989406,1,stale,raise,Zone 1: stale data
+
+2026-02-24T22:11:52.685335,1,stale,clear,Zone 1: stale data
+
+2026-02-24T22:18:04.990016,1,stale,raise,Zone 1: stale data
+
+2026-02-24T22:18:07.894432,1,offline,clear,Zone 1 is offline
+2026-02-24T22:18:07.894432,1,stale,clear,Zone 1: stale data
+2026-02-24T22:32:59.990652,1,stale,raise,Zone 1: stale data
+
+2026-02-24T22:33:02.584343,1,stale,clear,Zone 1: stale data
+
+2026-02-24T22:36:32.541189,1,stale,raise,Zone 1: stale data
+2026-02-24T22:36:44.602731,1,stale,clear,Zone 1: stale data
+2026-02-24T22:37:17.555143,1,stale,raise,Zone 1: stale data
+2026-02-24T22:37:29.590423,1,stale,clear,Zone 1: stale data
+2026-02-24T22:47:54.990218,1,stale,raise,Zone 1: stale data
+
+2026-02-24T22:47:57.761393,1,stale,clear,Zone 1: stale data
+
+2026-02-24T23:17:44.521679,1,stale,raise,Zone 1: stale data
+2026-02-24T23:18:29.546860,1,stale,clear,Zone 1: stale data
+2026-02-24T23:29:03.829141,1,stale,raise,Zone 1: stale data
+2026-02-24T23:29:27.785719,1,stale,clear,Zone 1: stale data
+2026-02-24T23:29:38.832453,1,stale,raise,Zone 1: stale data
+2026-02-24T23:30:11.898740,1,stale,clear,Zone 1: stale data
+2026-02-24T23:30:23.837731,1,stale,raise,Zone 1: stale data
+2026-02-24T23:30:28.824637,1,stale,clear,Zone 1: stale data
+2026-02-24T23:36:34.991583,1,stale,raise,Zone 1: stale data
+
+2026-02-24T23:36:37.860485,1,stale,clear,Zone 1: stale data
+
+2026-02-24T23:42:54.988653,1,stale,raise,Zone 1: stale data
+
+2026-02-24T23:42:57.852833,1,stale,clear,Zone 1: stale data
+
+2026-02-25T08:09:05.121288,1,stale,raise,Zone 1: stale data
+2026-02-25T08:09:16.159707,1,stale,clear,Zone 1: stale data
+2026-02-25T08:09:54.174517,1,stale,raise,Zone 1: stale data
+2026-02-25T08:10:01.154622,1,stale,clear,Zone 1: stale data
+2026-02-25T08:50:34.123564,1,offline,raise,Zone 1 is offline
+2026-02-25T08:50:37.018970,1,stale,clear,Zone 1: stale data
+
+2026-02-25T08:53:33.626616,1,stale,raise,Zone 1: stale data
+2026-02-25T08:53:46.588962,1,stale,clear,Zone 1: stale data
+2026-02-25T08:53:58.638371,1,stale,raise,Zone 1: stale data
+2026-02-25T08:54:11.606301,1,stale,clear,Zone 1: stale data
+2026-02-25T08:54:23.669037,1,stale,raise,Zone 1: stale data
+2026-02-25T08:54:33.683354,1,stale,clear,Zone 1: stale data
+2026-02-25T09:05:33.031300,1,stale,raise,Zone 1: stale data
+2026-02-25T09:05:38.046864,1,stale,clear,Zone 1: stale data
+2026-02-25T09:05:53.046888,1,stale,raise,Zone 1: stale data
+2026-02-25T09:06:07.009372,1,stale,clear,Zone 1: stale data
+2026-02-25T09:06:18.068652,1,stale,raise,Zone 1: stale data
+2026-02-25T09:06:31.018534,1,stale,clear,Zone 1: stale data
+2026-02-25T09:06:43.066943,1,stale,raise,Zone 1: stale data
+2026-02-25T09:06:56.021158,1,stale,clear,Zone 1: stale data
+2026-02-25T09:18:21.286069,1,offline,raise,Zone 1 is offline
+2026-02-25T09:18:32.795982,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-25T09:18:33.308118,1,stale,raise,Zone 1: stale data
+2026-02-25T09:18:37.804286,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-25T09:18:39.605349,1,stale,clear,Zone 1: stale data
+2026-02-25T09:27:17.765981,1,offline,raise,Zone 1 is offline
+2026-02-25T09:28:59.288587,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-25T09:29:02.109778,1,stale,raise,Zone 1: stale data
+2026-02-25T09:29:07.106730,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-25T09:29:08.907692,1,stale,clear,Zone 1: stale data
+2026-02-25T09:38:15.110778,1,offline,raise,Zone 1 is offline
+2026-02-25T09:38:31.616939,1,offline,clear,Zone 1 is offline
+2026-02-25T10:11:19.316130,1,stale,raise,Zone 1: stale data
+2026-02-25T10:11:41.796098,1,stale,clear,Zone 1: stale data
+2026-02-25T10:12:31.378129,1,stale,raise,Zone 1: stale data
+2026-02-25T10:12:33.322355,1,stale,clear,Zone 1: stale data
+2026-02-25T10:30:29.656027,1,stale,raise,Zone 1: stale data
+
+2026-02-25T10:31:45.028570,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-25T10:32:05.869701,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-02-25T10:32:17.995928,1,stale,clear,Zone 1: stale data
+2026-02-25T11:13:19.027855,2,invalidSensor,raise,Zone 2: invalid sensor value
+2026-02-25T11:13:22.034453,3,invalidSensor,raise,Zone 3: invalid sensor value
+2026-02-25T11:13:25.032865,4,invalidSensor,raise,Zone 4: invalid sensor value
+2026-02-25T11:13:28.052323,5,invalidSensor,raise,Zone 5: invalid sensor value
+2026-02-25T11:13:31.054531,6,invalidSensor,raise,Zone 6: invalid sensor value
+2026-02-25T11:13:34.066990,7,invalidSensor,raise,Zone 7: invalid sensor value
+2026-02-25T11:13:37.070079,8,invalidSensor,raise,Zone 8: invalid sensor value
+2026-02-25T11:13:40.080027,9,offline,raise,Zone 9 is offline
+lid sensor value
+2026-02-25T11:13:42.403429,10,invalidSensor,raise,Zone 10: invalid sensor value
+2026-02-25T11:13:45.080927,11,invalidSensor,raise,Zone 11: invalid sensor value
+2026-02-25T11:13:48.084735,12,invalidSensor,raise,Zone 12: invalid sensor value
+2026-02-25T11:13:51.084335,13,invalidSensor,raise,Zone 13: invalid sensor value
+2026-02-25T11:13:54.083896,14,offline,raise,Zone 14 is offline
+lid sensor value
+2026-02-25T11:13:57.115745,15,invalidSensor,raise,Zone 15: invalid sensor value
+2026-02-25T11:14:00.109533,16,invalidSensor,raise,Zone 16: invalid sensor value
+2026-02-25T11:14:03.109180,17,invalidSensor,raise,Zone 17: invalid sensor value
+2026-02-25T11:14:06.128033,18,invalidSensor,raise,Zone 18: invalid sensor value
+2026-02-25T11:14:08.445937,19,invalidSensor,raise,Zone 19: invalid sensor value
+2026-02-25T11:14:11.139696,20,stale,raise,Zone 20: stale data
+alid sensor value
+2026-02-25T11:17:55.052210,1,stale,raise,Zone 1: stale data
+2026-02-25T11:18:22.195668,2,invalidSensor,raise,Zone 2: invalid sensor value
+2026-02-25T11:18:25.056509,3,invalidSensor,raise,Zone 3: invalid sensor value
+2026-02-25T11:18:28.062665,4,invalidSensor,raise,Zone 4: invalid sensor value
+2026-02-25T11:18:31.068633,5,invalidSensor,raise,Zone 5: invalid sensor value
+2026-02-25T11:18:34.065187,6,invalidSensor,raise,Zone 6: invalid sensor value
+2026-02-25T11:18:37.078343,7,invalidSensor,raise,Zone 7: invalid sensor value
+2026-02-25T11:18:40.079624,8,invalidSensor,raise,Zone 8: invalid sensor value
+2026-02-25T11:18:43.093942,9,invalidSensor,raise,Zone 9: invalid sensor value
+2026-02-25T11:18:46.093589,10,invalidSensor,raise,Zone 10: invalid sensor value
+2026-02-25T11:18:48.400863,11,invalidSensor,raise,Zone 11: invalid sensor value
+2026-02-25T11:18:51.103768,12,invalidSensor,raise,Zone 12: invalid sensor value
+2026-02-25T11:18:54.115239,13,offline,raise,Zone 13 is offline
+lid sensor value
+2026-02-25T11:18:57.114092,14,invalidSensor,raise,Zone 14: invalid sensor value
+2026-02-25T11:19:00.126393,15,invalidSensor,raise,Zone 15: invalid sensor value
+2026-02-25T11:19:03.141353,16,invalidSensor,raise,Zone 16: invalid sensor value
+2026-02-25T11:19:06.143759,17,invalidSensor,raise,Zone 17: invalid sensor value
+2026-02-25T11:19:09.147999,18,invalidSensor,raise,Zone 18: invalid sensor value
+2026-02-25T11:19:12.160354,19,invalidSensor,raise,Zone 19: invalid sensor value
+2026-02-25T11:19:14.483002,20,invalidSensor,raise,Zone 20: invalid sensor value
+2026-02-25T11:19:16.290727,19,stale,raise,Zone 19: stale data
+2026-02-25T11:57:19.112311,1,stale,raise,Zone 1: stale data
+2026-02-25T11:57:19.110407,1,offline,raise,Zone 1 is offline
+2026-02-25T11:57:21.128167,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:18:04.117750,1,offline,raise,Zone 1 is offline
+2026-02-25T12:18:04.117750,1,stale,raise,Zone 1: stale data
+2026-02-25T12:18:06.107737,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:18:33.657970,1,stale,raise,Zone 1: stale data
+2026-02-25T12:18:43.685600,1,stale,clear,Zone 1: stale data
+2026-02-25T12:20:19.132277,1,stale,raise,Zone 1: stale data
+
+2026-02-25T12:20:21.833258,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:22:29.115118,1,stale,raise,Zone 1: stale data
+
+2026-02-25T12:22:31.986884,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:24:03.619743,1,stale,raise,Zone 1: stale data
+2026-02-25T12:24:21.591687,1,stale,clear,Zone 1: stale data
+2026-02-25T12:24:33.658707,1,stale,raise,Zone 1: stale data
+2026-02-25T12:24:46.008994,1,stale,clear,Zone 1: stale data
+2026-02-25T12:24:58.711649,1,stale,raise,Zone 1: stale data
+2026-02-25T12:25:03.730013,1,stale,clear,Zone 1: stale data
+2026-02-25T12:30:33.623159,1,stale,raise,Zone 1: stale data
+2026-02-25T12:30:41.589263,1,stale,clear,Zone 1: stale data
+2026-02-25T12:30:53.662749,1,stale,raise,Zone 1: stale data
+2026-02-25T12:30:58.658080,1,stale,clear,Zone 1: stale data
+2026-02-25T12:31:03.662409,1,stale,raise,Zone 1: stale data
+2026-02-25T12:31:11.631453,1,stale,clear,Zone 1: stale data
+2026-02-25T12:34:04.117900,1,stale,raise,Zone 1: stale data
+
+2026-02-25T12:34:06.920619,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:36:58.639679,1,stale,raise,Zone 1: stale data
+2026-02-25T12:37:11.615735,1,stale,clear,Zone 1: stale data
+2026-02-25T12:37:23.680391,1,stale,raise,Zone 1: stale data
+2026-02-25T12:37:38.701367,1,stale,clear,Zone 1: stale data
+2026-02-25T12:43:19.117102,1,stale,raise,Zone 1: stale data
+
+2026-02-25T12:43:22.056676,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:47:44.118635,1,offline,raise,Zone 1 is offline
+2026-02-25T12:47:44.119764,1,stale,raise,Zone 1: stale data
+2026-02-25T12:47:46.932326,1,stale,clear,Zone 1: stale data
+
+2026-02-25T12:49:48.654345,1,stale,raise,Zone 1: stale data
+2026-02-25T12:50:01.012004,1,stale,clear,Zone 1: stale data
+2026-02-25T12:54:53.637516,1,stale,raise,Zone 1: stale data
+2026-02-25T12:54:58.655112,1,stale,clear,Zone 1: stale data
+2026-02-25T12:55:13.678865,1,stale,raise,Zone 1: stale data
+2026-02-25T12:55:31.655083,1,stale,clear,Zone 1: stale data
+2026-02-25T12:55:43.729583,1,stale,raise,Zone 1: stale data
+2026-02-25T12:55:56.701463,1,stale,clear,Zone 1: stale data
+2026-02-25T12:56:08.783157,1,stale,raise,Zone 1: stale data
+2026-02-25T12:56:26.757347,1,stale,clear,Zone 1: stale data
+2026-02-25T13:01:18.783075,1,stale,raise,Zone 1: stale data
+2026-02-25T13:01:23.790119,1,stale,clear,Zone 1: stale data
+2026-02-25T13:01:28.795547,1,stale,raise,Zone 1: stale data
+2026-02-25T13:01:31.011407,1,stale,clear,Zone 1: stale data
+2026-02-25T13:01:43.823927,1,stale,raise,Zone 1: stale data
+2026-02-25T13:02:01.788711,1,stale,clear,Zone 1: stale data
+2026-02-25T13:02:13.853677,1,stale,raise,Zone 1: stale data
+2026-02-25T13:02:17.858904,1,stale,clear,Zone 1: stale data
+2026-02-25T13:03:04.518515,1,offline,raise,Zone 1 is offline
+2026-02-25T13:03:09.126436,1,stale,raise,Zone 1: stale data
+2026-02-25T13:03:17.950075,1,stale,clear,Zone 1: stale data
+
+2026-02-25T13:04:44.109756,1,stale,raise,Zone 1: stale data
+
+2026-02-25T13:04:51.035836,1,stale,clear,Zone 1: stale data
+
+2026-02-25T13:05:09.113736,1,stale,raise,Zone 1: stale data
+
+2026-02-25T13:05:11.728318,1,offline,clear,Zone 1 is offline
+2026-02-25T13:05:29.123118,1,offline,raise,Zone 1 is offline
+2026-02-25T13:05:36.757865,1,stale,clear,Zone 1: stale data
+
+2026-02-25T13:05:53.854663,1,stale,raise,Zone 1: stale data
+2026-02-25T13:06:01.834213,1,stale,clear,Zone 1: stale data
+2026-02-25T13:07:04.116378,1,offline,raise,Zone 1 is offline
+2026-02-25T13:07:04.116894,1,stale,raise,Zone 1: stale data
+2026-02-25T13:07:12.010586,1,stale,clear,Zone 1: stale data
+
+2026-02-25T13:08:47.160194,1,stale,raise,Zone 1: stale data
+
+2026-02-25T13:10:16.002935,1,stale,clear,Zone 1: stale data
+
+2026-02-25T13:10:34.130876,1,offline,raise,Zone 1 is offline
+2026-02-25T13:10:36.868754,1,offline,clear,Zone 1 is offline
+2026-02-25T13:10:36.868754,1,stale,clear,Zone 1: stale data
+2026-02-26T12:51:23.061397,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-02-26T12:51:30.109927,1,offline,clear,Zone 1 is offline
+2026-02-26T12:51:35.109074,1,offline,raise,Zone 1 is offline
+2026-02-26T12:52:10.137083,1,offline,clear,Zone 1 is offline
+2026-02-26T12:52:15.148237,1,offline,raise,Zone 1 is offline
+2026-02-26T12:52:18.104860,1,offline,clear,Zone 1 is offline
+2026-02-26T12:52:23.041400,1,offline,raise,Zone 1 is offline
+2026-02-26T13:47:08.491952,1,stale,raise,Zone 1: stale data
+
+lid sensor value
+2026-02-26T13:47:13.486640,1,offline,clear,Zone 1 is offline
+2026-02-26T13:47:21.261945,1,offline,raise,Zone 1 is offline
+2026-02-26T13:49:54.459958,1,stale,clear,Zone 1: stale data
+2026-02-26T13:49:58.465132,1,stale,raise,Zone 1: stale data
+
+2026-02-26T13:50:06.565107,1,offline,raise,Zone 1 is offline
+2026-02-26T13:50:09.289596,1,offline,clear,Zone 1 is offline
+2026-02-26T13:50:20.258727,1,offline,raise,Zone 1 is offline
+2026-02-26T13:50:25.321900,1,stale,clear,Zone 1: stale data
+2026-02-26T13:50:30.324944,1,stale,raise,Zone 1: stale data
+2026-02-26T13:50:45.356319,1,offline,clear,Zone 1 is offline
+2026-02-26T13:51:05.374473,1,offline,raise,Zone 1 is offline
+2026-02-26T13:51:10.373892,1,stale,clear,Zone 1: stale data
+2026-02-26T13:51:15.379670,1,stale,raise,Zone 1: stale data
+2026-02-26T13:51:23.465432,1,offline,clear,Zone 1 is offline
+2026-02-26T13:51:30.393731,1,offline,raise,Zone 1 is offline
+2026-02-26T13:51:35.388518,1,stale,clear,Zone 1: stale data
+2026-02-26T13:51:44.360540,1,stale,raise,Zone 1: stale data
+
+2026-02-26T13:51:48.459062,1,offline,raise,Zone 1 is offline
+2026-02-26T13:52:35.479190,1,offline,clear,Zone 1 is offline
+2026-02-26T13:52:43.464867,1,offline,raise,Zone 1 is offline
+2026-02-26T13:52:50.496481,1,offline,clear,Zone 1 is offline
+2026-02-26T13:52:55.497653,1,offline,raise,Zone 1 is offline
+2026-02-26T13:53:25.523097,1,offline,clear,Zone 1 is offline
+2026-02-26T13:53:30.521293,1,offline,raise,Zone 1 is offline
+2026-02-26T13:53:50.534743,1,offline,clear,Zone 1 is offline
+2026-02-26T13:53:55.546653,1,offline,raise,Zone 1 is offline
+2026-02-26T13:54:03.463350,1,stale,clear,Zone 1: stale data
+2026-02-26T13:54:10.549436,1,stale,raise,Zone 1: stale data
+2026-02-26T13:54:15.562117,1,offline,clear,Zone 1 is offline
+2026-02-26T13:54:20.556496,1,offline,raise,Zone 1 is offline
+2026-02-26T13:54:28.458749,1,stale,clear,Zone 1: stale data
+2026-02-26T13:54:35.564168,1,stale,raise,Zone 1: stale data
+
+2026-02-26T13:54:58.460517,1,offline,raise,Zone 1 is offline
+2026-02-26T13:55:23.463391,1,offline,clear,Zone 1 is offline
+2026-02-26T13:55:41.119417,1,offline,raise,Zone 1 is offline
+2026-02-26T13:55:48.467980,1,stale,clear,Zone 1: stale data
+2026-02-26T13:56:01.137208,1,stale,raise,Zone 1: stale data
+
+2026-02-26T13:56:06.146832,1,offline,raise,Zone 1 is offline
+2026-02-26T13:56:10.262841,1,stale,clear,Zone 1: stale data
+2026-02-26T13:56:16.162588,1,stale,raise,Zone 1: stale data
+2026-02-26T13:56:21.156091,1,offline,clear,Zone 1 is offline
+2026-02-26T13:56:26.175883,1,stale,clear,Zone 1: stale data
+
+2026-02-26T13:56:31.176391,1,offline,clear,Zone 1 is offline
+2026-02-26T13:56:36.184593,1,stale,clear,Zone 1: stale data
+
+2026-02-26T13:56:39.133507,1,stale,raise,Zone 1: stale data
+2026-02-26T13:56:58.453274,1,offline,clear,Zone 1 is offline
+2026-02-26T13:57:04.159655,1,stale,clear,Zone 1: stale data
+
+2026-02-26T13:57:16.223057,1,offline,clear,Zone 1 is offline
+2026-02-26T13:57:21.236458,1,offline,raise,Zone 1 is offline
+2026-02-26T13:57:36.243667,1,offline,clear,Zone 1 is offline
+2026-02-26T13:57:51.262557,1,offline,raise,Zone 1 is offline
+2026-02-26T13:58:03.462120,1,offline,clear,Zone 1 is offline
+2026-02-26T13:58:11.281567,1,offline,raise,Zone 1 is offline
+2026-02-26T13:58:16.283837,1,stale,clear,Zone 1: stale data
+2026-02-26T13:58:28.462977,1,stale,raise,Zone 1: stale data
+2026-02-26T13:58:41.306396,1,offline,clear,Zone 1 is offline
+2026-02-26T13:58:46.320151,1,offline,raise,Zone 1 is offline
+2026-02-26T13:58:50.324283,1,offline,clear,Zone 1 is offline
+2026-02-26T13:58:54.281265,1,offline,raise,Zone 1 is offline
+2026-02-26T13:59:05.334770,1,offline,clear,Zone 1 is offline
+2026-02-26T13:59:10.343548,1,offline,raise,Zone 1 is offline
+2026-02-26T13:59:15.343968,1,stale,clear,Zone 1: stale data
+2026-02-26T13:59:19.305212,1,stale,raise,Zone 1: stale data
+
+2026-02-26T13:59:23.459661,1,offline,raise,Zone 1 is offline
+2026-02-26T13:59:23.461378,1,stale,clear,Zone 1: stale data
+2026-02-26T13:59:30.363266,1,stale,raise,Zone 1: stale data
+2026-02-26T13:59:35.369160,1,offline,clear,Zone 1 is offline
+2026-02-26T13:59:45.380493,1,offline,raise,Zone 1 is offline
+2026-02-26T13:59:53.463772,1,offline,clear,Zone 1 is offline
+2026-02-26T14:00:05.388363,1,offline,raise,Zone 1 is offline
+2026-02-26T14:00:18.462865,1,offline,clear,Zone 1 is offline
+2026-02-26T14:00:25.417834,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:00:30.416340,1,stale,raise,Zone 1: stale data
+2026-02-26T14:00:35.418227,1,offline,clear,Zone 1 is offline
+2026-02-26T14:00:40.420282,1,offline,raise,Zone 1 is offline
+2026-02-26T14:00:44.374472,1,offline,clear,Zone 1 is offline
+2026-02-26T14:00:48.464296,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:00:55.431401,1,stale,raise,Zone 1: stale data
+2026-02-26T14:01:20.466118,1,offline,clear,Zone 1 is offline
+2026-02-26T14:01:25.458545,1,offline,raise,Zone 1 is offline
+2026-02-26T14:01:55.478252,1,offline,clear,Zone 1 is offline
+2026-02-26T14:02:00.497537,1,offline,raise,Zone 1 is offline
+2026-02-26T14:02:04.447132,1,offline,clear,Zone 1 is offline
+2026-02-26T14:02:20.496527,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:02:25.512283,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:02:45.524260,1,offline,raise,Zone 1 is offline
+2026-02-26T14:02:58.482876,1,offline,clear,Zone 1 is offline
+2026-02-26T14:03:03.465295,1,offline,raise,Zone 1 is offline
+2026-02-26T14:03:15.559170,1,offline,clear,Zone 1 is offline
+2026-02-26T14:03:23.512082,1,offline,raise,Zone 1 is offline
+2026-02-26T14:03:41.074497,1,offline,clear,Zone 1 is offline
+2026-02-26T14:03:46.072232,1,offline,raise,Zone 1 is offline
+2026-02-26T14:03:53.466822,1,offline,clear,Zone 1 is offline
+2026-02-26T14:04:06.081375,1,offline,raise,Zone 1 is offline
+2026-02-26T14:04:14.043631,1,offline,clear,Zone 1 is offline
+2026-02-26T14:04:31.103419,1,offline,raise,Zone 1 is offline
+2026-02-26T14:04:36.106781,1,offline,clear,Zone 1 is offline
+2026-02-26T14:04:46.093516,1,offline,raise,Zone 1 is offline
+2026-02-26T14:04:51.093220,1,offline,clear,Zone 1 is offline
+2026-02-26T14:04:56.096463,1,offline,raise,Zone 1 is offline
+2026-02-26T14:05:09.065986,1,stale,clear,Zone 1: stale data
+2026-02-26T14:05:21.110211,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:05:26.113683,1,offline,raise,Zone 1 is offline
+2026-02-26T14:05:31.109998,1,stale,clear,Zone 1: stale data
+2026-02-26T14:05:36.122806,1,stale,raise,Zone 1: stale data
+2026-02-26T14:05:41.126189,1,offline,clear,Zone 1 is offline
+2026-02-26T14:05:46.117478,1,offline,raise,Zone 1 is offline
+2026-02-26T14:05:51.119414,1,offline,clear,Zone 1 is offline
+2026-02-26T14:05:54.082552,1,offline,raise,Zone 1 is offline
+2026-02-26T14:06:04.143295,1,offline,clear,Zone 1 is offline
+2026-02-26T14:06:11.143398,1,offline,raise,Zone 1 is offline
+2026-02-26T14:06:16.139424,1,stale,clear,Zone 1: stale data
+2026-02-26T14:06:21.135845,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:06:39.098089,1,offline,raise,Zone 1 is offline
+2026-02-26T14:06:51.148834,1,offline,clear,Zone 1 is offline
+2026-02-26T14:06:56.148905,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:07:01.159860,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:07:06.163786,1,offline,raise,Zone 1 is offline
+2026-02-26T14:07:11.168602,1,stale,clear,Zone 1: stale data
+2026-02-26T14:07:16.184974,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:07:21.172146,1,offline,raise,Zone 1 is offline
+2026-02-26T14:07:28.465161,1,offline,clear,Zone 1 is offline
+2026-02-26T14:07:51.196530,1,offline,raise,Zone 1 is offline
+2026-02-26T14:08:01.201710,1,offline,clear,Zone 1 is offline
+2026-02-26T14:08:09.164059,1,offline,raise,Zone 1 is offline
+2026-02-26T14:08:13.462441,1,offline,clear,Zone 1 is offline
+2026-02-26T14:08:21.222798,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:08:26.217780,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:08:36.231829,1,offline,raise,Zone 1 is offline
+2026-02-26T14:08:46.237344,1,offline,clear,Zone 1 is offline
+2026-02-26T14:08:54.188302,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:08:58.461650,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:09:21.248377,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:09:26.255086,1,stale,raise,Zone 1: stale data
+2026-02-26T14:09:36.260435,1,offline,clear,Zone 1 is offline
+2026-02-26T14:09:39.211479,1,offline,raise,Zone 1 is offline
+2026-02-26T14:10:11.289915,1,offline,clear,Zone 1 is offline
+2026-02-26T14:10:18.469358,1,offline,raise,Zone 1 is offline
+2026-02-26T14:10:31.305265,1,offline,clear,Zone 1 is offline
+2026-02-26T14:10:41.321445,1,offline,raise,Zone 1 is offline
+2026-02-26T14:10:50.338908,1,offline,clear,Zone 1 is offline
+2026-02-26T14:11:03.646272,1,offline,raise,Zone 1 is offline
+2026-02-26T14:11:10.359523,1,offline,clear,Zone 1 is offline
+2026-02-26T14:11:15.366110,1,offline,raise,Zone 1 is offline
+2026-02-26T14:11:40.388659,1,offline,clear,Zone 1 is offline
+2026-02-26T14:11:48.450321,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:11:55.425110,1,stale,raise,Zone 1: stale data
+2026-02-26T14:12:15.444581,1,stale,clear,Zone 1: stale data
+2026-02-26T14:12:29.406027,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:12:33.462072,1,offline,raise,Zone 1 is offline
+2026-02-26T14:12:40.469345,1,stale,clear,Zone 1: stale data
+2026-02-26T14:12:45.480103,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:12:50.480725,1,offline,raise,Zone 1 is offline
+2026-02-26T14:12:55.481846,1,offline,clear,Zone 1 is offline
+2026-02-26T14:13:00.487758,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:13:10.523988,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:13:14.459192,1,offline,raise,Zone 1 is offline
+2026-02-26T14:13:18.631402,1,offline,clear,Zone 1 is offline
+2026-02-26T14:13:25.499412,1,offline,raise,Zone 1 is offline
+2026-02-26T14:13:30.508807,1,offline,clear,Zone 1 is offline
+2026-02-26T14:13:35.513905,1,offline,raise,Zone 1 is offline
+2026-02-26T14:13:40.525096,1,offline,clear,Zone 1 is offline
+2026-02-26T14:13:45.534597,1,offline,raise,Zone 1 is offline
+2026-02-26T14:13:55.536319,1,offline,clear,Zone 1 is offline
+2026-02-26T14:14:05.550556,1,offline,raise,Zone 1 is offline
+2026-02-26T14:14:10.562606,1,offline,clear,Zone 1 is offline
+2026-02-26T14:14:15.556536,1,offline,raise,Zone 1 is offline
+2026-02-26T14:14:15.556536,1,stale,clear,Zone 1: stale data
+2026-02-26T14:14:25.566643,1,stale,raise,Zone 1: stale data
+2026-02-26T14:14:28.530063,1,stale,clear,Zone 1: stale data
+2026-02-26T14:14:33.456578,1,stale,raise,Zone 1: stale data
+2026-02-26T14:14:39.039778,1,offline,clear,Zone 1 is offline
+2026-02-26T14:14:43.454471,1,offline,raise,Zone 1 is offline
+2026-02-26T14:15:11.127222,1,stale,clear,Zone 1: stale data
+2026-02-26T14:15:26.139944,1,offline,clear,Zone 1 is offline
+2026-02-26T14:15:31.150943,1,offline,raise,Zone 1 is offline
+2026-02-26T14:15:41.158353,1,offline,clear,Zone 1 is offline
+2026-02-26T14:16:00.269416,1,offline,raise,Zone 1 is offline
+2026-02-26T14:16:16.196373,1,offline,clear,Zone 1 is offline
+2026-02-26T14:16:21.206379,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:16:26.224364,1,stale,raise,Zone 1: stale data
+2026-02-26T14:16:26.223846,1,offline,clear,Zone 1 is offline
+2026-02-26T14:16:31.225898,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:16:36.243599,1,stale,raise,Zone 1: stale data
+
+2026-02-26T14:16:51.257524,1,offline,raise,Zone 1 is offline
+2026-02-26T14:16:56.255950,1,offline,clear,Zone 1 is offline
+2026-02-26T14:17:06.263441,1,stale,clear,Zone 1: stale data
+
+2026-02-26T14:17:11.263257,1,stale,raise,Zone 1: stale data
+
+2026-03-01T10:58:35.527187,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T11:19:21.936869,1,offline,raise,Zone 1 is offline
+2026-03-01T13:22:28.476290,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:22:43.062588,1,stale,clear,Zone 1: stale data
+2026-03-01T13:22:48.586229,1,stale,raise,Zone 1: stale data
+2026-03-01T13:22:58.638633,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:23:03.672903,1,stale,clear,Zone 1: stale data
+2026-03-01T13:23:13.399182,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:23:33.329570,1,stale,raise,Zone 1: stale data
+2026-03-01T13:23:48.418961,1,stale,clear,Zone 1: stale data
+2026-03-01T13:24:03.013185,1,stale,raise,Zone 1: stale data
+2026-03-01T13:24:08.550352,1,stale,clear,Zone 1: stale data
+2026-03-01T13:24:23.129167,1,stale,raise,Zone 1: stale data
+2026-03-01T13:24:28.662825,1,stale,clear,Zone 1: stale data
+2026-03-01T13:24:38.416698,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:24:43.255117,1,stale,raise,Zone 1: stale data
+2026-03-01T13:24:54.331697,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-03-01T13:24:58.361566,1,stale,raise,Zone 1: stale data
+2026-03-01T13:25:03.891211,1,stale,clear,Zone 1: stale data
+2026-03-01T13:25:18.475628,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:25:29.040803,1,stale,clear,Zone 1: stale data
+2026-03-01T13:25:33.055708,1,stale,raise,Zone 1: stale data
+2026-03-01T13:25:38.588948,1,stale,clear,Zone 1: stale data
+2026-03-01T13:25:49.170852,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:25:53.190061,1,stale,raise,Zone 1: stale data
+2026-03-01T13:26:04.254342,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:26:08.274923,1,stale,clear,Zone 1: stale data
+2026-03-01T13:26:13.801808,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:26:24.360500,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:26:28.378812,1,stale,clear,Zone 1: stale data
+2026-03-01T13:26:33.910347,1,stale,raise,Zone 1: stale data
+2026-03-01T13:26:43.467961,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:26:48.486070,1,stale,clear,Zone 1: stale data
+2026-03-01T13:27:03.058831,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:27:08.595237,1,stale,clear,Zone 1: stale data
+2026-03-01T13:27:18.640150,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:27:33.439683,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:27:38.253889,1,stale,raise,Zone 1: stale data
+2026-03-01T13:27:43.781486,1,stale,clear,Zone 1: stale data
+2026-03-01T13:27:53.830956,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:27:58.852712,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:27:58.853311,1,stale,raise,Zone 1: stale data
+2026-03-01T13:28:09.406232,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:28:13.413292,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:28:23.486816,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:28:28.500552,1,stale,clear,Zone 1: stale data
+2026-03-01T13:28:33.534121,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:28:48.617207,1,stale,clear,Zone 1: stale data
+2026-03-01T13:28:58.661770,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:29:03.681111,1,stale,raise,Zone 1: stale data
+2026-03-01T13:29:12.892516,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:29:18.759175,1,stale,clear,Zone 1: stale data
+2026-03-01T13:29:33.850353,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:30:23.622875,1,stale,clear,Zone 1: stale data
+2026-03-01T13:30:38.689110,1,stale,raise,Zone 1: stale data
+2026-03-01T13:30:49.257475,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:30:53.273093,1,stale,clear,Zone 1: stale data
+2026-03-01T13:30:58.802717,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:31:08.853242,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:31:13.881106,1,stale,clear,Zone 1: stale data
+2026-03-01T13:31:28.452093,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:31:43.024850,1,stale,clear,Zone 1: stale data
+2026-03-01T13:31:48.562122,1,stale,raise,Zone 1: stale data
+2026-03-01T13:31:59.120037,1,stale,clear,Zone 1: stale data
+2026-03-01T13:32:03.141163,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:32:03.141163,1,stale,raise,Zone 1: stale data
+2026-03-01T13:32:14.209132,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:32:18.224426,1,stale,clear,Zone 1: stale data
+2026-03-01T13:32:23.755657,1,stale,raise,Zone 1: stale data
+2026-03-01T13:32:38.331643,1,stale,clear,Zone 1: stale data
+2026-03-01T13:32:43.871063,1,stale,raise,Zone 1: stale data
+2026-03-01T13:32:58.946714,1,stale,clear,Zone 1: stale data
+2026-03-01T13:33:13.527136,1,stale,raise,Zone 1: stale data
+2026-03-01T13:33:23.583581,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:33:28.613664,1,stale,clear,Zone 1: stale data
+2026-03-01T13:33:39.172084,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:33:43.187615,1,stale,raise,Zone 1: stale data
+2026-03-01T13:33:53.424194,1,stale,clear,Zone 1: stale data
+2026-03-01T13:33:58.274338,1,stale,raise,Zone 1: stale data
+2026-03-01T13:34:28.430079,1,stale,clear,Zone 1: stale data
+2026-03-01T13:34:38.493967,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:34:43.512930,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:34:48.551272,1,stale,clear,Zone 1: stale data
+2026-03-01T13:35:03.123905,1,stale,raise,Zone 1: stale data
+2026-03-01T13:35:05.886792,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-01T13:35:18.196768,1,stale,clear,Zone 1: stale data
+2026-03-01T13:35:23.721682,1,stale,raise,Zone 1: stale data
+2026-03-01T13:35:38.296664,1,stale,clear,Zone 1: stale data
+2026-03-01T13:35:53.376435,1,stale,raise,Zone 1: stale data
+2026-03-01T13:35:58.912119,1,stale,clear,Zone 1: stale data
+2026-03-01T13:36:13.480236,1,stale,raise,Zone 1: stale data
+2026-03-01T13:36:28.056819,1,stale,clear,Zone 1: stale data
+2026-03-01T13:36:43.136718,1,stale,raise,Zone 1: stale data
+2026-03-01T13:36:58.211524,1,stale,clear,Zone 1: stale data
+2026-03-01T13:37:03.731484,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:37:29.355953,1,stale,clear,Zone 1: stale data
+alid sensor value
+2026-03-01T13:37:33.367001,1,stale,raise,Zone 1: stale data
+2026-03-01T13:37:38.882244,1,stale,clear,Zone 1: stale data
+2026-03-01T13:37:47.992006,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-01T13:37:52.276099,1,stale,clear,Zone 1: stale data
+2026-03-01T13:38:10.145111,1,stale,raise,Zone 1: stale data
+2026-03-01T13:38:16.116508,1,stale,clear,Zone 1: stale data
+2026-03-01T13:38:29.232154,1,stale,raise,Zone 1: stale data
+2026-03-01T13:38:44.982339,1,stale,clear,Zone 1: stale data
+2026-03-01T13:39:00.893717,1,stale,raise,Zone 1: stale data
+2026-03-01T13:39:26.012348,1,stale,clear,Zone 1: stale data
+2026-03-01T13:39:31.034465,1,stale,raise,Zone 1: stale data
+2026-03-01T13:40:07.673730,1,stale,clear,Zone 1: stale data
+2026-03-01T13:40:12.281903,1,stale,raise,Zone 1: stale data
+2026-03-01T13:40:24.312356,1,stale,clear,Zone 1: stale data
+2026-03-01T13:40:30.327131,1,stale,raise,Zone 1: stale data
+2026-03-01T13:40:36.319307,1,stale,clear,Zone 1: stale data
+2026-03-01T13:40:49.936329,1,stale,raise,Zone 1: stale data
+2026-03-01T13:40:55.966504,1,stale,clear,Zone 1: stale data
+2026-03-01T13:41:02.945387,1,stale,raise,Zone 1: stale data
+2026-03-01T13:41:15.060433,1,stale,clear,Zone 1: stale data
+2026-03-01T13:41:20.084903,1,stale,raise,Zone 1: stale data
+2026-03-01T13:41:45.227253,1,stale,clear,Zone 1: stale data
+2026-03-01T13:41:54.270459,1,stale,raise,Zone 1: stale data
+2026-03-01T13:42:10.352146,1,stale,clear,Zone 1: stale data
+2026-03-01T13:42:27.405459,1,stale,raise,Zone 1: stale data
+2026-03-01T13:42:32.283766,1,stale,clear,Zone 1: stale data
+2026-03-01T13:42:45.027305,1,stale,raise,Zone 1: stale data
+2026-03-01T13:43:10.173940,1,stale,clear,Zone 1: stale data
+2026-03-01T13:43:23.700576,1,stale,raise,Zone 1: stale data
+2026-03-01T13:43:30.777209,1,stale,clear,Zone 1: stale data
+2026-03-01T13:43:35.808653,1,stale,raise,Zone 1: stale data
+2026-03-01T13:43:42.296454,1,stale,clear,Zone 1: stale data
+2026-03-01T13:43:57.273056,1,stale,raise,Zone 1: stale data
+2026-03-01T13:44:09.989984,1,stale,clear,Zone 1: stale data
+2026-03-01T13:44:23.550399,1,stale,raise,Zone 1: stale data
+2026-03-01T13:44:30.613577,1,stale,clear,Zone 1: stale data
+2026-03-01T13:44:39.670042,1,stale,raise,Zone 1: stale data
+2026-03-01T13:44:45.707754,1,stale,clear,Zone 1: stale data
+2026-03-01T13:44:55.267258,1,stale,raise,Zone 1: stale data
+2026-03-01T13:45:15.014600,1,stale,clear,Zone 1: stale data
+2026-03-01T13:45:30.968416,1,stale,raise,Zone 1: stale data
+2026-03-01T13:45:55.100298,1,stale,clear,Zone 1: stale data
+2026-03-01T13:46:08.619669,1,stale,raise,Zone 1: stale data
+2026-03-01T13:46:15.699483,1,stale,clear,Zone 1: stale data
+2026-03-01T13:46:20.734251,1,stale,raise,Zone 1: stale data
+2026-03-01T13:46:37.771298,1,stale,clear,Zone 1: stale data
+2026-03-01T13:46:42.280374,1,stale,raise,Zone 1: stale data
+2026-03-01T13:46:54.393753,1,stale,clear,Zone 1: stale data
+2026-03-01T13:47:04.460264,1,stale,raise,Zone 1: stale data
+2026-03-01T13:47:21.043005,1,stale,clear,Zone 1: stale data
+2026-03-01T13:47:37.292656,1,stale,raise,Zone 1: stale data
+2026-03-01T13:47:52.198870,1,stale,clear,Zone 1: stale data
+2026-03-01T13:48:15.313191,1,stale,raise,Zone 1: stale data
+2026-03-01T13:48:20.347984,1,stale,clear,Zone 1: stale data
+2026-03-01T13:48:35.412770,1,stale,raise,Zone 1: stale data
+2026-03-01T13:48:50.498058,1,stale,clear,Zone 1: stale data
+2026-03-01T13:49:15.136683,1,stale,raise,Zone 1: stale data
+2026-03-01T13:49:40.760554,1,stale,clear,Zone 1: stale data
+2026-03-01T13:49:46.745200,1,stale,raise,Zone 1: stale data
+2026-03-01T13:49:59.359289,1,stale,clear,Zone 1: stale data
+2026-03-01T13:50:05.379646,1,stale,raise,Zone 1: stale data
+2026-03-01T13:50:12.378194,1,stale,clear,Zone 1: stale data
+2026-03-01T13:50:17.269697,1,stale,raise,Zone 1: stale data
+2026-03-01T13:50:30.024217,1,stale,clear,Zone 1: stale data
+2026-03-01T13:50:55.651804,1,stale,raise,Zone 1: stale data
+2026-03-01T13:51:20.284812,1,stale,clear,Zone 1: stale data
+2026-03-01T13:51:25.305539,1,stale,raise,Zone 1: stale data
+2026-03-01T13:51:28.790958,1,stale,clear,Zone 1: stale data
+2026-03-01T13:51:35.865569,1,stale,raise,Zone 1: stale data
+2026-03-01T13:51:50.446444,1,stale,clear,Zone 1: stale data
+2026-03-01T13:52:09.043656,1,stale,raise,Zone 1: stale data
+2026-03-01T13:52:15.076997,1,stale,clear,Zone 1: stale data
+2026-03-01T13:52:32.115961,1,stale,raise,Zone 1: stale data
+2026-03-01T13:52:45.236689,1,stale,clear,Zone 1: stale data
+2026-03-01T13:52:50.263460,1,stale,raise,Zone 1: stale data
+2026-03-01T13:53:15.387954,1,stale,clear,Zone 1: stale data
+2026-03-01T13:53:30.001143,1,stale,raise,Zone 1: stale data
+2026-03-01T13:53:55.098940,1,stale,clear,Zone 1: stale data
+2026-03-01T13:54:20.720173,1,stale,raise,Zone 1: stale data
+2026-03-01T13:54:26.701490,1,stale,clear,Zone 1: stale data
+2026-03-01T13:54:50.368026,1,stale,raise,Zone 1: stale data
+2026-03-01T13:55:25.049010,1,stale,clear,Zone 1: stale data
+2026-03-01T13:55:37.067712,1,stale,raise,Zone 1: stale data
+2026-03-01T13:55:50.171025,1,stale,clear,Zone 1: stale data
+2026-03-01T13:55:55.201948,1,stale,raise,Zone 1: stale data
+2026-03-01T13:56:32.850494,1,stale,clear,Zone 1: stale data
+2026-03-01T13:56:37.268051,1,stale,raise,Zone 1: stale data
+2026-03-01T13:56:49.982446,1,stale,clear,Zone 1: stale data
+2026-03-01T13:56:56.006877,1,stale,raise,Zone 1: stale data
+2026-03-01T13:57:04.065688,1,stale,clear,Zone 1: stale data
+2026-03-01T13:57:19.140156,1,stale,raise,Zone 1: stale data
+2026-03-01T13:57:40.246926,1,stale,clear,Zone 1: stale data
+2026-03-01T13:57:45.278085,1,stale,raise,Zone 1: stale data
+2026-03-01T13:58:10.910500,1,stale,clear,Zone 1: stale data
+2026-03-01T13:58:21.889146,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:58:34.772930,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:58:57.822501,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-01T13:59:46.601711,1,stale,raise,Zone 1: stale data
+2026-03-01T14:00:14.242513,1,stale,clear,Zone 1: stale data
+2026-03-01T14:01:08.531365,1,stale,raise,Zone 1: stale data
+2026-03-01T14:01:35.156683,1,stale,clear,Zone 1: stale data
+2026-03-01T14:02:30.457054,1,stale,raise,Zone 1: stale data
+2026-03-01T14:03:24.736743,1,stale,clear,Zone 1: stale data
+2026-03-01T14:04:48.182048,1,stale,raise,Zone 1: stale data
+2026-03-01T14:06:18.184659,1,stale,clear,Zone 1: stale data
+2026-03-01T14:09:35.191122,1,stale,raise,Zone 1: stale data
+2026-03-01T14:10:02.836252,1,stale,clear,Zone 1: stale data
+2026-03-01T14:13:02.766180,1,stale,raise,Zone 1: stale data
+2026-03-01T14:15:33.098956,1,stale,clear,Zone 1: stale data
+2026-03-01T14:16:45.922969,1,stale,raise,Zone 1: stale data
+2026-03-01T14:22:57.392947,1,stale,raise,Zone 1: stale data
+2026-03-01T14:29:18.510546,1,stale,raise,Zone 1: stale data
+2026-03-01T14:31:29.396581,1,stale,ack,Zone 1: stale data
+2026-03-01T14:36:48.555783,1,stale,raise,Zone 1: stale data
+2026-03-01T14:53:23.474126,1,stale,raise,Zone 1: stale data
+2026-03-01T14:59:38.867565,1,stale,raise,Zone 1: stale data
+2026-03-01T14:59:47.448985,1,offline,raise,Zone 1 is offline
+2026-03-01T15:00:07.978998,1,offline,clear,Zone 1 is offline
+2026-03-01T15:00:22.443871,1,offline,raise,Zone 1 is offline
+2026-03-01T15:00:43.139836,1,offline,clear,Zone 1 is offline
+2026-03-01T15:00:57.443858,1,offline,raise,Zone 1 is offline
+2026-03-01T15:01:18.809368,1,offline,clear,Zone 1 is offline
+2026-03-01T15:01:32.460259,1,offline,raise,Zone 1 is offline
+2026-03-01T15:01:52.982422,1,offline,clear,Zone 1 is offline
+2026-03-01T15:02:07.465167,1,offline,raise,Zone 1 is offline
+2026-03-01T15:02:28.144950,1,offline,clear,Zone 1 is offline
+2026-03-01T15:02:42.462675,1,offline,raise,Zone 1 is offline
+2026-03-01T15:03:03.816177,1,offline,clear,Zone 1 is offline
+2026-03-01T15:03:17.445600,1,offline,raise,Zone 1 is offline
+2026-03-01T15:03:37.985783,1,offline,clear,Zone 1 is offline
+2026-03-01T15:03:52.467636,1,offline,raise,Zone 1 is offline
+2026-03-01T15:04:13.668360,1,offline,clear,Zone 1 is offline
+2026-03-01T15:04:27.446388,1,offline,raise,Zone 1 is offline
+2026-03-01T15:04:48.832722,1,offline,clear,Zone 1 is offline
+2026-03-01T15:05:06.570850,1,stale,raise,Zone 1: stale data
+2026-03-01T15:10:03.326592,1,stale,raise,Zone 1: stale data
+2026-03-01T15:38:45.713740,1,offline,raise,Zone 1 is offline
+2026-03-02T10:55:32.617160,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-02T11:09:42.612252,1,offline,raise,Zone 1 is offline
+2026-03-02T11:09:57.613038,1,offline,clear,Zone 1 is offline
+2026-03-02T11:11:26.703772,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-02T11:26:16.985104,1,stale,raise,Zone 1: stale data
+2026-03-02T11:55:01.893719,1,stale,raise,Zone 1: stale data
+2026-03-02T12:06:10.640888,1,offline,raise,Zone 1 is offline
+2026-03-02T12:06:18.333143,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-02T12:06:39.156673,1,invalidSensor,clear,Zone 1: invalid sensor value

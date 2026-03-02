@@ -57,7 +57,9 @@ class _ScadaAppState extends State<ScadaApp> {
                       child: Text(
                         controller.connected ? 'CONNECTED' : 'DISCONNECTED',
                         style: TextStyle(
-                          color: controller.connected ? Colors.green : Colors.red,
+                          color: controller.connected
+                              ? Colors.green
+                              : Colors.red,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -88,19 +90,99 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final z = controller.zones.first;
+    final w = controller.weather;
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: GridView.builder(
-        itemCount: controller.zones.length,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 4,
-          childAspectRatio: 1.8,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-        ),
-        itemBuilder: (context, i) {
-          final z = controller.zones[i];
-          return Card(
+      child: ListView(
+        children: [
+          Card(
+            color: w.online ? Colors.white : Colors.red.shade50,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Weather Station',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text('State: ${w.online ? 'online' : 'offline'}'),
+                  Text(
+                    'Last update: ${w.lastUpdate?.toIso8601String() ?? '-'}',
+                  ),
+                  if (!w.online && w.lastError != null)
+                    Text('Last error: ${w.lastError}'),
+                  const SizedBox(height: 6),
+                  _weatherRow(
+                    label: 'OUT_TEMP',
+                    valueText: _weatherDisplayValue(w, 0, 'C', 1),
+                    quality: _weatherQuality(w, 0),
+                    ageSec: _weatherAge(w, 0),
+                    valid: _weatherUsable(w, 0),
+                  ),
+                  _weatherRow(
+                    label: 'OUT_HUM',
+                    valueText: _weatherDisplayValue(w, 1, '%RH', 1),
+                    quality: _weatherQuality(w, 1),
+                    ageSec: _weatherAge(w, 1),
+                    valid: _weatherUsable(w, 1),
+                  ),
+                  _weatherRow(
+                    label: 'WIND_SPEED',
+                    valueText: _weatherDisplayValue(w, 2, 'm/s', 1),
+                    quality: _weatherQuality(w, 2),
+                    ageSec: _weatherAge(w, 2),
+                    valid: _weatherUsable(w, 2),
+                  ),
+                  _weatherRow(
+                    label: 'WIND_DIR',
+                    valueText: _weatherDisplayValue(w, 3, 'deg', 0),
+                    quality: _weatherQuality(w, 3),
+                    ageSec: _weatherAge(w, 3),
+                    valid: _weatherUsable(w, 3),
+                  ),
+                  _weatherRow(
+                    label: 'RAIN_FLAG',
+                    valueText: _weatherRainValueText(w, 4),
+                    quality: _weatherQuality(w, 4),
+                    ageSec: _weatherAge(w, 4),
+                    valid: _weatherUsable(w, 4),
+                  ),
+                  _weatherRow(
+                    label: 'SOLAR_RAD',
+                    valueText: _weatherDisplayValue(w, 5, 'W/m2', 0),
+                    quality: _weatherQuality(w, 5),
+                    ageSec: _weatherAge(w, 5),
+                    valid: _weatherUsable(w, 5),
+                  ),
+                  _weatherRow(
+                    label: 'BARO_PRESS',
+                    valueText: _weatherDisplayValue(w, 6, 'hPa', 1),
+                    quality: _weatherQuality(w, 6),
+                    ageSec: _weatherAge(w, 6),
+                    valid: _weatherUsable(w, 6),
+                  ),
+                  _weatherRow(
+                    label: 'DEW_POINT',
+                    valueText: _weatherDisplayValue(w, 7, 'C', 1),
+                    quality: _weatherQuality(w, 7),
+                    ageSec: _weatherAge(w, 7),
+                    valid: _weatherUsable(w, 7),
+                  ),
+                  _weatherRow(
+                    label: 'STATUS_BITS',
+                    valueText: _weatherStatusBitsText(w, 8),
+                    quality: _weatherQuality(w, 8),
+                    ageSec: _weatherAge(w, 8),
+                    valid: _weatherUsable(w, 8),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Card(
             color: z.online ? Colors.white : Colors.red.shade50,
             child: InkWell(
               onTap: () {
@@ -125,10 +207,115 @@ class _DashboardTab extends StatelessWidget {
                 ),
               ),
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
+  }
+
+  Widget _weatherRow({
+    required String label,
+    required String valueText,
+    required int quality,
+    required int ageSec,
+    required bool valid,
+  }) {
+    final color = !valid
+        ? Colors.red
+        : (quality == 0 ? Colors.black87 : Colors.orange.shade800);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Text(
+        '$label: $valueText | ${_qualityLabel(quality)} | age:${ageSec}s',
+        style: TextStyle(color: color),
+      ),
+    );
+  }
+
+  double? _weatherValue(WeatherStationState state, int index) {
+    if (index < 0 || index >= state.values.length) {
+      return null;
+    }
+    return state.values[index];
+  }
+
+  int _weatherQuality(WeatherStationState state, int index) {
+    if (index < 0 || index >= state.qualityCodes.length) {
+      return 3;
+    }
+    return state.qualityCodes[index];
+  }
+
+  int _weatherAge(WeatherStationState state, int index) {
+    if (index < 0 || index >= state.ageSec.length) {
+      return 0;
+    }
+    return state.ageSec[index];
+  }
+
+  bool _weatherUsable(WeatherStationState state, int index) {
+    if (index < 0 || index >= state.flags.length) {
+      return false;
+    }
+    final hasValidFlag = (state.flags[index] & 0x0001) != 0;
+    return hasValidFlag && _weatherQuality(state, index) != 3;
+  }
+
+  String _formatValue(double? value, String unit, int decimals) {
+    if (value == null) {
+      return 'N/A';
+    }
+    return '${value.toStringAsFixed(decimals)} $unit';
+  }
+
+  String _weatherDisplayValue(
+    WeatherStationState state,
+    int index,
+    String unit,
+    int decimals,
+  ) {
+    if (!_weatherUsable(state, index)) {
+      return 'N/A';
+    }
+    return _formatValue(_weatherValue(state, index), unit, decimals);
+  }
+
+  String _weatherRainValueText(WeatherStationState state, int index) {
+    if (!_weatherUsable(state, index)) {
+      return 'N/A';
+    }
+    final value = _weatherValue(state, index);
+    if (value == null) {
+      return 'N/A';
+    }
+    return ((value.round() & 0x1) == 1) ? '1' : '0';
+  }
+
+  String _weatherStatusBitsText(WeatherStationState state, int index) {
+    if (!_weatherUsable(state, index)) {
+      return 'N/A';
+    }
+    final value = _weatherValue(state, index);
+    if (value == null) {
+      return 'N/A';
+    }
+    final bits = value.round() & 0xFFFF;
+    return '0x${bits.toRadixString(16).toUpperCase().padLeft(4, '0')}';
+  }
+
+  String _qualityLabel(int quality) {
+    switch (quality) {
+      case 0:
+        return 'OK';
+      case 1:
+        return 'STALE';
+      case 2:
+        return 'FAULT';
+      case 3:
+        return 'OFFLINE';
+      default:
+        return 'Q$quality';
+    }
   }
 }
 
@@ -164,19 +351,6 @@ class _ZoneTabState extends State<_ZoneTab> {
       padding: const EdgeInsets.all(12),
       child: ListView(
         children: [
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List<Widget>.generate(c.zones.length, (i) {
-              final z = i + 1;
-              return ChoiceChip(
-                label: Text('Zone $z'),
-                selected: z == c.selectedZoneId,
-                onSelected: (_) => c.selectZone(z),
-              );
-            }),
-          ),
-          const SizedBox(height: 10),
           Text(
             'Mode: ${zone.mode.name.toUpperCase()} | Online: ${zone.online ? 'yes' : 'no'} | '
             'Stale: ${zone.stale ? 'yes' : 'no'} | Poll: ${zone.lastPollMs}ms | '
@@ -207,18 +381,33 @@ class _ZoneTabState extends State<_ZoneTab> {
             }).toList(),
           ),
           const SizedBox(height: 12),
-          const Text('Sensors (read only, x10 scaling applied)'),
+          const Text('Sensors (read only, Points float32 decode)'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             children: List<Widget>.generate(zone.sensors.length, (i) {
-              final valid = (zone.sensorValidMask & (1 << i)) != 0;
+              final quality = i < zone.sensorQualityCodes.length
+                  ? zone.sensorQualityCodes[i]
+                  : 3;
+              final ageSec = i < zone.sensorAgeSec.length
+                  ? zone.sensorAgeSec[i]
+                  : 0;
+              final flags = i < zone.sensorFlags.length
+                  ? zone.sensorFlags[i]
+                  : 0;
+              final hasValidFlag = (flags & 0x0001) != 0;
+              final usable = hasValidFlag && quality == 0;
+              final valueText = usable
+                  ? zone.sensors[i].toStringAsFixed(1)
+                  : 'N/A';
               return Chip(
                 label: Text(
-                  '${c.config.sensorNames[i]}: ${zone.sensors[i].toStringAsFixed(1)}',
+                  '${c.config.sensorNames[i]}: $valueText | ${_qualityLabel(quality)} | age:${ageSec}s',
                 ),
-                backgroundColor: valid ? null : Colors.red.shade100,
+                backgroundColor: !hasValidFlag
+                    ? Colors.red.shade100
+                    : (quality != 0 ? Colors.grey.shade300 : null),
               );
             }),
           ),
@@ -231,9 +420,8 @@ class _ZoneTabState extends State<_ZoneTab> {
                 child: _NumberField(
                   label: 'Set Temp',
                   value: draft.setpoints.setTemp,
-                  onChanged: (v) => _updateSetpoints(
-                    draft.setpoints.copyWith(setTemp: v),
-                  ),
+                  onChanged: (v) =>
+                      _updateSetpoints(draft.setpoints.copyWith(setTemp: v)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -241,9 +429,8 @@ class _ZoneTabState extends State<_ZoneTab> {
                 child: _NumberField(
                   label: 'Set Hum',
                   value: draft.setpoints.setHum,
-                  onChanged: (v) => _updateSetpoints(
-                    draft.setpoints.copyWith(setHum: v),
-                  ),
+                  onChanged: (v) =>
+                      _updateSetpoints(draft.setpoints.copyWith(setHum: v)),
                 ),
               ),
             ],
@@ -254,9 +441,8 @@ class _ZoneTabState extends State<_ZoneTab> {
                 child: _NumberField(
                   label: 'Hyst Temp',
                   value: draft.setpoints.hystTemp,
-                  onChanged: (v) => _updateSetpoints(
-                    draft.setpoints.copyWith(hystTemp: v),
-                  ),
+                  onChanged: (v) =>
+                      _updateSetpoints(draft.setpoints.copyWith(hystTemp: v)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -264,9 +450,8 @@ class _ZoneTabState extends State<_ZoneTab> {
                 child: _NumberField(
                   label: 'Hyst Hum',
                   value: draft.setpoints.hystHum,
-                  onChanged: (v) => _updateSetpoints(
-                    draft.setpoints.copyWith(hystHum: v),
-                  ),
+                  onChanged: (v) =>
+                      _updateSetpoints(draft.setpoints.copyWith(hystHum: v)),
                 ),
               ),
             ],
@@ -329,7 +514,10 @@ class _ZoneTabState extends State<_ZoneTab> {
                     final currentDraft = _draft!;
                     setState(() => _applyStatus = 'Applying...');
                     try {
-                      await c.applyCommand(zoneId: zone.zoneId, draft: currentDraft);
+                      await c.applyCommand(
+                        zoneId: zone.zoneId,
+                        draft: currentDraft,
+                      );
                       if (mounted) {
                         setState(() => _applyStatus = 'Applied');
                       }
@@ -404,6 +592,21 @@ class _ZoneTabState extends State<_ZoneTab> {
       );
     });
   }
+
+  String _qualityLabel(int quality) {
+    switch (quality) {
+      case 0:
+        return 'OK';
+      case 1:
+        return 'STALE';
+      case 2:
+        return 'FAULT';
+      case 3:
+        return 'OFFLINE';
+      default:
+        return 'Q$quality';
+    }
+  }
 }
 
 class _NumberField extends StatefulWidget {
@@ -465,10 +668,7 @@ class _NumberFieldState extends State<_NumberField> {
 }
 
 class _TrendChart extends StatelessWidget {
-  const _TrendChart({
-    required this.points,
-    required this.selectedSensors,
-  });
+  const _TrendChart({required this.points, required this.selectedSensors});
 
   final List<TrendPoint> points;
   final Set<int> selectedSensors;
@@ -491,11 +691,15 @@ class _TrendChart extends StatelessWidget {
     final lines = <LineChartBarData>[];
     for (var i = 0; i < sensors.length; i++) {
       final sensor = sensors[i];
-      final sensorPoints = points
-          .where((p) => p.sensorIndex == sensor)
-          .map((p) => FlSpot(p.time.millisecondsSinceEpoch.toDouble(), p.value))
-          .toList()
-        ..sort((a, b) => a.x.compareTo(b.x));
+      final sensorPoints =
+          points
+              .where((p) => p.sensorIndex == sensor)
+              .map(
+                (p) =>
+                    FlSpot(p.time.millisecondsSinceEpoch.toDouble(), p.value),
+              )
+              .toList()
+            ..sort((a, b) => a.x.compareTo(b.x));
       lines.add(
         LineChartBarData(
           spots: sensorPoints,
@@ -658,7 +862,9 @@ class _SettingsTabState extends State<_SettingsTab> {
           TextField(
             controller: _staleCtrl,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Stale threshold, sec'),
+            decoration: const InputDecoration(
+              labelText: 'Stale threshold, sec',
+            ),
           ),
           TextField(
             controller: _logCtrl,
@@ -690,6 +896,36 @@ class _SettingsTabState extends State<_SettingsTab> {
             Text('Last error: ${widget.controller.lastError}'),
           const SizedBox(height: 8),
           const Text('Register map is configured for current server spec.'),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Text('Client trace (latest 120 lines)'),
+              const Spacer(),
+              TextButton(
+                onPressed: () {
+                  widget.controller.clearClientTrace();
+                  setState(() => _status = 'Client trace cleared');
+                },
+                child: const Text('Clear trace'),
+              ),
+            ],
+          ),
+          Container(
+            constraints: const BoxConstraints(minHeight: 140, maxHeight: 280),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.black12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: SingleChildScrollView(
+              child: SelectableText(
+                widget.controller.clientTrace.take(120).join('\n'),
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text('File: logs/client_trace.csv'),
         ],
       ),
     );

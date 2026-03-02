@@ -5,14 +5,20 @@ import '../models/scada_models.dart';
 class ScadaLogger {
   File? _telemetryFile;
   File? _alarmFile;
+  File? _clientTraceFile;
 
   Future<void> init() async {
-    final dir = Directory('${Directory.current.path}${Platform.pathSeparator}logs');
+    final dir = Directory(
+      '${Directory.current.path}${Platform.pathSeparator}logs',
+    );
     if (!dir.existsSync()) {
       dir.createSync(recursive: true);
     }
     _telemetryFile = File('${dir.path}${Platform.pathSeparator}telemetry.csv');
     _alarmFile = File('${dir.path}${Platform.pathSeparator}alarms.csv');
+    _clientTraceFile = File(
+      '${dir.path}${Platform.pathSeparator}client_trace.csv',
+    );
 
     if (!(_telemetryFile!.existsSync())) {
       await _telemetryFile!.writeAsString(
@@ -20,9 +26,10 @@ class ScadaLogger {
       );
     }
     if (!(_alarmFile!.existsSync())) {
-      await _alarmFile!.writeAsString(
-        'time,zone,alarm_type,event,message\n',
-      );
+      await _alarmFile!.writeAsString('time,zone,alarm_type,event,message\n');
+    }
+    if (!(_clientTraceFile!.existsSync())) {
+      await _clientTraceFile!.writeAsString('time,event\n');
     }
   }
 
@@ -41,10 +48,7 @@ class ScadaLogger {
     await file.writeAsString(buffer.toString(), mode: FileMode.append);
   }
 
-  Future<void> logAlarm(
-    AlarmEntry alarm, {
-    required String event,
-  }) async {
+  Future<void> logAlarm(AlarmEntry alarm, {required String event}) async {
     final file = _alarmFile;
     if (file == null) {
       return;
@@ -52,6 +56,18 @@ class ScadaLogger {
     final now = DateTime.now().toIso8601String();
     await file.writeAsString(
       '$now,${alarm.zoneId},${alarm.type.name},$event,${_sanitizeCsv(alarm.message)}\n',
+      mode: FileMode.append,
+    );
+  }
+
+  Future<void> logClientEvent(String event) async {
+    final file = _clientTraceFile;
+    if (file == null) {
+      return;
+    }
+    final now = DateTime.now().toIso8601String();
+    await file.writeAsString(
+      '$now,${_sanitizeCsv(event)}\n',
       mode: FileMode.append,
     );
   }

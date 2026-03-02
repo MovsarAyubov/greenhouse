@@ -1,0 +1,1073 @@
+time,event
+2026-03-02T11:54:57.786221,controller init poll_ms=5000 ip=192.168.50.20 port=502 profile(timeout_ms=1800 retries_total=2 backoff=250 degraded_after=2 degraded_reconnect_ms=20000 offline_after_failed=3 stale_after_no_success_ms=12000 offline_after_no_success_ms=30000)
+2026-03-02T11:54:57.807965,poll timer set period_ms=5000
+440 count=14 attempt=1/1
+2026-03-02T11:54:58.337748,send op=points@0 start=0 count=72 attempt=1/2
+ration_ms=524
+2026-03-02T11:55:00.156174,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:00.414694,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:01.881163,candidate selected op=points start=0
+ duration_ms=1465
+2026-03-02T11:55:01.926385,poll ok #1 duration_ms=4117 degraded=0 timeout_streak=0
+2026-03-02T11:55:02.824443,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:04.632299,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:55:04.897288,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:05.878816,poll ok #2 duration_ms=3054 degraded=0 timeout_streak=0
+2026-03-02T11:55:07.821799,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:09.697939,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T11:55:09.697939,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:10.003704,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:10.888992,poll ok #3 duration_ms=3067 degraded=0 timeout_streak=0
+2026-03-02T11:55:12.812295,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:14.614084,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:14.865755,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:15.890012,candidate selected op=points start=0
+ duration_ms=1024
+2026-03-02T11:55:15.892011,poll ok #4 duration_ms=3079 degraded=0 timeout_streak=0
+2026-03-02T11:55:17.809692,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:19.613054,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:19.865180,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:20.893488,poll ok #5 duration_ms=3083 degraded=0 timeout_streak=0
+2026-03-02T11:55:22.811331,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:24.614323,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:24.866001,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:25.899693,recv ok op=points@0 regs=72 attempt=2 duration_ms=1033
+2026-03-02T11:55:25.903238,poll ok #6 duration_ms=3092 degraded=0 timeout_streak=0
+2026-03-02T11:55:27.809790,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:29.611422,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:29.863990,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:30.895473,poll ok #7 duration_ms=3085 degraded=0 timeout_streak=0
+2026-03-02T11:55:32.811248,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:34.614670,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:34.866140,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:35.908257,candidate selected op=points start=0
+ duration_ms=1042
+2026-03-02T11:55:35.911803,poll ok #8 duration_ms=3100 degraded=0 timeout_streak=0
+2026-03-02T11:55:37.810523,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:39.612502,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:39.864220,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:40.907753,poll ok #9 duration_ms=3097 degraded=0 timeout_streak=0
+2026-03-02T11:55:42.811232,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:43.847784,poll ok #10 duration_ms=1037 degraded=0 timeout_streak=0
+2026-03-02T11:55:47.811173,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:48.324873,recv ok op=points@0 regs=72 attempt=1 duration_ms=513
+2026-03-02T11:55:48.327016,poll ok #11 duration_ms=515 degraded=0 timeout_streak=0
+2026-03-02T11:55:52.811044,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:54.614694,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:54.868469,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:55:56.399695,poll ok #12 duration_ms=3589 degraded=0 timeout_streak=0
+2026-03-02T11:55:57.809759,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:55:59.613383,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:55:59.864562,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:01.424034,candidate selected op=points start=0
+ duration_ms=1559
+2026-03-02T11:56:01.426662,poll ok #13 duration_ms=3616 degraded=0 timeout_streak=0
+2026-03-02T11:56:02.810984,poll start #14
+2026-03-02T11:56:02.812005,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:04.614498,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:04.865983,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:06.424930,poll ok #14 duration_ms=3613 degraded=0 timeout_streak=0
+2026-03-02T11:56:07.810724,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:09.613402,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:09.864707,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:11.429617,recv ok op=points@0 regs=72 attempt=2 duration_ms=1564
+2026-03-02T11:56:11.429617,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:56:12.811425,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:14.614137,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:14.867133,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:15.440941,poll ok #16 duration_ms=2629 degraded=0 timeout_streak=0
+2026-03-02T11:56:17.809978,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:19.611588,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:19.863646,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:20.429235,poll ok #17 duration_ms=2620 degraded=0 timeout_streak=0
+2026-03-02T11:56:22.810715,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:24.613158,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:24.865040,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:25.440945,recv ok op=points@0 regs=72 attempt=2 duration_ms=575
+2026-03-02T11:56:25.440945,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:56:27.810725,poll start #19
+2026-03-02T11:56:27.810725,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:28.396116,poll ok #19 duration_ms=585 degraded=0 timeout_streak=0
+2026-03-02T11:56:32.811939,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:33.323263,candidate selected op=points start=0
+ duration_ms=512
+2026-03-02T11:56:33.324285,poll ok #20 duration_ms=513 degraded=0 timeout_streak=0
+2026-03-02T11:56:37.810771,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:39.615074,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:39.870591,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:40.956625,candidate selected op=points start=0
+ duration_ms=1087
+2026-03-02T11:56:40.961221,poll ok #21 duration_ms=3149 degraded=0 timeout_streak=0
+2026-03-02T11:56:42.810958,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:44.613328,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:44.867133,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:44.893105,trace cleared
+2026-03-02T11:56:45.951594,candidate selected op=points start=0
+ duration_ms=1083
+2026-03-02T11:56:45.951594,poll ok #22 duration_ms=3141 degraded=0 timeout_streak=0
+2026-03-02T11:56:47.812777,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:49.616193,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:49.868150,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:50.939959,recv ok op=points@0 regs=72 attempt=2 duration_ms=1071
+2026-03-02T11:56:50.939959,candidate selected op=points start=0
+2026-03-02T11:56:50.939959,poll ok #23 duration_ms=3129 degraded=0 timeout_streak=0
+2026-03-02T11:56:52.811502,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:54.615342,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:56:54.867838,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:56:55.963262,candidate selected op=points start=0
+ duration_ms=1095
+2026-03-02T11:56:55.967105,poll ok #24 duration_ms=3156 degraded=0 timeout_streak=0
+2026-03-02T11:56:57.812035,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:56:58.914039,poll ok #25 duration_ms=1102 degraded=0 timeout_streak=0
+2026-03-02T11:57:02.810728,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:03.325808,poll ok #26 duration_ms=515 degraded=0 timeout_streak=0
+2026-03-02T11:57:07.811179,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:09.613553,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T11:57:09.613553,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:09.866051,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:10.951689,candidate selected op=points start=0
+ duration_ms=1085
+2026-03-02T11:57:10.953366,poll ok #27 duration_ms=3142 degraded=0 timeout_streak=0
+2026-03-02T11:57:12.810844,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:13.908698,poll ok #28 duration_ms=1098 degraded=0 timeout_streak=0
+2026-03-02T11:57:17.809847,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:18.328131,poll ok #29 duration_ms=518 degraded=0 timeout_streak=0
+2026-03-02T11:57:22.810984,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:24.613169,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:24.877438,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:25.971752,candidate selected op=points start=0
+ duration_ms=1093
+2026-03-02T11:57:25.978767,poll ok #30 duration_ms=3167 degraded=0 timeout_streak=0
+2026-03-02T11:57:27.819036,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:29.634751,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:29.898139,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:30.975664,poll ok #31 duration_ms=3157 degraded=0 timeout_streak=0
+2026-03-02T11:57:32.814933,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:34.625193,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:34.889347,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:35.972700,candidate selected op=points start=0
+ duration_ms=1083
+2026-03-02T11:57:35.976740,poll ok #32 duration_ms=3163 degraded=0 timeout_streak=0
+2026-03-02T11:57:37.812108,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:39.618599,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:39.883179,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:40.978489,poll ok #33 duration_ms=3166 degraded=0 timeout_streak=0
+2026-03-02T11:57:42.817248,poll start #34
+2026-03-02T11:57:42.817248,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:44.621755,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:57:44.886161,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:45.987758,candidate selected op=points start=0
+ duration_ms=1102
+2026-03-02T11:57:45.989440,poll ok #34 duration_ms=3172 degraded=0 timeout_streak=0
+2026-03-02T11:57:47.810074,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:49.610623,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:57:49.862801,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:50.986391,poll ok #35 duration_ms=3176 degraded=0 timeout_streak=0
+2026-03-02T11:57:52.810509,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:54.611847,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:57:54.863023,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:57:55.974870,poll ok #36 duration_ms=3164 degraded=0 timeout_streak=0
+2026-03-02T11:57:57.810660,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:57:58.936428,candidate selected op=points start=0
+ duration_ms=1125
+2026-03-02T11:57:58.939494,poll ok #37 duration_ms=1129 degraded=0 timeout_streak=0
+2026-03-02T11:58:02.809666,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:03.322754,poll ok #38 duration_ms=513 degraded=0 timeout_streak=0
+2026-03-02T11:58:07.810782,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:09.612923,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:09.867171,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:10.980190,recv ok op=points@0 regs=72 attempt=2 duration_ms=1114
+2026-03-02T11:58:10.981221,poll ok #39 duration_ms=3171 degraded=0 timeout_streak=0
+2026-03-02T11:58:12.810556,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:14.611846,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:14.864627,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:15.996538,poll ok #40 duration_ms=3185 degraded=0 timeout_streak=0
+2026-03-02T11:58:17.810593,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:19.614576,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:58:19.876663,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:20.997919,recv ok op=points@0 regs=72 attempt=2 duration_ms=1122
+2026-03-02T11:58:21.000493,poll ok #41 duration_ms=3189 degraded=0 timeout_streak=0
+2026-03-02T11:58:22.810874,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:24.615811,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:58:24.868614,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:25.996736,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:58:27.811042,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:29.615170,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:29.868283,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:31.005365,candidate selected op=points start=0
+ duration_ms=1137
+2026-03-02T11:58:31.006430,poll ok #43 duration_ms=3195 degraded=0 timeout_streak=0
+2026-03-02T11:58:32.810485,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:34.614428,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:34.866223,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:36.009880,poll ok #44 duration_ms=3199 degraded=0 timeout_streak=0
+2026-03-02T11:58:37.809934,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:39.613154,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:39.864367,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:41.011934,candidate selected op=points start=0
+ duration_ms=1147
+2026-03-02T11:58:41.012967,poll ok #45 duration_ms=3203 degraded=0 timeout_streak=0
+2026-03-02T11:58:42.810669,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:43.971594,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:58:47.810556,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:48.316071,candidate selected op=points start=0
+0 timeout_streak=0
+2026-03-02T11:58:52.810950,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:54.612787,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:54.865213,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:58:56.017932,candidate selected op=points start=0
+ duration_ms=1152
+2026-03-02T11:58:56.018940,poll ok #48 duration_ms=3208 degraded=0 timeout_streak=0
+2026-03-02T11:58:57.815800,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:58:59.630476,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:58:59.894245,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:01.032092,poll ok #49 duration_ms=3216 degraded=0 timeout_streak=0
+2026-03-02T11:59:02.818978,poll start #50
+2026-03-02T11:59:02.819964,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:04.626826,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:59:04.891676,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:06.030702,candidate selected op=points start=0
+ duration_ms=1139
+2026-03-02T11:59:06.031206,poll ok #50 duration_ms=3212 degraded=0 timeout_streak=0
+2026-03-02T11:59:07.810468,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:09.624601,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:09.886250,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:11.012871,poll ok #51 duration_ms=3202 degraded=0 timeout_streak=0
+2026-03-02T11:59:12.816973,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:14.620763,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:59:14.886457,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:16.023725,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:59:17.818939,poll start #53
+0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:19.627404,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:19.892157,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:21.033775,candidate selected op=points start=0
+ duration_ms=1141
+2026-03-02T11:59:21.038100,poll ok #53 duration_ms=3219 degraded=0 timeout_streak=0
+2026-03-02T11:59:22.816442,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:24.620834,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:24.873945,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:26.020672,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T11:59:27.810738,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:28.978220,poll ok #55 duration_ms=1167 degraded=0 timeout_streak=0
+2026-03-02T11:59:32.817714,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:33.337559,candidate selected op=points start=0
+ duration_ms=519
+2026-03-02T11:59:33.340409,poll ok #56 duration_ms=522 degraded=0 timeout_streak=0
+2026-03-02T11:59:37.823782,poll start #57
+0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:39.632075,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:39.895487,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:41.052452,poll ok #57 duration_ms=3228 degraded=0 timeout_streak=0
+2026-03-02T11:59:42.816239,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:44.619648,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:44.870440,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:46.053771,candidate selected op=points start=0
+ duration_ms=1183
+2026-03-02T11:59:46.058383,poll ok #58 duration_ms=3242 degraded=0 timeout_streak=0
+2026-03-02T11:59:47.810141,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:49.610608,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T11:59:49.861646,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:51.044517,poll ok #59 duration_ms=3235 degraded=0 timeout_streak=0
+2026-03-02T11:59:52.810687,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:54.611951,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:54.864101,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T11:59:56.059730,candidate selected op=points start=0
+ duration_ms=1195
+2026-03-02T11:59:56.060736,poll ok #60 duration_ms=3250 degraded=0 timeout_streak=0
+2026-03-02T11:59:57.810758,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T11:59:59.613292,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T11:59:59.865258,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:01.044346,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:00:02.811342,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:04.612731,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:04.864389,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:06.062866,recv ok op=points@0 regs=72 attempt=2 duration_ms=1198
+2026-03-02T12:00:06.065685,poll ok #62 duration_ms=3255 degraded=0 timeout_streak=0
+2026-03-02T12:00:07.810172,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:09.611977,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:00:09.862090,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:11.066558,poll ok #63 duration_ms=3256 degraded=0 timeout_streak=0
+2026-03-02T12:00:12.810654,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:14.013469,poll ok #64 duration_ms=1203 degraded=0 timeout_streak=0
+2026-03-02T12:00:17.810043,poll start #65
+2026-03-02T12:00:17.811073,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:18.329420,candidate selected op=points start=0
+ duration_ms=518
+2026-03-02T12:00:18.332951,poll ok #65 duration_ms=522 degraded=0 timeout_streak=0
+2026-03-02T12:00:22.811909,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:24.614703,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:00:24.615730,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:24.867804,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:26.078678,poll ok #66 duration_ms=3267 degraded=0 timeout_streak=0
+2026-03-02T12:00:27.809835,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:29.654342,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:00:29.906689,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:31.080559,candidate selected op=points start=0
+ duration_ms=1173
+2026-03-02T12:00:31.082631,poll ok #67 duration_ms=3272 degraded=0 timeout_streak=0
+2026-03-02T12:00:32.812574,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:34.614523,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:34.868843,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:36.089443,poll ok #68 duration_ms=3277 degraded=0 timeout_streak=0
+2026-03-02T12:00:37.810570,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:39.615184,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:39.867900,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:41.098356,candidate selected op=points start=0
+ duration_ms=1231
+2026-03-02T12:00:41.099870,poll ok #69 duration_ms=3287 degraded=0 timeout_streak=0
+2026-03-02T12:00:42.811312,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:44.618628,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:00:44.883766,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:46.097123,poll ok #70 duration_ms=3286 degraded=0 timeout_streak=0
+2026-03-02T12:00:47.819449,poll start #71
+2026-03-02T12:00:47.820955,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:49.629635,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:49.895844,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:51.091389,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:00:52.823443,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:54.633891,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:00:54.900615,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:00:56.088707,candidate selected op=points start=0
+ duration_ms=1186
+2026-03-02T12:00:56.092675,poll ok #72 duration_ms=3269 degraded=0 timeout_streak=0
+2026-03-02T12:00:57.821717,poll start #73
+0 start=0 count=72 attempt=1/2
+2026-03-02T12:00:59.051060,poll ok #73 duration_ms=1230 degraded=0 timeout_streak=0
+2026-03-02T12:01:02.810572,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:03.325449,poll ok #74 duration_ms=515 degraded=0 timeout_streak=0
+2026-03-02T12:01:07.821422,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:09.630756,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:09.910199,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:11.097007,candidate selected op=points start=0
+ duration_ms=1185
+2026-03-02T12:01:11.099712,poll ok #75 duration_ms=3278 degraded=0 timeout_streak=0
+2026-03-02T12:01:12.824717,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:14.630602,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:14.894047,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:16.099499,poll ok #76 duration_ms=3275 degraded=0 timeout_streak=0
+2026-03-02T12:01:17.811730,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:19.056743,recv ok op=points@0 regs=72 attempt=1 duration_ms=1245
+2026-03-02T12:01:19.058940,poll ok #77 duration_ms=1247 degraded=0 timeout_streak=0
+2026-03-02T12:01:22.818100,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:23.332354,recv ok op=points@0 regs=72 attempt=1 duration_ms=514
+2026-03-02T12:01:23.332972,candidate selected op=points start=0
+0 timeout_streak=0
+2026-03-02T12:01:27.824160,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:29.632925,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:01:29.632925,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:29.898249,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:31.118124,poll ok #79 duration_ms=3293 degraded=0 timeout_streak=0
+2026-03-02T12:01:32.812774,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:34.620772,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:34.886351,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:36.131887,candidate selected op=points start=0
+ duration_ms=1245
+2026-03-02T12:01:36.136204,poll ok #80 duration_ms=3323 degraded=0 timeout_streak=0
+2026-03-02T12:01:37.817083,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:39.628950,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:39.881284,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:41.128260,poll ok #81 duration_ms=3311 degraded=0 timeout_streak=0
+2026-03-02T12:01:42.813085,poll start #82
+0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:43.329189,candidate selected op=points start=0
+0 timeout_streak=0
+2026-03-02T12:01:47.814376,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:48.330312,candidate selected op=points start=0
+ duration_ms=514
+2026-03-02T12:01:48.333661,poll ok #83 duration_ms=518 degraded=0 timeout_streak=0
+2026-03-02T12:01:52.824765,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:54.635566,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:54.889948,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:01:56.137422,poll ok #84 duration_ms=3312 degraded=0 timeout_streak=0
+2026-03-02T12:01:57.818906,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:01:59.626701,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:01:59.626701,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:01:59.893983,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:01.137613,recv ok op=points@0 regs=72 attempt=2 duration_ms=1244
+2026-03-02T12:02:01.137613,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:02:02.820624,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:04.624976,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:02:04.624976,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:04.891747,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:06.143127,poll ok #86 duration_ms=3322 degraded=0 timeout_streak=0
+2026-03-02T12:02:07.810637,poll start #87
+2026-03-02T12:02:07.810637,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:09.619700,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:09.883920,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:11.148609,recv ok op=points@0 regs=72 attempt=2 duration_ms=1264
+2026-03-02T12:02:11.151825,poll ok #87 duration_ms=3341 degraded=0 timeout_streak=0
+2026-03-02T12:02:12.818339,poll start #88
+0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:14.626167,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:14.890492,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:16.153110,poll ok #88 duration_ms=3334 degraded=0 timeout_streak=0
+2026-03-02T12:02:17.810295,poll start #89
+2026-03-02T12:02:17.810805,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:19.619123,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:19.883614,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:21.156644,candidate selected op=points start=0
+ duration_ms=1273
+2026-03-02T12:02:21.161073,poll ok #89 duration_ms=3350 degraded=0 timeout_streak=0
+2026-03-02T12:02:22.824945,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:24.631611,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:24.894577,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:26.157852,poll ok #90 duration_ms=3333 degraded=0 timeout_streak=0
+2026-03-02T12:02:27.824604,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:29.118138,poll ok #91 duration_ms=1294 degraded=0 timeout_streak=0
+2026-03-02T12:02:32.817896,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:33.331070,candidate selected op=points start=0
+ duration_ms=513
+2026-03-02T12:02:33.335178,poll ok #92 duration_ms=517 degraded=0 timeout_streak=0
+2026-03-02T12:02:37.814525,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:39.629217,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:02:39.891235,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:41.180515,recv ok op=points@0 regs=72 attempt=2 duration_ms=1289
+2026-03-02T12:02:41.181068,poll ok #93 duration_ms=3366 degraded=0 timeout_streak=0
+2026-03-02T12:02:42.816931,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:44.634291,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:44.898034,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:46.161660,candidate selected op=points start=0
+ duration_ms=1262
+2026-03-02T12:02:46.166384,poll ok #94 duration_ms=3350 degraded=0 timeout_streak=0
+2026-03-02T12:02:47.824635,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:49.628983,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:49.894579,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:51.193088,poll ok #95 duration_ms=3368 degraded=0 timeout_streak=0
+2026-03-02T12:02:52.825883,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:54.635115,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:02:54.901123,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:02:56.192688,candidate selected op=points start=0
+ duration_ms=1292
+2026-03-02T12:02:56.196545,poll ok #96 duration_ms=3371 degraded=0 timeout_streak=0
+2026-03-02T12:02:57.818943,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:02:59.636131,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:02:59.900710,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:01.181948,candidate selected op=points start=0
+ duration_ms=1280
+2026-03-02T12:03:01.181948,poll ok #97 duration_ms=3364 degraded=0 timeout_streak=0
+2026-03-02T12:03:02.820857,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:04.631079,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:04.893131,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:06.193093,poll ok #98 duration_ms=3373 degraded=0 timeout_streak=0
+2026-03-02T12:03:07.825847,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:09.634239,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:09.898529,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:11.208655,recv ok op=points@0 regs=72 attempt=2 duration_ms=1309
+2026-03-02T12:03:11.212765,poll ok #99 duration_ms=3386 degraded=0 timeout_streak=0
+2026-03-02T12:03:12.815258,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:14.143962,poll ok #100 duration_ms=1329 degraded=0 timeout_streak=0
+2026-03-02T12:03:17.819767,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:18.333110,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:03:22.819342,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:24.634026,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:24.898302,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:26.192571,candidate selected op=points start=0
+ duration_ms=1294
+2026-03-02T12:03:26.196287,poll ok #102 duration_ms=3377 degraded=0 timeout_streak=0
+2026-03-02T12:03:27.812202,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:29.622236,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:29.873666,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:31.210104,poll ok #103 duration_ms=3398 degraded=0 timeout_streak=0
+2026-03-02T12:03:32.812826,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:34.625736,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:34.904279,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:36.219412,recv ok op=points@0 regs=72 attempt=2 duration_ms=1315
+2026-03-02T12:03:36.221923,poll ok #104 duration_ms=3409 degraded=0 timeout_streak=0
+2026-03-02T12:03:37.817605,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:39.623313,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:39.886951,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:41.211655,candidate selected op=points start=0
+ duration_ms=1323
+2026-03-02T12:03:41.211655,poll ok #105 duration_ms=3394 degraded=0 timeout_streak=0
+2026-03-02T12:03:42.815294,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:44.622448,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:44.887281,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:46.210685,poll ok #106 duration_ms=3395 degraded=0 timeout_streak=0
+2026-03-02T12:03:47.818494,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:49.630279,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:49.892609,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:51.196842,candidate selected op=points start=0
+ duration_ms=1304
+2026-03-02T12:03:51.197847,poll ok #107 duration_ms=3379 degraded=0 timeout_streak=0
+2026-03-02T12:03:52.813331,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:54.628117,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:03:54.888825,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:03:56.202328,poll ok #108 duration_ms=3390 degraded=0 timeout_streak=0
+2026-03-02T12:03:57.817299,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:03:59.161170,poll ok #109 duration_ms=1344 degraded=0 timeout_streak=0
+2026-03-02T12:04:02.810725,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:03.328914,recv ok op=points@0 regs=72 attempt=1 duration_ms=518
+2026-03-02T12:04:03.330804,poll ok #110 duration_ms=520 degraded=0 timeout_streak=0
+2026-03-02T12:04:07.810514,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:09.614263,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:09.864678,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:11.201189,poll ok #111 duration_ms=3391 degraded=0 timeout_streak=0
+2026-03-02T12:04:12.811050,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:14.613454,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:14.866019,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:16.196511,candidate selected op=points start=0
+ duration_ms=1330
+2026-03-02T12:04:16.200235,poll ok #112 duration_ms=3389 degraded=0 timeout_streak=0
+2026-03-02T12:04:17.810350,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:19.613389,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:19.866018,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:21.182173,candidate selected op=points start=0
+ duration_ms=1315
+=0
+2026-03-02T12:04:22.810680,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:24.624614,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:24.885315,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:26.201701,candidate selected op=points start=0
+ duration_ms=1315
+2026-03-02T12:04:26.206073,poll ok #114 duration_ms=3395 degraded=0 timeout_streak=0
+2026-03-02T12:04:27.818290,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:29.619745,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:29.882715,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:31.209698,poll ok #115 duration_ms=3391 degraded=0 timeout_streak=0
+2026-03-02T12:04:32.817672,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:34.624892,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:34.889647,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:36.200794,recv ok op=points@0 regs=72 attempt=2 duration_ms=1311
+2026-03-02T12:04:36.205791,poll ok #116 duration_ms=3389 degraded=0 timeout_streak=0
+2026-03-02T12:04:37.814352,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:39.628187,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:39.895857,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:41.205828,candidate selected op=points start=0
+ duration_ms=1309
+2026-03-02T12:04:41.206404,poll ok #117 duration_ms=3392 degraded=0 timeout_streak=0
+2026-03-02T12:04:42.811531,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:44.148388,poll ok #118 duration_ms=1336 degraded=0 timeout_streak=0
+2026-03-02T12:04:47.816301,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:48.326625,recv ok op=points@0 regs=72 attempt=1 duration_ms=510
+2026-03-02T12:04:48.331022,poll ok #119 duration_ms=514 degraded=0 timeout_streak=0
+2026-03-02T12:04:52.817976,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:54.621704,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:04:54.884860,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:04:56.206154,candidate selected op=points start=0
+ duration_ms=1321
+2026-03-02T12:04:56.207166,poll ok #120 duration_ms=3389 degraded=0 timeout_streak=0
+2026-03-02T12:04:57.811241,poll start #121
+2026-03-02T12:04:57.811241,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:04:59.618402,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:04:59.884912,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:01.195479,recv ok op=points@0 regs=72 attempt=2 duration_ms=1310
+2026-03-02T12:05:01.201652,poll ok #121 duration_ms=3389 degraded=0 timeout_streak=0
+2026-03-02T12:05:02.814962,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:04.630047,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:05:04.895774,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:06.203358,candidate selected op=points start=0
+ duration_ms=1306
+2026-03-02T12:05:06.203358,poll ok #122 duration_ms=3388 degraded=0 timeout_streak=0
+2026-03-02T12:05:07.817271,poll start #123
+2026-03-02T12:05:07.817271,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:09.631761,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:09.896252,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:11.205760,candidate selected op=points start=0
+ duration_ms=1308
+2026-03-02T12:05:11.210201,poll ok #123 duration_ms=3392 degraded=0 timeout_streak=0
+2026-03-02T12:05:12.824779,poll start #124
+ start=0 count=72 attempt=1/2
+2026-03-02T12:05:14.643636,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:14.908196,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:16.216792,poll ok #124 duration_ms=3392 degraded=0 timeout_streak=0
+2026-03-02T12:05:17.817045,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:19.629627,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:05:19.629627,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:19.894367,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:21.214695,candidate selected op=points start=0
+ duration_ms=1320
+2026-03-02T12:05:21.217155,poll ok #125 duration_ms=3400 degraded=0 timeout_streak=0
+2026-03-02T12:05:22.819822,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:24.629236,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:24.891568,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:26.211214,poll ok #126 duration_ms=3392 degraded=0 timeout_streak=0
+2026-03-02T12:05:27.813694,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:29.165837,poll ok #127 duration_ms=1352 degraded=0 timeout_streak=0
+2026-03-02T12:05:32.810736,poll start #128
+ start=0 count=72 attempt=1/2
+2026-03-02T12:05:34.622089,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:34.891776,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:36.707211,disconnected
+pt host=192.168.50.20 port=502
+=2/2 streak=2 degraded=1
+2026-03-02T12:05:36.755811,connected
+ #128: Bad state: Read failed: points@0: ModbusTcpException: response timeout (2 consecutive) [degraded  timeout_streak=2]
+ timeout_streak=2]
+2026-03-02T12:05:37.823232,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:39.163543,candidate selected op=points start=0
+ duration_ms=1339
+2026-03-02T12:05:39.165544,poll ok #129 duration_ms=1341 degraded=0 timeout_streak=0
+2026-03-02T12:05:42.868122,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:43.385503,poll ok #130 duration_ms=517 degraded=0 timeout_streak=0
+2026-03-02T12:05:47.846641,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:49.694984,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:49.950110,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:51.210199,recv ok op=points@0 regs=72 attempt=2 duration_ms=1260
+2026-03-02T12:05:51.212212,poll ok #131 duration_ms=3365 degraded=0 timeout_streak=0
+2026-03-02T12:05:52.814391,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:54.622571,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:05:54.623235,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:05:54.888069,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:05:56.203316,poll ok #132 duration_ms=3388 degraded=0 timeout_streak=0
+2026-03-02T12:05:57.821070,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:05:58.421582,disconnected
+ed op=points@0 next_in_ms=250 after_error=ModbusTcpException: disconnected
+2026-03-02T12:05:58.676965,connect attempt host=192.168.50.20 port=502
+2026-03-02T12:06:02.685895,candidate failed op=points start=0: Bad state: Read failed: points@0: Bad state: not connected
+ Connection timed out  errno = 10060)
+2026-03-02T12:06:02.823183,connect attempt host=192.168.50.20 port=502
+2026-03-02T12:06:05.557789,poll #134: still disconnected
+: Запрос на отправку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied (OS Error: Запрос на отправку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied  errno = 10057)  address = 192.168.50.20  port = 52992
+2026-03-02T12:06:07.821320,connect attempt host=192.168.50.20 port=502
+2026-03-02T12:06:10.639861,poll #135: still disconnected
+apsed_ms=14436 failed_polls=3
+вку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied (OS Error: Запрос на отправку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied  errno = 10057)  address = 192.168.50.20  port = 56172
+2026-03-02T12:06:12.817427,poll start #136
+host=192.168.50.20 port=502
+2026-03-02T12:06:15.437590,poll #136: still disconnected
+: Запрос на отправку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied (OS Error: Запрос на отправку или получение данных  (when sending on a datagram socket using a sendto call) no address was supplied  errno = 10057)  address = 192.168.50.20  port = 54768
+2026-03-02T12:06:17.817839,connect attempt host=192.168.50.20 port=502
+2026-03-02T12:06:17.823629,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:18.333143,connectivity policy state=0 elapsed_ms=0 failed_polls=0
+2026-03-02T12:06:18.335125,poll ok #137 duration_ms=517 degraded=0 timeout_streak=0
+2026-03-02T12:06:22.809845,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:23.323767,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:06:27.810390,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:28.330814,poll ok #139 duration_ms=520 degraded=0 timeout_streak=0
+2026-03-02T12:06:32.810356,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:34.611528,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:06:34.862585,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:06:36.664414,disconnected
+pt host=192.168.50.20 port=502
+=2/2 streak=2 degraded=1
+2026-03-02T12:06:36.668054,connect ok
+ op=points@0 error=ModbusTcpException: response timeout (2 consecutive) [degraded  timeout_streak=2]
+d  timeout_streak=2]
+ timeout_streak=2]
+2026-03-02T12:06:37.810784,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:39.156673,candidate selected op=points start=0
+ duration_ms=1345
+2026-03-02T12:06:39.158262,poll ok #141 duration_ms=1347 degraded=0 timeout_streak=0
+2026-03-02T12:06:42.809692,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:43.321119,poll ok #142 duration_ms=511 degraded=0 timeout_streak=0
+2026-03-02T12:06:47.809678,poll start #143
+ start=0 count=72 attempt=1/2
+2026-03-02T12:06:49.611486,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:06:49.865023,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:06:51.269574,candidate selected op=points start=0
+ duration_ms=1403
+2026-03-02T12:06:51.270583,poll ok #143 duration_ms=3460 degraded=0 timeout_streak=0
+2026-03-02T12:06:52.809675,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:54.610662,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:06:54.862624,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:06:56.295460,poll ok #144 duration_ms=3485 degraded=0 timeout_streak=0
+2026-03-02T12:06:57.811246,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:06:59.613364,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:06:59.866058,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:01.317881,candidate selected op=points start=0
+ duration_ms=1451
+2026-03-02T12:07:01.320904,poll ok #145 duration_ms=3510 degraded=0 timeout_streak=0
+2026-03-02T12:07:02.810566,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:04.614278,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:04.866715,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:06.330263,poll ok #146 duration_ms=3520 degraded=0 timeout_streak=0
+2026-03-02T12:07:07.810671,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:09.613391,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:09.864876,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:11.349349,candidate selected op=points start=0
+ duration_ms=1483
+2026-03-02T12:07:11.352368,poll ok #147 duration_ms=3541 degraded=0 timeout_streak=0
+2026-03-02T12:07:12.810387,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:14.612805,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:14.864643,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:16.360840,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:07:17.810564,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:19.612799,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:19.864147,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:21.393058,candidate selected op=points start=0
+ duration_ms=1528
+2026-03-02T12:07:21.396637,poll ok #149 duration_ms=3586 degraded=0 timeout_streak=0
+2026-03-02T12:07:22.810480,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:23.356350,poll ok #150 duration_ms=546 degraded=0 timeout_streak=0
+2026-03-02T12:07:27.810299,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:28.320501,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:07:32.810763,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:34.614314,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:34.866047,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:35.446647,candidate selected op=points start=0
+ duration_ms=579
+2026-03-02T12:07:35.448667,poll ok #152 duration_ms=2638 degraded=0 timeout_streak=0
+2026-03-02T12:07:37.810763,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:39.612330,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:39.863373,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:40.473684,poll ok #153 duration_ms=2663 degraded=0 timeout_streak=0
+2026-03-02T12:07:42.811032,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:44.614676,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:44.865887,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:45.489752,candidate selected op=points start=0
+ duration_ms=623
+2026-03-02T12:07:45.491276,poll ok #154 duration_ms=2680 degraded=0 timeout_streak=0
+2026-03-02T12:07:47.810510,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:49.611585,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:49.863029,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:50.514164,poll ok #155 duration_ms=2704 degraded=0 timeout_streak=0
+2026-03-02T12:07:52.810645,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:54.613035,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:54.864484,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:07:55.545379,candidate selected op=points start=0
+ duration_ms=679
+2026-03-02T12:07:55.548376,poll ok #156 duration_ms=2739 degraded=0 timeout_streak=0
+2026-03-02T12:07:57.810699,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:07:59.611648,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:07:59.862841,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:00.552193,poll ok #157 duration_ms=2742 degraded=0 timeout_streak=0
+2026-03-02T12:08:02.810686,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:04.613592,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:04.865864,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:05.580861,candidate selected op=points start=0
+ duration_ms=714
+2026-03-02T12:08:05.583388,poll ok #158 duration_ms=2773 degraded=0 timeout_streak=0
+2026-03-02T12:08:07.810660,poll start #159
+2026-03-02T12:08:07.810660,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:08.538131,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:08:12.810791,poll start #160
+ start=0 count=72 attempt=1/2
+2026-03-02T12:08:13.322733,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:08:17.809883,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:19.614273,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:19.866135,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:21.136683,recv ok op=points@0 regs=72 attempt=2 duration_ms=1270
+2026-03-02T12:08:21.139264,poll ok #161 duration_ms=3329 degraded=0 timeout_streak=0
+2026-03-02T12:08:22.809968,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:24.612955,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:24.866027,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:26.151859,poll ok #162 duration_ms=3341 degraded=0 timeout_streak=0
+2026-03-02T12:08:27.810864,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:29.611563,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:29.864416,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:31.160835,candidate selected op=points start=0
+ duration_ms=1296
+2026-03-02T12:08:31.161708,poll ok #163 duration_ms=3351 degraded=0 timeout_streak=0
+2026-03-02T12:08:32.810938,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:34.614050,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:34.866020,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:36.180774,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:08:37.810731,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:39.612827,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:08:39.863804,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:41.199208,candidate selected op=points start=0
+ duration_ms=1335
+2026-03-02T12:08:41.201225,poll ok #165 duration_ms=3391 degraded=0 timeout_streak=0
+2026-03-02T12:08:42.812007,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:44.613136,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:44.864672,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:46.216704,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:08:47.810944,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:49.614313,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:08:49.866119,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:08:51.237668,candidate selected op=points start=0
+ duration_ms=1371
+2026-03-02T12:08:51.239239,poll ok #167 duration_ms=3428 degraded=0 timeout_streak=0
+2026-03-02T12:08:52.811586,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:54.196848,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:08:57.811230,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:08:58.320479,poll ok #169 duration_ms=509 degraded=0 timeout_streak=0
+2026-03-02T12:09:02.810773,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:04.614157,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:04.866622,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:06.278376,candidate selected op=points start=0
+ duration_ms=1411
+2026-03-02T12:09:06.281329,poll ok #170 duration_ms=3470 degraded=0 timeout_streak=0
+2026-03-02T12:09:07.810816,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:09.611686,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:09:09.611686,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:09.864668,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:11.294379,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:09:12.811539,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:14.614078,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:14.865929,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:16.310101,candidate selected op=points start=0
+ duration_ms=1443
+2026-03-02T12:09:16.312633,poll ok #172 duration_ms=3501 degraded=0 timeout_streak=0
+2026-03-02T12:09:17.810725,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:19.611772,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:19.864500,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:21.334542,poll ok #173 duration_ms=3524 degraded=0 timeout_streak=0
+2026-03-02T12:09:22.810957,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:24.613018,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:24.865907,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:26.348556,candidate selected op=points start=0
+ duration_ms=1482
+2026-03-02T12:09:26.350265,poll ok #174 duration_ms=3540 degraded=0 timeout_streak=0
+2026-03-02T12:09:27.811547,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:29.613436,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:29.864689,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:31.373808,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:09:32.811027,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:34.613948,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:34.864622,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:36.396067,candidate selected op=points start=0
+ duration_ms=1531
+2026-03-02T12:09:36.400271,poll ok #176 duration_ms=3588 degraded=0 timeout_streak=0
+2026-03-02T12:09:37.810592,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:38.340191,poll ok #177 duration_ms=529 degraded=0 timeout_streak=0
+2026-03-02T12:09:42.810150,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:43.329189,poll ok #178 duration_ms=520 degraded=0 timeout_streak=0
+2026-03-02T12:09:47.810358,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:49.612852,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:09:49.612852,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:49.864316,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:50.422360,candidate selected op=points start=0
+ duration_ms=558
+2026-03-02T12:09:50.425379,poll ok #179 duration_ms=2615 degraded=0 timeout_streak=0
+2026-03-02T12:09:52.810536,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:54.611741,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:54.864281,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:09:55.448171,poll ok #180 duration_ms=2639 degraded=0 timeout_streak=0
+2026-03-02T12:09:57.811185,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:09:59.614157,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:09:59.866205,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:00.471236,candidate selected op=points start=0
+ duration_ms=605
+2026-03-02T12:10:00.473956,poll ok #181 duration_ms=2663 degraded=0 timeout_streak=0
+2026-03-02T12:10:02.810701,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:04.612872,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:04.863247,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:05.493277,candidate selected op=points start=0
+ duration_ms=629
+2026-03-02T12:10:05.493277,poll ok #182 duration_ms=2683 degraded=0 timeout_streak=0
+2026-03-02T12:10:07.810849,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:09.612910,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:10:09.864726,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:10.503028,candidate selected op=points start=0
+ duration_ms=638
+2026-03-02T12:10:10.504770,poll ok #183 duration_ms=2694 degraded=0 timeout_streak=0
+2026-03-02T12:10:12.810608,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:14.612007,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:14.864571,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:15.531171,poll ok #184 duration_ms=2721 degraded=0 timeout_streak=0
+2026-03-02T12:10:17.810559,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:19.612866,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:19.864428,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:20.528783,recv ok op=points@0 regs=72 attempt=2 duration_ms=664
+2026-03-02T12:10:20.528783,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:10:22.810628,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:23.501347,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:10:27.810837,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:28.318984,recv ok op=points@0 regs=72 attempt=1 duration_ms=508
+2026-03-02T12:10:28.320501,poll ok #187 duration_ms=510 degraded=0 timeout_streak=0
+2026-03-02T12:10:32.818044,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:34.628594,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:10:34.892577,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:36.090385,recv ok op=points@0 regs=72 attempt=2 duration_ms=1197
+2026-03-02T12:10:36.095793,poll ok #188 duration_ms=3277 degraded=0 timeout_streak=0
+2026-03-02T12:10:37.822724,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:39.639848,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:39.903065,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:41.103914,candidate selected op=points start=0
+ duration_ms=1200
+2026-03-02T12:10:41.104973,poll ok #189 duration_ms=3282 degraded=0 timeout_streak=0
+2026-03-02T12:10:42.818500,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:44.625367,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:44.887446,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:46.132901,candidate selected op=points start=0
+ duration_ms=1244
+2026-03-02T12:10:46.136561,poll ok #190 duration_ms=3319 degraded=0 timeout_streak=0
+2026-03-02T12:10:47.815059,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:47.814032,poll start #191
+2026-03-02T12:10:49.622216,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:10:49.622216,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:10:49.888363,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:10:51.147302,candidate selected op=points start=0
+ duration_ms=1258
+2026-03-02T12:10:51.147827,poll ok #191 duration_ms=3333 degraded=0 timeout_streak=0
+2026-03-02T12:10:52.819764,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:54.107334,poll ok #192 duration_ms=1287 degraded=0 timeout_streak=0
+2026-03-02T12:10:54.106307,candidate selected op=points start=0
+2026-03-02T12:10:57.821027,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:10:58.334957,recv ok op=points@0 regs=72 attempt=1 duration_ms=513
+2026-03-02T12:10:58.334957,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:11:02.814280,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:04.630845,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:04.895618,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:06.208271,poll ok #194 duration_ms=3395 degraded=0 timeout_streak=0
+2026-03-02T12:11:07.826114,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:09.163715,candidate selected op=points start=0
+ duration_ms=1337
+2026-03-02T12:11:09.169816,poll ok #195 duration_ms=1345 degraded=0 timeout_streak=0
+2026-03-02T12:11:12.811586,poll start #196
+2026-03-02T12:11:12.811586,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:13.327787,candidate selected op=points start=0
+=0 timeout_streak=0
+2026-03-02T12:11:17.818828,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:19.626276,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:19.889378,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:21.249743,candidate selected op=points start=0
+ duration_ms=1359
+2026-03-02T12:11:21.253800,poll ok #197 duration_ms=3435 degraded=0 timeout_streak=0
+2026-03-02T12:11:22.812300,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:24.617496,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:24.880891,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:26.268636,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:11:27.811430,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:29.620530,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:29.886074,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:31.283749,recv ok op=points@0 regs=72 attempt=2 duration_ms=1397
+2026-03-02T12:11:31.286287,poll ok #199 duration_ms=3474 degraded=0 timeout_streak=0
+2026-03-02T12:11:32.823764,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:34.635353,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:34.903202,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:36.310787,poll ok #200 duration_ms=3487 degraded=0 timeout_streak=0
+2026-03-02T12:11:37.811295,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:39.618972,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:11:39.882427,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:41.332872,recv ok op=points@0 regs=72 attempt=2 duration_ms=1450
+2026-03-02T12:11:41.333878,poll ok #201 duration_ms=3524 degraded=0 timeout_streak=0
+2026-03-02T12:11:42.817956,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:44.619569,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:44.884545,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:46.350510,poll ok #202 duration_ms=3533 degraded=0 timeout_streak=0
+2026-03-02T12:11:47.824015,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:49.631073,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:11:49.894057,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:11:51.373447,candidate selected op=points start=0
+ duration_ms=1478
+2026-03-02T12:11:51.377335,poll ok #203 duration_ms=3554 degraded=0 timeout_streak=0
+2026-03-02T12:11:52.819094,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:11:54.326959,poll ok #204 duration_ms=1507 degraded=0 timeout_streak=0
+2026-03-02T12:11:57.819887,poll start #205
+ start=0 count=72 attempt=1/2
+2026-03-02T12:11:58.335381,poll ok #205 duration_ms=515 degraded=0 timeout_streak=0
+2026-03-02T12:11:58.335381,candidate selected op=points start=0
+2026-03-02T12:12:02.816321,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:04.625338,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:12:04.625338,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:04.889235,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:06.424553,recv ok op=points@0 regs=72 attempt=2 duration_ms=1535
+2026-03-02T12:12:06.428033,poll ok #206 duration_ms=3613 degraded=0 timeout_streak=0
+2026-03-02T12:12:07.825606,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:09.630279,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:09.893883,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:11.439729,recv ok op=points@0 regs=72 attempt=22026-03-02T12:12:11.440262,poll ok #207 duration_ms=3616 degraded=0 timeout_streak=0
+2026-03-02T12:12:12.813965,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:14.626450,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:14.889108,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:15.458474,poll ok #208 duration_ms=2645 degraded=0 timeout_streak=0
+2026-03-02T12:12:17.812729,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:19.617063,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:19.878651,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:20.485867,recv ok op=points@0 regs=72 attempt=2 duration_ms=607
+2026-03-02T12:12:20.489452,poll ok #209 duration_ms=2676 degraded=0 timeout_streak=0
+2026-03-02T12:12:22.810649,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:24.616357,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:24.881025,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:25.503154,poll ok #210 duration_ms=2692 degraded=0 timeout_streak=0
+2026-03-02T12:12:27.824791,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:29.629810,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:29.894225,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:30.516057,candidate selected op=points start=0
+ duration_ms=620
+2026-03-02T12:12:30.521161,poll ok #211 duration_ms=2696 degraded=0 timeout_streak=0
+2026-03-02T12:12:32.818244,poll start #212
+2026-03-02T12:12:32.821964,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:34.625266,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+2026-03-02T12:12:34.625266,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:34.890345,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:35.547973,poll ok #212 duration_ms=2729 degraded=0 timeout_streak=0
+2026-03-02T12:12:37.818313,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:38.507035,candidate selected op=points start=0
+ duration_ms=688
+2026-03-02T12:12:38.507035,poll ok #213 duration_ms=688 degraded=0 timeout_streak=0
+2026-03-02T12:12:42.813314,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:43.326103,recv ok op=points@0 regs=72 attempt=1 duration_ms=512
+2026-03-02T12:12:43.330793,poll ok #214 duration_ms=518 degraded=0 timeout_streak=0
+2026-03-02T12:12:47.818729,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:49.635639,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:49.900387,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:51.099476,poll ok #215 duration_ms=3281 degraded=0 timeout_streak=0
+2026-03-02T12:12:52.810597,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:54.622860,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:12:54.883262,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:12:56.118484,recv ok op=points@0 regs=72 attempt=2 duration_ms=1235
+2026-03-02T12:12:56.123537,poll ok #216 duration_ms=3312 degraded=0 timeout_streak=0
+2026-03-02T12:12:57.814075,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:12:59.630753,timeout op=points@0 start=0 count=72 attempt=1/2 streak=1 degraded=0
+tion: response timeout (1 consecutive)
+2026-03-02T12:12:59.894355,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:01.138776,poll ok #217 duration_ms=3325 degraded=0 timeout_streak=0
+2026-03-02T12:13:02.815859,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:04.624930,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:13:04.888059,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:06.146675,candidate selected op=points start=0
+ duration_ms=1257
+2026-03-02T12:13:06.149977,poll ok #218 duration_ms=3334 degraded=0 timeout_streak=0
+2026-03-02T12:13:07.815708,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:09.623126,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:13:09.885938,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:11.173797,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:13:12.824099,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:14.633996,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:13:14.899840,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:16.196006,candidate selected op=points start=0
+ duration_ms=1297
+2026-03-02T12:13:16.201624,poll ok #220 duration_ms=3378 degraded=0 timeout_streak=0
+2026-03-02T12:13:17.818559,poll start #221
+2026-03-02T12:13:17.819570,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:19.625666,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:13:19.886838,send op=points@0 start=0 count=72 attempt=2/2
+2026-03-02T12:13:21.208430,candidate selected op=points start=0
+d=0 timeout_streak=0
+2026-03-02T12:13:22.810521,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:24.168139,poll ok #222 duration_ms=1357 degraded=0 timeout_streak=0
+2026-03-02T12:13:27.818861,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:28.333800,candidate selected op=points start=0
+ duration_ms=515
+2026-03-02T12:13:28.337625,poll ok #223 duration_ms=519 degraded=0 timeout_streak=0
+2026-03-02T12:13:32.812815,send op=points@0 start=0 count=72 attempt=1/2
+2026-03-02T12:13:34.615393,retry scheduled op=points@0 next_in_ms=250 after_error=ModbusTcpException: response timeout (1 consecutive)
+2026-03-02T12:13:34.881141,send op=points@0 start=0 count=72 attempt=2/2

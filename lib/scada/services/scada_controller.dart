@@ -14,10 +14,10 @@ class ScadaController extends ChangeNotifier {
     ConfigStore? configStore,
     ScadaLogger? logger,
     RegisterMap? registerMap,
-  })  : _client = client ?? ModbusTcpClient(),
-        _configStore = configStore ?? ConfigStore(),
-        _logger = logger ?? ScadaLogger(),
-        _registerMap = registerMap ?? RegisterMap.assumed;
+  }) : _client = client ?? ModbusTcpClient(),
+       _configStore = configStore ?? ConfigStore(),
+       _logger = logger ?? ScadaLogger(),
+       _registerMap = registerMap ?? RegisterMap.assumed;
 
   final ModbusTcpClient _client;
   final ConfigStore _configStore;
@@ -32,30 +32,75 @@ class ScadaController extends ChangeNotifier {
   int selectedZoneId = 1;
 
   final List<ZoneState> zones = List<ZoneState>.generate(
-    20,
+    1,
     (i) => ZoneState.initial(i + 1),
   );
+  WeatherStationState weather = WeatherStationState.initial();
   final Map<String, AlarmEntry> _activeAlarms = <String, AlarmEntry>{};
   final List<AlarmEntry> alarmHistory = <AlarmEntry>[];
   final List<TrendPoint> _trendPoints = <TrendPoint>[];
   final Map<int, int> _pendingOutputMaskByZone = <int, int>{};
   final Map<int, int> _pendingApplyTriggerByZone = <int, int>{};
+  final List<String> _clientTrace = <String>[];
+  static const int _clientTraceLimit = 1200;
 
   StreamSubscription<bool>? _connectionSub;
   Timer? _pollTimer;
   DateTime _lastLogAt = DateTime.fromMillisecondsSinceEpoch(0);
   int _applyCounter = 0;
+  final List<int> _readRetryBackoffMs = <int>[250];
+  final int _degradedAfterConsecutiveTimeouts = 2;
+  final Duration _degradedReconnectCooldown = const Duration(seconds: 20);
+  final int _offlineAfterConsecutiveFailedPolls = 3;
+  final Duration _staleAfterNoSuccess = const Duration(milliseconds: 12000);
+  final Duration _offlineAfterNoSuccess = const Duration(milliseconds: 30000);
+  int? _resolvedDirectoryBase;
+  int _resolvedMapFlags = 0;
+  int _resolvedPointCount = 0;
+  int _resolvedPointStride = 0;
+  int _resolvedPointsBase = 0;
+  int? _zoneModuleId;
+  int _zoneExpectedSensorCount = 0;
+  final Map<String, int> _preferredReadStartByOperation = <String, int>{};
+  int _consecutiveReadTimeouts = 0;
+  bool _degraded = false;
+  DateTime _lastDegradedReconnectAt = DateTime.fromMillisecondsSinceEpoch(0);
+  int _consecutiveFailedPolls = 0;
+  DateTime _lastSuccessfulPollAt = DateTime.fromMillisecondsSinceEpoch(0);
+  int _connectivityPolicyState = 0; // 0=normal,1=stale,2=offline
+  int _pollSeq = 0;
 
   List<AlarmEntry> get activeAlarms =>
-      _activeAlarms.values.toList()..sort((a, b) => b.raisedAt.compareTo(a.raisedAt));
+      _activeAlarms.values.toList()
+        ..sort((a, b) => b.raisedAt.compareTo(a.raisedAt));
 
   ZoneState get selectedZone => zones[selectedZoneId - 1];
+  List<String> get clientTrace => List<String>.unmodifiable(_clientTrace);
 
   Future<void> init() async {
-    config = await _configStore.load();
+    final loaded = await _configStore.load();
+    final normalized = loaded.copyWith(
+      pollPeriodMs: _normalizePollPeriodMs(loaded.pollPeriodMs),
+    );
+    config = normalized;
+    if (normalized.pollPeriodMs != loaded.pollPeriodMs) {
+      await _configStore.save(normalized);
+    }
     await _logger.init();
+    _lastSuccessfulPollAt = DateTime.now();
+    _addClientTrace(
+      'controller init poll_ms=${config.pollPeriodMs} '
+      'ip=${config.masterIp} port=${config.masterPort} '
+      'profile(timeout_ms=1800,retries_total=${_readRetryBackoffMs.length + 1},'
+      'backoff=${_readRetryBackoffMs.join("/")},degraded_after=$_degradedAfterConsecutiveTimeouts,'
+      'degraded_reconnect_ms=${_degradedReconnectCooldown.inMilliseconds},'
+      'offline_after_failed=$_offlineAfterConsecutiveFailedPolls,'
+      'stale_after_no_success_ms=${_staleAfterNoSuccess.inMilliseconds},'
+      'offline_after_no_success_ms=${_offlineAfterNoSuccess.inMilliseconds})',
+    );
     _connectionSub = _client.connection.listen((value) {
       connected = value;
+      _addClientTrace(value ? 'connected' : 'disconnected');
       notifyListeners();
     });
     await _ensureConnected();
@@ -64,16 +109,25 @@ class ScadaController extends ChangeNotifier {
   }
 
   Future<void> saveConfig(ScadaConfig newConfig) async {
-    final reconnectNeeded = newConfig.masterIp != config.masterIp ||
-        newConfig.masterPort != config.masterPort;
-    final pollChanged = newConfig.pollPeriodMs != config.pollPeriodMs;
-    config = newConfig;
+    final normalizedConfig = newConfig.copyWith(
+      pollPeriodMs: _normalizePollPeriodMs(newConfig.pollPeriodMs),
+    );
+    final reconnectNeeded =
+        normalizedConfig.masterIp != config.masterIp ||
+        normalizedConfig.masterPort != config.masterPort;
+    final pollChanged = normalizedConfig.pollPeriodMs != config.pollPeriodMs;
+    config = normalizedConfig;
     await _configStore.save(config);
     if (reconnectNeeded) {
+      _addClientTrace('settings changed: reconnect requested');
       await _client.disconnect();
+      _invalidateDirectoryCache();
       await _ensureConnected();
     }
     if (pollChanged) {
+      _addClientTrace(
+        'settings changed: poll period updated to ${config.pollPeriodMs}ms',
+      );
       _startPolling();
     }
     notifyListeners();
@@ -179,17 +233,28 @@ class ScadaController extends ChangeNotifier {
     // Data is continuously appended in logs/telemetry.csv and logs/alarms.csv.
   }
 
+  void clearClientTrace() {
+    _clientTrace.clear();
+    _addClientTrace('trace cleared');
+    notifyListeners();
+  }
+
   Future<void> _ensureConnected() async {
     if (_client.isConnected || connecting) {
       return;
     }
     connecting = true;
+    _addClientTrace(
+      'connect attempt host=${config.masterIp} port=${config.masterPort}',
+    );
     notifyListeners();
     try {
       await _client.connect(config.masterIp, config.masterPort);
       lastError = null;
+      _addClientTrace('connect ok');
     } catch (e) {
       lastError = e.toString();
+      _addClientTrace('connect error: $e');
     } finally {
       connecting = false;
       notifyListeners();
@@ -198,6 +263,7 @@ class ScadaController extends ChangeNotifier {
 
   void _startPolling() {
     _pollTimer?.cancel();
+    _addClientTrace('poll timer set period_ms=${config.pollPeriodMs}');
     _pollTimer = Timer.periodic(
       Duration(milliseconds: config.pollPeriodMs),
       (_) => unawaited(_pollTick()),
@@ -207,42 +273,76 @@ class ScadaController extends ChangeNotifier {
 
   Future<void> _pollTick() async {
     if (polling) {
+      _addClientTrace('poll skipped: previous cycle in progress');
       return;
     }
+    final pollId = ++_pollSeq;
+    final startedAt = DateTime.now();
+    _addClientTrace('poll start #$pollId');
     polling = true;
     try {
       if (!_client.isConnected) {
         await _ensureConnected();
       }
       if (!_client.isConnected) {
-        _markAllZonesOffline();
+        _addClientTrace('poll #$pollId: still disconnected');
+        _consecutiveFailedPolls += 1;
+        _applyNoSuccessPolicy();
+        lastError = 'not connected';
         return;
       }
 
+      await _ensureDirectoryReady();
+      final rows = await _readPointsRowsWithRetry();
+      final groupedRows = _groupRowsByModule(rows);
+
       for (var zoneId = 1; zoneId <= zones.length; zoneId++) {
-        await _pollZone(zoneId);
+        await _pollZone(zoneId, groupedRows);
       }
+      await _pollWeather(rows);
 
       _refreshStaleStates();
+      _consecutiveFailedPolls = 0;
+      _lastSuccessfulPollAt = DateTime.now();
+      _applyNoSuccessPolicy();
       await _logIfNeeded();
       lastError = null;
+      final elapsedMs = DateTime.now().difference(startedAt).inMilliseconds;
+      _addClientTrace(
+        'poll ok #$pollId duration_ms=$elapsedMs '
+        'degraded=${_degraded ? 1 : 0} timeout_streak=$_consecutiveReadTimeouts',
+      );
     } catch (e) {
       lastError = e.toString();
+      weather = weather.copyWith(lastError: e.toString());
+      for (var i = 0; i < zones.length; i++) {
+        final prev = zones[i];
+        zones[i] = prev.copyWith(errTimeout: prev.errTimeout + 1);
+      }
+      _consecutiveFailedPolls += 1;
+      _applyNoSuccessPolicy();
+      _addClientTrace('poll error #$pollId: $e');
     } finally {
       polling = false;
       notifyListeners();
     }
   }
 
-  Future<void> _pollZone(int zoneId) async {
+  Future<void> _pollZone(
+    int zoneId,
+    Map<int, List<_PointRow>> groupedRows,
+  ) async {
     final zoneIndex = zoneId - 1;
     final prev = zones[zoneIndex];
     final startedAt = DateTime.now();
 
     try {
-      final regs = await _readZoneWithRetry(zoneId);
+      final zoneRows = _resolveZoneRows(groupedRows);
       final elapsed = DateTime.now().difference(startedAt).inMilliseconds;
-      final next = _decodeZone(prev, regs).copyWith(lastPollMs: elapsed);
+      final next = _decodeZoneFromPoints(
+        prev,
+        zoneRows,
+      ).copyWith(lastPollMs: elapsed);
 
       zones[zoneIndex] = next;
       if (next.online) {
@@ -257,12 +357,13 @@ class ScadaController extends ChangeNotifier {
       _validateZone(next);
       _checkCommandMatch(next);
       _checkApplyTrigger(zoneId, next);
-    } catch (_) {
+    } catch (e) {
       zones[zoneIndex] = prev.copyWith(
         online: false,
         stale: true,
         errTimeout: prev.errTimeout + 1,
       );
+      lastError = e.toString();
       _raiseAlarm(
         zoneId: zoneId,
         type: AlarmType.offline,
@@ -271,56 +372,302 @@ class ScadaController extends ChangeNotifier {
     }
   }
 
-  ZoneState _decodeZone(ZoneState prev, List<int> regs) {
-    int regAt(int idx) => idx < regs.length ? regs[idx] : 0;
+  ZoneState _decodeZoneFromPoints(ZoneState prev, List<_PointRow> rows) {
+    final sensors = List<double>.filled(_registerMap.sensorCount, 0);
+    final sensorQualityCodes = List<int>.filled(_registerMap.sensorCount, 3);
+    final sensorAgeSec = List<int>.filled(_registerMap.sensorCount, 0);
+    final sensorFlags = List<int>.filled(_registerMap.sensorCount, 0);
+    var sensorValidMask = 0;
+    var maxAgeSec = 0;
 
-    final sensors = List<double>.generate(_registerMap.sensorCount, (i) {
-      return _toScaledFromU16(regAt(_registerMap.sensorStart + i));
-    });
+    for (var i = 0; i < _registerMap.sensorCount; i++) {
+      if (i >= rows.length) {
+        sensors[i] = prev.sensors[i];
+        continue;
+      }
+      final row = rows[i];
+      final value = _toFloat32FromHiLo(row.valueHi, row.valueLo);
+      final quality = row.quality & 0xFFFF;
+      final ageSec = row.ageSec & 0xFFFF;
+      final flags = row.flags & 0xFFFF;
+      final flagValid = (flags & _registerMap.pointValidFlagMask) != 0;
+      final usableValue = flagValid && quality == 0 && value.isFinite;
 
-    final outputMask = regAt(_registerMap.outStateMaskReg);
-    final outputs = List<bool>.generate(16, (i) => (outputMask & (1 << i)) != 0);
+      sensorQualityCodes[i] = quality;
+      sensorAgeSec[i] = ageSec;
+      sensorFlags[i] = flags;
+      sensors[i] = usableValue ? value : prev.sensors[i];
+      if (usableValue) {
+        sensorValidMask |= (1 << i);
+      }
+      if (ageSec > maxAgeSec) {
+        maxAgeSec = ageSec;
+      }
+    }
 
-    final slaveStatus = regAt(_registerMap.slaveStatusReg);
-    final online = (slaveStatus & 0x0001) != 0;
-    final staleByStatus = (slaveStatus & 0x0002) != 0;
-    final ageSec = regAt(_registerMap.lastOkAgeSecReg);
-    final staleByAge = ageSec >= config.staleThresholdSec;
-
-    final modeValue = regAt(_registerMap.modeReg);
-    final mode = _modeFromReg(modeValue);
-    final setpoints = ZoneSetpoints(
-      setTemp: _toScaledFromU16(regAt(_registerMap.setTempReg)),
-      setHum: _toScaledFromU16(regAt(_registerMap.setHumReg)),
-      hystTemp: _toScaledFromU16(regAt(_registerMap.hystTempReg)),
-      hystHum: _toScaledFromU16(regAt(_registerMap.hystHumReg)),
-      minOnSec: regAt(_registerMap.minOnSecReg),
-      minOffSec: regAt(_registerMap.minOffSecReg),
-    );
+    final mapValid = (_resolvedMapFlags & 0x0001) != 0;
+    final topologyActive = (_resolvedMapFlags & 0x0002) != 0;
+    final online = mapValid && topologyActive && rows.isNotEmpty;
+    final hasQualityWarning = sensorQualityCodes.any((q) => q != 0);
+    final staleByAge = maxAgeSec >= config.staleThresholdSec;
 
     return prev.copyWith(
       sensors: sensors,
-      sensorValidMask: regAt(_registerMap.sensorValidMaskReg),
-      outputs: outputs,
-      outputCommandMask: regAt(_registerMap.outCmdMaskReg),
-      mode: mode,
-      setpoints: setpoints,
+      sensorValidMask: sensorValidMask,
+      sensorQualityCodes: sensorQualityCodes,
+      sensorAgeSec: sensorAgeSec,
+      sensorFlags: sensorFlags,
       online: online,
-      stale: staleByStatus || staleByAge,
-      lastOkAgeSec: ageSec,
-      errTimeout: regAt(_registerMap.errTimeoutReg),
-      errCrc: regAt(_registerMap.errCrcReg),
-      errException: regAt(_registerMap.errExceptionReg),
-      dataVersion: regAt(_registerMap.dataVersionReg),
-      lastAppliedTrigger: regAt(_registerMap.lastAppliedTriggerReg),
+      stale: hasQualityWarning || staleByAge || !topologyActive,
+      lastOkAgeSec: maxAgeSec,
+      dataVersion: _resolvedPointCount,
       lastUpdate: DateTime.now(),
     );
   }
 
+  WeatherStationState _decodeWeatherFromPoints(List<_PointRow> rows) {
+    final count = _registerMap.weatherPointCount;
+    final values = List<double?>.filled(count, null);
+    final qualityCodes = List<int>.filled(count, 3);
+    final ageSec = List<int>.filled(count, 0);
+    final flags = List<int>.filled(count, 0);
+
+    for (var i = 0; i < count; i++) {
+      if (i >= rows.length) {
+        continue;
+      }
+      final row = rows[i];
+      final value = _toFloat32FromHiLo(row.valueHi, row.valueLo);
+      qualityCodes[i] = row.quality & 0xFFFF;
+      ageSec[i] = row.ageSec & 0xFFFF;
+      flags[i] = row.flags & 0xFFFF;
+      values[i] = value.isFinite ? value : null;
+    }
+
+    final hasAnyLivePoint = List<bool>.generate(
+      count,
+      (i) =>
+          ((flags[i] & _registerMap.pointValidFlagMask) != 0) &&
+          qualityCodes[i] != 3 &&
+          values[i] != null,
+    ).any((v) => v);
+    final online = rows.length >= count && hasAnyLivePoint;
+
+    return weather.copyWith(
+      values: values,
+      qualityCodes: qualityCodes,
+      ageSec: ageSec,
+      flags: flags,
+      online: online,
+    );
+  }
+
+  Future<void> _pollWeather(List<_PointRow> allRows) async {
+    try {
+      final weatherRows = _resolveWeatherRowsFromPoints(allRows);
+      weather = _decodeWeatherFromPoints(
+        weatherRows,
+      ).copyWith(lastUpdate: DateTime.now(), clearLastError: true);
+    } catch (e) {
+      weather = weather.copyWith(online: false, lastError: e.toString());
+    }
+  }
+
+  List<_PointRow> _resolveWeatherRowsFromPoints(List<_PointRow> allRows) {
+    final start = _registerMap.weatherPublishStartIndex;
+    final count = _registerMap.weatherPointCount;
+    final end = start + count;
+    if (allRows.length < end) {
+      throw StateError(
+        'Weather rows are incomplete: have=${allRows.length}, '
+        'need_at_least=$end',
+      );
+    }
+    final rows = allRows.sublist(start, end);
+    for (final row in rows) {
+      if (row.moduleId != _registerMap.weatherExpectedModuleId) {
+        throw StateError(
+          'Unexpected weather module_id=${row.moduleId}, '
+          'expected=${_registerMap.weatherExpectedModuleId}',
+        );
+      }
+    }
+    return rows;
+  }
+
+  Map<int, List<_PointRow>> _groupRowsByModule(List<_PointRow> rows) {
+    final grouped = <int, List<_PointRow>>{};
+    for (final row in rows) {
+      grouped.putIfAbsent(row.moduleId, () => <_PointRow>[]).add(row);
+    }
+    return grouped;
+  }
+
+  List<_PointRow> _resolveZoneRows(Map<int, List<_PointRow>> groupedRows) {
+    List<_PointRow> takeRows(List<_PointRow> source) {
+      final rows = source.take(_registerMap.sensorCount).toList();
+      _zoneExpectedSensorCount = rows.length;
+      return rows;
+    }
+
+    bool isZoneModule(int moduleId) {
+      return moduleId != _registerMap.weatherExpectedModuleId;
+    }
+
+    if (_zoneModuleId != null && isZoneModule(_zoneModuleId!)) {
+      final cached = groupedRows[_zoneModuleId!];
+      if (cached != null && cached.isNotEmpty) {
+        return takeRows(cached);
+      }
+    }
+
+    final orderedModuleIds = groupedRows.keys.toList()..sort();
+
+    for (final moduleId in orderedModuleIds) {
+      if (!isZoneModule(moduleId)) {
+        continue;
+      }
+      final rows = groupedRows[moduleId];
+      if (rows == null || rows.isEmpty) {
+        continue;
+      }
+      _zoneModuleId = moduleId;
+      return takeRows(rows);
+    }
+
+    for (final moduleId in orderedModuleIds) {
+      final rows = groupedRows[moduleId];
+      if (rows == null || rows.isEmpty) {
+        continue;
+      }
+      _zoneModuleId = moduleId;
+      return takeRows(rows);
+    }
+
+    _zoneExpectedSensorCount = 0;
+    return const <_PointRow>[];
+  }
+
+  Future<void> _ensureDirectoryReady() async {
+    if (_resolvedDirectoryBase != null) {
+      return;
+    }
+
+    Object? lastError;
+    for (final base in _registerMap.directoryBaseCandidates) {
+      try {
+        final regs = await _readHoldingWithRetry(
+          startAddress: base,
+          count: _registerMap.directoryReadCount,
+          operationName: 'directory@$base',
+          maxAttempts: 1,
+        );
+        if (regs.length < _registerMap.directoryReadCount) {
+          throw StateError(
+            'Directory read too short: ${regs.length}/${_registerMap.directoryReadCount}',
+          );
+        }
+
+        final mapVersion = regs[_registerMap.mapVersionReg];
+        final pointStride = regs[_registerMap.pointStrideReg];
+        final mapFlags = regs[_registerMap.mapFlagsReg];
+        final pointCount = regs[_registerMap.pointCountReg] & 0xFFFF;
+        final pointsBase = regs[_registerMap.pointsBaseReg];
+        if (mapVersion != _registerMap.expectedMapVersion ||
+            pointStride != _registerMap.expectedPointStride) {
+          throw StateError(
+            'Incompatible map contract: MAP_VERSION=$mapVersion '
+            '(expected ${_registerMap.expectedMapVersion}), '
+            'POINT_STRIDE=$pointStride (expected ${_registerMap.expectedPointStride})',
+          );
+        }
+        if ((mapFlags & 0x0001) == 0) {
+          throw StateError(
+            'Directory map is invalid: MAP_FLAGS=0x${mapFlags.toRadixString(16)}',
+          );
+        }
+        if (pointCount != _registerMap.expectedPointCount) {
+          throw StateError(
+            'Unexpected Directory POINT_COUNT=$pointCount '
+            '(expected ${_registerMap.expectedPointCount})',
+          );
+        }
+
+        _resolvedDirectoryBase = base;
+        _resolvedMapFlags = mapFlags;
+        _resolvedPointCount = pointCount;
+        _resolvedPointStride = pointStride;
+        _resolvedPointsBase = pointsBase;
+        return;
+      } catch (e) {
+        lastError = e;
+      }
+    }
+
+    _invalidateDirectoryCache();
+    throw lastError ?? StateError('Failed to resolve Directory');
+  }
+
+  Future<List<_PointRow>> _readPointsRowsWithRetry() async {
+    await _ensureDirectoryReady();
+
+    final rowCount = _resolvedPointCount > _registerMap.expectedPointCount
+        ? _registerMap.expectedPointCount
+        : _resolvedPointCount;
+    if (rowCount <= 0) {
+      throw StateError('POINT_COUNT is 0');
+    }
+
+    final totalRegs = rowCount * _resolvedPointStride;
+    final regs = <int>[];
+    var regOffset = 0;
+    while (regOffset < totalRegs) {
+      final remainingRegs = totalRegs - regOffset;
+      final maxRowsPerReq = 20; // 20 * 6 = 120, below FC03 limit 125
+      final remainingRows = remainingRegs ~/ _resolvedPointStride;
+      final rowsInChunk = remainingRows > maxRowsPerReq
+          ? maxRowsPerReq
+          : remainingRows;
+      final chunkRegs = rowsInChunk * _resolvedPointStride;
+      final startAddress = _resolvedPointsBase + regOffset;
+      final chunk = await _readHoldingAtCandidates(
+        startCandidates: _addressCandidates(startAddress),
+        count: chunkRegs,
+        operationName: 'points',
+      );
+      regs.addAll(chunk);
+      regOffset += chunkRegs;
+    }
+
+    final rows = <_PointRow>[];
+    for (var i = 0; i < rowCount; i++) {
+      final base = i * _resolvedPointStride;
+      rows.add(
+        _PointRow(
+          valueHi: regs[base + _registerMap.pointValueHiReg],
+          valueLo: regs[base + _registerMap.pointValueLoReg],
+          quality: regs[base + _registerMap.pointQualityReg],
+          ageSec: regs[base + _registerMap.pointAgeSecReg],
+          moduleId: regs[base + _registerMap.pointModuleIdReg],
+          flags: regs[base + _registerMap.pointFlagsReg],
+        ),
+      );
+    }
+    return rows;
+  }
+
   void _validateZone(ZoneState zone) {
-    final hasInvalidMask = (zone.sensorValidMask & 0x01FF) != 0x01FF;
-    final hasInvalidRange =
-        zone.sensors.any((v) => v.isNaN || v < -100 || v > 200);
+    final expectedCount = _zoneExpectedSensorCount > 0
+        ? _zoneExpectedSensorCount
+        : _registerMap.sensorCount;
+    final expectedMask = expectedCount >= 16
+        ? 0xFFFF
+        : ((1 << expectedCount) - 1);
+    final hasInvalidMask =
+        (zone.sensorValidMask & expectedMask) != expectedMask;
+    final hasInvalidRange = zone.sensors.any(
+      (v) => v.isNaN || v < -100 || v > 200,
+    );
     final hasInvalid = hasInvalidMask || hasInvalidRange;
     if (hasInvalid) {
       _raiseAlarm(
@@ -334,7 +681,8 @@ class ScadaController extends ChangeNotifier {
   }
 
   void _checkCommandMatch(ZoneState zone) {
-    final expectedMask = _pendingOutputMaskByZone[zone.zoneId] ??
+    final expectedMask =
+        _pendingOutputMaskByZone[zone.zoneId] ??
         (zone.mode == ZoneMode.manual ? zone.outputCommandMask : null);
     if (expectedMask == null || zone.mode != ZoneMode.manual) {
       _clearAlarm(zone.zoneId, AlarmType.commandMismatch);
@@ -397,14 +745,43 @@ class ScadaController extends ChangeNotifier {
     }
   }
 
-  void _markAllZonesOffline() {
-    for (var i = 0; i < zones.length; i++) {
-      zones[i] = zones[i].copyWith(online: false, stale: true);
-      _raiseAlarm(
-        zoneId: zones[i].zoneId,
-        type: AlarmType.offline,
-        message: 'Zone ${zones[i].zoneId} is offline',
+  void _applyNoSuccessPolicy() {
+    final lastSuccess = _lastSuccessfulPollAt;
+    if (lastSuccess.millisecondsSinceEpoch <= 0) {
+      return;
+    }
+    final elapsed = DateTime.now().difference(lastSuccess);
+    final forceOffline =
+        _consecutiveFailedPolls >= _offlineAfterConsecutiveFailedPolls ||
+        elapsed >= _offlineAfterNoSuccess;
+    final forceStale = !forceOffline && elapsed >= _staleAfterNoSuccess;
+
+    final nextState = forceOffline ? 2 : (forceStale ? 1 : 0);
+    if (nextState != _connectivityPolicyState) {
+      _connectivityPolicyState = nextState;
+      _addClientTrace(
+        'connectivity policy state=$nextState elapsed_ms=${elapsed.inMilliseconds} '
+        'failed_polls=$_consecutiveFailedPolls',
       );
+    }
+
+    if (forceOffline) {
+      weather = weather.copyWith(online: false);
+      for (var i = 0; i < zones.length; i++) {
+        zones[i] = zones[i].copyWith(online: false, stale: true);
+        _raiseAlarm(
+          zoneId: zones[i].zoneId,
+          type: AlarmType.offline,
+          message: 'Zone ${zones[i].zoneId} is offline',
+        );
+      }
+      return;
+    }
+
+    if (forceStale) {
+      for (var i = 0; i < zones.length; i++) {
+        zones[i] = zones[i].copyWith(stale: true);
+      }
     }
   }
 
@@ -489,10 +866,10 @@ class ScadaController extends ChangeNotifier {
     final base = _registerMap.zoneBase(zoneId);
     for (var i = 0; i < 8; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 150));
-      final regs = await _client.readHoldingRegisters(
-        unitId: _registerMap.unitId,
+      final regs = await _readHoldingWithRetry(
         startAddress: base + _registerMap.applyTriggerReg,
         count: 2,
+        operationName: 'apply_ack',
       );
       if (regs.length >= 2 && regs[1] == expected) {
         return true;
@@ -501,20 +878,95 @@ class ScadaController extends ChangeNotifier {
     return false;
   }
 
-  Future<List<int>> _readZoneWithRetry(int zoneId) async {
+  Future<List<int>> _readHoldingWithRetry({
+    required int startAddress,
+    required int count,
+    required String operationName,
+    int? maxAttempts,
+  }) async {
     Object? last;
-    for (var attempt = 0; attempt < 2; attempt++) {
+    final attemptLimit = maxAttempts ?? (_readRetryBackoffMs.length + 1);
+    for (var attempt = 0; attempt < attemptLimit; attempt++) {
       try {
-        return await _client.readHoldingRegisters(
-          unitId: _registerMap.unitId,
-          startAddress: _registerMap.zoneReadStart(zoneId),
-          count: _registerMap.readCount,
+        if (!_client.isConnected) {
+          await _ensureConnected();
+        }
+        if (!_client.isConnected) {
+          throw StateError('not connected');
+        }
+        final requestStartedAt = DateTime.now();
+        _addClientTrace(
+          'send op=$operationName start=$startAddress count=$count '
+          'attempt=${attempt + 1}/$attemptLimit',
         );
+        final regs = await _client.readHoldingRegisters(
+          unitId: _registerMap.unitId,
+          startAddress: startAddress,
+          count: count,
+        );
+        _consecutiveReadTimeouts = 0;
+        _degraded = false;
+        final elapsedMs = DateTime.now()
+            .difference(requestStartedAt)
+            .inMilliseconds;
+        _addClientTrace(
+          'recv ok op=$operationName regs=${regs.length} '
+          'attempt=${attempt + 1} duration_ms=$elapsedMs',
+        );
+        return regs;
       } catch (e) {
         last = e;
+        final timeoutError = _isReadTimeout(e);
+        if (timeoutError) {
+          _consecutiveReadTimeouts += 1;
+          if (_consecutiveReadTimeouts >= _degradedAfterConsecutiveTimeouts) {
+            _degraded = true;
+          }
+          _addClientTrace(
+            'timeout op=$operationName start=$startAddress count=$count '
+            'attempt=${attempt + 1}/$attemptLimit '
+            'streak=$_consecutiveReadTimeouts degraded=${_degraded ? 1 : 0}',
+          );
+        }
+        if (_isModbusException(e)) {
+          _addClientTrace('modbus exception op=$operationName: $e');
+          rethrow;
+        }
+        final mustForceDisconnect = _shouldForceDisconnectAfterReadError(e);
+        if (mustForceDisconnect && _client.isConnected) {
+          _addClientTrace('disconnect after error op=$operationName: $e');
+          await _client.disconnect();
+        }
+        if (timeoutError && _degraded && _shouldReconnectInDegradedMode()) {
+          _lastDegradedReconnectAt = DateTime.now();
+          _addClientTrace('degraded reconnect start op=$operationName');
+          if (_client.isConnected) {
+            await _client.disconnect();
+          }
+          await _ensureConnected();
+          _addClientTrace('degraded reconnect done op=$operationName');
+        }
+        if (attempt < _readRetryBackoffMs.length &&
+            attempt < (attemptLimit - 1)) {
+          _addClientTrace(
+            'retry scheduled op=$operationName next_in_ms=${_readRetryBackoffMs[attempt]} '
+            'after_error=$e',
+          );
+          await Future<void>.delayed(
+            Duration(milliseconds: _readRetryBackoffMs[attempt]),
+          );
+          continue;
+        }
       }
     }
-    throw last ?? StateError('Unknown read error');
+    if (last != null) {
+      final degradedTag = _degraded
+          ? ' [degraded, timeout_streak=$_consecutiveReadTimeouts]'
+          : '';
+      _addClientTrace('read failed op=$operationName error=$last$degradedTag');
+      throw StateError('Read failed: $operationName: $last$degradedTag');
+    }
+    throw StateError('Read failed: $operationName');
   }
 
   void _checkApplyTrigger(int zoneId, ZoneState zone) {
@@ -532,9 +984,154 @@ class ScadaController extends ChangeNotifier {
     return scaled & 0xFFFF;
   }
 
-  double _toScaledFromU16(int value) {
-    final signed = value >= 0x8000 ? value - 0x10000 : value;
-    return signed / 10.0;
+  bool _shouldForceDisconnectAfterReadError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('not connected') ||
+        message.contains('disconnected') ||
+        message.contains('connection reset') ||
+        message.contains('broken pipe') ||
+        message.contains('software caused connection abort') ||
+        message.contains('connection aborted') ||
+        message.contains('connection refused') ||
+        message.contains('socketexception') ||
+        message.contains('socket write failed') ||
+        message.contains('forcibly closed') ||
+        message.contains('wsaec');
+  }
+
+  bool _isModbusException(Object error) {
+    return error.toString().toLowerCase().contains('modbus exception code:');
+  }
+
+  bool _isIllegalDataAddress(Object error) {
+    return error.toString().toLowerCase().contains('modbus exception code: 2');
+  }
+
+  bool _isRetryableTransportError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('response timeout') ||
+        message.contains('timeout') ||
+        message.contains('not connected') ||
+        message.contains('disconnected') ||
+        message.contains('connection reset') ||
+        message.contains('broken pipe') ||
+        message.contains('software caused connection abort') ||
+        message.contains('connection aborted') ||
+        message.contains('connection refused') ||
+        message.contains('socketexception') ||
+        message.contains('socket write failed') ||
+        message.contains('forcibly closed') ||
+        message.contains('wsaec');
+  }
+
+  bool _isReadTimeout(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('response timeout') || message.contains('timeout');
+  }
+
+  bool _shouldReconnectInDegradedMode() {
+    final now = DateTime.now();
+    return now.difference(_lastDegradedReconnectAt) >=
+        _degradedReconnectCooldown;
+  }
+
+  void _addClientTrace(String message) {
+    final timestamp = DateTime.now().toIso8601String();
+    final line = '$timestamp $message';
+    _clientTrace.insert(0, line);
+    if (_clientTrace.length > _clientTraceLimit) {
+      _clientTrace.removeRange(_clientTraceLimit, _clientTrace.length);
+    }
+    unawaited(_logger.logClientEvent(message));
+  }
+
+  List<int> _addressCandidates(int startAddress) {
+    return <int>[startAddress];
+  }
+
+  Future<List<int>> _readHoldingAtCandidates({
+    required List<int> startCandidates,
+    required int count,
+    required String operationName,
+  }) async {
+    final dedupedCandidates = <int>[];
+    for (final candidate in startCandidates) {
+      if (candidate < 0 || dedupedCandidates.contains(candidate)) {
+        continue;
+      }
+      dedupedCandidates.add(candidate);
+    }
+    final preferredCandidate = _preferredReadStartByOperation[operationName];
+    if (preferredCandidate != null &&
+        dedupedCandidates.contains(preferredCandidate)) {
+      dedupedCandidates
+        ..remove(preferredCandidate)
+        ..insert(0, preferredCandidate);
+    }
+    if (dedupedCandidates.length > 1) {
+      _addClientTrace(
+        'candidates op=$operationName values=${dedupedCandidates.join('/')}, '
+        'preferred=${preferredCandidate ?? '-'}',
+      );
+    }
+
+    Object? last;
+    for (final candidate in dedupedCandidates) {
+      final hasAlternatives = dedupedCandidates.length > 1;
+      final candidateAttempts = hasAlternatives
+          ? 1
+          : (_readRetryBackoffMs.length + 1);
+      try {
+        final regs = await _readHoldingWithRetry(
+          startAddress: candidate,
+          count: count,
+          operationName: '$operationName@$candidate',
+          maxAttempts: candidateAttempts,
+        );
+        _preferredReadStartByOperation[operationName] = candidate;
+        _addClientTrace(
+          'candidate selected op=$operationName start=$candidate',
+        );
+        return regs;
+      } catch (e) {
+        last = e;
+        _addClientTrace(
+          'candidate failed op=$operationName start=$candidate: $e',
+        );
+        if (_isIllegalDataAddress(e) || _isRetryableTransportError(e)) {
+          continue;
+        }
+        rethrow;
+      }
+    }
+    throw last ??
+        StateError('Read failed for all address candidates: $operationName');
+  }
+
+  void _invalidateDirectoryCache() {
+    _resolvedDirectoryBase = null;
+    _resolvedMapFlags = 0;
+    _resolvedPointCount = 0;
+    _resolvedPointStride = 0;
+    _resolvedPointsBase = 0;
+    _zoneModuleId = null;
+    _zoneExpectedSensorCount = 0;
+    _preferredReadStartByOperation.clear();
+    _consecutiveReadTimeouts = 0;
+    _degraded = false;
+    _lastDegradedReconnectAt = DateTime.fromMillisecondsSinceEpoch(0);
+    _consecutiveFailedPolls = 0;
+    _connectivityPolicyState = 0;
+  }
+
+  int _normalizePollPeriodMs(int value) {
+    return 5000;
+  }
+
+  double _toFloat32FromHiLo(int hi, int lo) {
+    final raw = ((hi & 0xFFFF) << 16) | (lo & 0xFFFF);
+    final data = ByteData(4)..setUint32(0, raw, Endian.big);
+    return data.getFloat32(0, Endian.big);
   }
 
   @override
@@ -544,4 +1141,22 @@ class ScadaController extends ChangeNotifier {
     unawaited(_client.dispose());
     super.dispose();
   }
+}
+
+class _PointRow {
+  const _PointRow({
+    required this.valueHi,
+    required this.valueLo,
+    required this.quality,
+    required this.ageSec,
+    required this.moduleId,
+    required this.flags,
+  });
+
+  final int valueHi;
+  final int valueLo;
+  final int quality;
+  final int ageSec;
+  final int moduleId;
+  final int flags;
 }

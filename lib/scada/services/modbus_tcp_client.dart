@@ -40,11 +40,7 @@ class ModbusTcpClient {
     if (_socket != null) {
       return;
     }
-    final socket = await Socket.connect(
-      host,
-      port,
-      timeout: connectTimeout,
-    );
+    final socket = await Socket.connect(host, port, timeout: connectTimeout);
     socket.setOption(SocketOption.tcpNoDelay, true);
     _socket = socket;
     _readSub = socket.listen(
@@ -142,37 +138,32 @@ class ModbusTcpClient {
     }
   }
 
-  Future<Uint8List> _request({
-    required int unitId,
-    required Uint8List pdu,
-  }) {
+  Future<Uint8List> _request({required int unitId, required Uint8List pdu}) {
     final completer = Completer<Uint8List>();
     int? requestTxId;
-    _requestChain = _requestChain
-        .catchError((_) {})
-        .then((_) async {
-          final socket = _socket;
-          if (socket == null) {
-            completer.completeError(ModbusTcpException('not connected'));
-            return;
-          }
+    _requestChain = _requestChain.catchError((_) {}).then((_) async {
+      final socket = _socket;
+      if (socket == null) {
+        completer.completeError(ModbusTcpException('not connected'));
+        return;
+      }
 
-          final txId = _nextTransactionId();
-          requestTxId = txId;
-          _pending[txId] = completer;
-          final adu = _buildAdu(txId: txId, unitId: unitId, pdu: pdu);
+      final txId = _nextTransactionId();
+      requestTxId = txId;
+      _pending[txId] = completer;
+      final adu = _buildAdu(txId: txId, unitId: unitId, pdu: pdu);
 
-          try {
-            socket.add(adu);
-            await socket.flush();
-          } catch (e) {
-            _pending.remove(txId);
-            if (!completer.isCompleted) {
-              completer.completeError(e);
-            }
-            await disconnect();
-          }
-        });
+      try {
+        socket.add(adu);
+        await socket.flush();
+      } catch (e) {
+        _pending.remove(txId);
+        if (!completer.isCompleted) {
+          completer.completeError(e);
+        }
+        await disconnect();
+      }
+    });
 
     return completer.future.timeout(
       responseTimeout,
@@ -182,9 +173,6 @@ class ModbusTcpClient {
           _pending.remove(txId);
         }
         _consecutiveTimeouts += 1;
-        if (_consecutiveTimeouts >= maxConsecutiveTimeoutsBeforeDisconnect) {
-          unawaited(disconnect());
-        }
         final e = ModbusTcpException(
           'response timeout (${_consecutiveTimeouts} consecutive)',
         );
