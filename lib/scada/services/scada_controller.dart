@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
 import 'config_store.dart';
 import 'modbus_tcp_client.dart';
@@ -45,6 +46,12 @@ class ScadaController extends ChangeNotifier {
   final List<TrendPoint> _trendPoints = <TrendPoint>[];
   final Map<int, int> _pendingOutputMaskByZone = <int, int>{};
   final Map<int, int> _pendingApplyTriggerByZone = <int, int>{};
+  final Map<int, LightingScheduleStatus> _lightingStatusBySlave =
+      <int, LightingScheduleStatus>{};
+  final Map<int, _LightingScheduleTask> _latestQueuedScheduleBySlave =
+      <int, _LightingScheduleTask>{};
+  final Set<int> _scheduleWorkerBusySlaveIds = <int>{};
+  final Map<int, int> _lightingTriggerCounterBySlave = <int, int>{};
   final List<String> _clientTrace = <String>[];
   static const int _clientTraceLimit = 1200;
 
@@ -74,6 +81,9 @@ class ScadaController extends ChangeNotifier {
   int _connectivityPolicyState = 0; // 0=normal,1=stale,2=offline
   int _pollSeq = 0;
   int _rtcSetTokenCounter = 0;
+  bool _rtcSetInProgress = false;
+  ScheduleAddressMode _scheduleAddressMode = ScheduleAddressMode.zeroBased;
+  Duration _schedulePollingTimeout = const Duration(seconds: 25);
 
   List<AlarmEntry> get activeAlarms =>
       _activeAlarms.values.toList()
@@ -81,6 +91,24 @@ class ScadaController extends ChangeNotifier {
 
   ZoneState get selectedZone => zones[selectedZoneId - 1];
   List<String> get clientTrace => List<String>.unmodifiable(_clientTrace);
+  ScheduleAddressMode get scheduleAddressMode => _scheduleAddressMode;
+  Duration get schedulePollingTimeout => _schedulePollingTimeout;
+  List<LightingScheduleStatus> get lightingStatusBySlave {
+    _ensureLightingStatusInitialized();
+    return _lightingStatusBySlave.values.toList()
+      ..sort((a, b) => a.slaveId.compareTo(b.slaveId));
+  }
+
+  LightingScheduleStatus lightingStatusForSlave(int slaveId) {
+    _ensureLightingStatusInitialized();
+    if (!_registerMap.isValidScheduleSlaveId(slaveId)) {
+      throw RangeError(
+        'slave_id=$slaveId is out of range '
+        '(${_registerMap.scheduleSlaveMin}..${_registerMap.scheduleSlaveMax})',
+      );
+    }
+    return _lightingStatusBySlave[slaveId] ?? LightingScheduleStatus.initial(slaveId);
+  }
   String get serverRtcText {
     final hour = serverRtcHour;
     final minute = serverRtcMinute;
@@ -91,6 +119,7 @@ class ScadaController extends ChangeNotifier {
   }
 
   Future<void> init() async {
+    _ensureLightingStatusInitialized();
     final loaded = await _configStore.load();
     final normalized = loaded.copyWith(
       pollPeriodMs: _normalizePollPeriodMs(loaded.pollPeriodMs),
@@ -117,6 +146,7 @@ class ScadaController extends ChangeNotifier {
       notifyListeners();
     });
     await _ensureConnected();
+    unawaited(refreshLightingDiagnosticsAll());
     _startPolling();
     notifyListeners();
   }
@@ -152,6 +182,163 @@ class ScadaController extends ChangeNotifier {
     }
     selectedZoneId = zoneId;
     notifyListeners();
+  }
+
+  void setScheduleAddressMode(ScheduleAddressMode mode) {
+    if (_scheduleAddressMode == mode) {
+      return;
+    }
+    _scheduleAddressMode = mode;
+    _addClientTrace('lighting schedule address_mode=${mode.name}');
+    notifyListeners();
+  }
+
+  void setSchedulePollingTimeout(Duration timeout) {
+    var clampedMs = timeout.inMilliseconds;
+    if (clampedMs < 1000) {
+      clampedMs = 1000;
+    } else if (clampedMs > 120000) {
+      clampedMs = 120000;
+    }
+    final normalized = Duration(milliseconds: clampedMs);
+    if (_schedulePollingTimeout == normalized) {
+      return;
+    }
+    _schedulePollingTimeout = normalized;
+    _addClientTrace(
+      'lighting schedule timeout_ms=${_schedulePollingTimeout.inMilliseconds}',
+    );
+    notifyListeners();
+  }
+
+  void setLightingDraft(LightingScheduleDraft draft) {
+    _ensureLightingStatusInitialized();
+    if (!_registerMap.isValidScheduleSlaveId(draft.slaveId)) {
+      throw RangeError(
+        'slave_id=${draft.slaveId} is out of range '
+        '(${_registerMap.scheduleSlaveMin}..${_registerMap.scheduleSlaveMax})',
+      );
+    }
+    final current = lightingStatusForSlave(draft.slaveId);
+    _lightingStatusBySlave[draft.slaveId] = current.copyWith(draft: draft);
+    notifyListeners();
+  }
+
+  Future<void> refreshLightingDiagnosticsAll() async {
+    _ensureLightingStatusInitialized();
+    for (
+      var slaveId = _registerMap.scheduleSlaveMin;
+      slaveId <= _registerMap.scheduleSlaveMax;
+      slaveId++
+    ) {
+      try {
+        await refreshLightingDiagnosticsForSlave(slaveId);
+      } catch (_) {
+        // Best effort: diagnostics refresh should not block startup or UI.
+      }
+    }
+  }
+
+  Future<void> refreshLightingDiagnosticsForSlave(int slaveId) async {
+    _ensureLightingStatusInitialized();
+    if (!_registerMap.isValidScheduleSlaveId(slaveId)) {
+      throw RangeError(
+        'slave_id=$slaveId is out of range '
+        '(${_registerMap.scheduleSlaveMin}..${_registerMap.scheduleSlaveMax})',
+      );
+    }
+    final mode = _scheduleAddressMode;
+    final readOffset = _registerMap.scheduleBlockBaseOffset(slaveId) +
+        _registerMap.scheduleLastAppliedTriggerOffset;
+    final readAddress = _registerMap.scheduleAddressForOffset(
+      offset: readOffset,
+      mode: mode,
+    );
+    final operationName = 'lighting_refresh_s${slaveId}_${mode.name}';
+    final regs = await _readHoldingWithRetry(
+      startAddress: readAddress,
+      count: _registerMap.scheduleCommitStateRegisterCount,
+      operationName: operationName,
+      maxAttempts: 1,
+    );
+    if (regs.length < _registerMap.scheduleCommitStateRegisterCount) {
+      throw StateError(
+        'Lighting refresh read too short: '
+        '${regs.length}/${_registerMap.scheduleCommitStateRegisterCount}',
+      );
+    }
+    final status = lightingStatusForSlave(slaveId).copyWith(
+      lastAppliedTrigger: regs[0] & 0xFFFF,
+      lastResult: regs[1] & 0xFFFF,
+      lastIoErr: regs[2] & 0xFFFF,
+    );
+    _lightingStatusBySlave[slaveId] = status;
+    await _logger.logScheduleTransaction(
+      slaveId: slaveId,
+      event: 'refresh',
+      operation: operationName,
+      address: readAddress,
+      count: _registerMap.scheduleCommitStateRegisterCount,
+      responseRegs: regs,
+      trigger: status.trigger,
+      lastAppliedTrigger: status.lastAppliedTrigger,
+      lastResult: status.lastResult,
+      lastIoErr: status.lastIoErr,
+    );
+    notifyListeners();
+  }
+
+  Future<LightingScheduleStatus> sendLightingSchedule({
+    required LightingScheduleDraft draft,
+    Duration? timeout,
+    ScheduleAddressMode? addressMode,
+  }) async {
+    _ensureLightingStatusInitialized();
+    _validateLightingDraft(draft);
+
+    final slaveId = draft.slaveId;
+    final effectiveMode = addressMode ?? _scheduleAddressMode;
+    final effectiveTimeout = timeout ?? _schedulePollingTimeout;
+    final completer = Completer<LightingScheduleStatus>();
+    final queuedTask = _LightingScheduleTask(
+      draft: draft,
+      addressMode: effectiveMode,
+      timeout: effectiveTimeout,
+      completer: completer,
+    );
+
+    final current = lightingStatusForSlave(slaveId);
+    if (_scheduleWorkerBusySlaveIds.contains(slaveId)) {
+      final previousQueued = _latestQueuedScheduleBySlave[slaveId];
+      if (previousQueued != null && !previousQueued.completer.isCompleted) {
+        previousQueued.completer.completeError(
+          StateError(
+            'Superseded by newer request for slave_id=$slaveId (latest wins)',
+          ),
+        );
+      }
+      _latestQueuedScheduleBySlave[slaveId] = queuedTask;
+      _lightingStatusBySlave[slaveId] = current.copyWith(
+        draft: draft,
+        phase: LightingSchedulePhase.queued,
+        lastAttemptAt: DateTime.now(),
+        message: 'Queued (latest wins)',
+      );
+      notifyListeners();
+      return completer.future;
+    }
+
+    _scheduleWorkerBusySlaveIds.add(slaveId);
+    _lightingStatusBySlave[slaveId] = current.copyWith(
+      draft: draft,
+      phase: LightingSchedulePhase.pending,
+      lastAttemptAt: DateTime.now(),
+      clearMessage: true,
+    );
+    notifyListeners();
+
+    unawaited(_runLightingScheduleQueue(slaveId, queuedTask));
+    return completer.future;
   }
 
   Future<void> applyCommand({
@@ -223,35 +410,40 @@ class ScadaController extends ChangeNotifier {
     serverRtcLastError = null;
     final token = await _nextRtcSetToken();
     _addClientTrace('rtc_set start hour=$hour minute=$minute token=$token');
+    _rtcSetInProgress = true;
     notifyListeners();
 
     try {
-      await _writeSingleWithRetry(
-        address: _registerMap.rtcSetHourAddress,
-        value: hour,
-        operationName: 'rtc_set_hour',
-      );
-      await _writeSingleWithRetry(
-        address: _registerMap.rtcSetMinuteAddress,
-        value: minute,
-        operationName: 'rtc_set_minute',
-      );
-      await _writeSingleWithRetry(
-        address: _registerMap.rtcSetTokenAddress,
-        value: token,
-        operationName: 'rtc_set_token',
+      await _writeMultipleWithRetry(
+        startAddress: _registerMap.rtcSetHourAddress,
+        values: <int>[hour, minute, token],
+        operationName: 'rtc_set_triplet',
       );
 
-      final deadline = DateTime.now().add(const Duration(seconds: 8));
+      final deadline = DateTime.now().add(const Duration(seconds: 10));
       var lastAppliedToken = -1;
       var lastResult = -1;
+      Object? lastReadError;
       while (DateTime.now().isBefore(deadline)) {
-        final regs = await _readHoldingWithRetry(
-          startAddress: _registerMap.rtcSetAppliedTokenAddress,
-          count: 2,
-          operationName: 'rtc_set_state',
-          maxAttempts: 1,
-        );
+        List<int> regs;
+        try {
+          regs = await _readHoldingWithRetry(
+            startAddress: _registerMap.rtcSetAppliedTokenAddress,
+            count: 2,
+            operationName: 'rtc_set_state',
+            maxAttempts: 2,
+          );
+          lastReadError = null;
+        } catch (e) {
+          if (_isRetryableTransportError(e)) {
+            lastReadError = e;
+            _addClientTrace('rtc_set_state transient read error: $e');
+            await Future<void>.delayed(const Duration(milliseconds: 350));
+            continue;
+          }
+          rethrow;
+        }
+
         if (regs.length < 2) {
           throw StateError('RTC_SET state read too short: ${regs.length}/2');
         }
@@ -259,33 +451,39 @@ class ScadaController extends ChangeNotifier {
         lastAppliedToken = regs[0] & 0xFFFF;
         lastResult = regs[1] & 0xFFFF;
 
-        if (lastResult == 3) {
-          throw StateError('RTC_SET rejected: REJECT_RANGE');
-        }
-        if (lastResult == 4) {
-          throw StateError('RTC_SET failed: FAILED');
-        }
-        if (lastAppliedToken == token && (lastResult == 2 || lastResult == 0)) {
-          await _pollServerRtc();
-          _addClientTrace(
-            'rtc_set applied token=$token result=${_rtcSetResultLabel(lastResult)}',
-          );
-          notifyListeners();
-          return;
+        if (lastAppliedToken == token) {
+          if (lastResult == 2) {
+            await _pollServerRtc();
+            _addClientTrace(
+              'rtc_set applied token=$token result=${_rtcSetResultLabel(lastResult)}',
+            );
+            notifyListeners();
+            return;
+          }
+          if (lastResult == 3) {
+            throw StateError('RTC_SET rejected: REJECT_RANGE');
+          }
+          if (lastResult == 4) {
+            throw StateError('RTC_SET failed: FAILED');
+          }
         }
 
-        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await Future<void>.delayed(const Duration(milliseconds: 250));
       }
 
       throw TimeoutException(
         'RTC_SET not confirmed: token=$token '
-        'applied=$lastAppliedToken result=${_rtcSetResultLabel(lastResult)}',
+        'applied=$lastAppliedToken result=${_rtcSetResultLabel(lastResult)}'
+        '${lastReadError == null ? '' : ' last_read_error=$lastReadError'}',
       );
     } catch (e) {
       serverRtcLastError = e.toString();
       _addClientTrace('rtc_set error token=$token: $e');
       notifyListeners();
       rethrow;
+    } finally {
+      _rtcSetInProgress = false;
+      notifyListeners();
     }
   }
 
@@ -366,6 +564,10 @@ class ScadaController extends ChangeNotifier {
   Future<void> _pollTick() async {
     if (polling) {
       _addClientTrace('poll skipped: previous cycle in progress');
+      return;
+    }
+    if (_rtcSetInProgress) {
+      _addClientTrace('poll skipped: rtc_set in progress');
       return;
     }
     final pollId = ++_pollSeq;
@@ -1052,6 +1254,68 @@ class ScadaController extends ChangeNotifier {
     throw StateError('Write failed: $operationName');
   }
 
+  Future<void> _writeMultipleWithRetry({
+    required int startAddress,
+    required List<int> values,
+    required String operationName,
+    int? maxAttempts,
+  }) async {
+    if (values.isEmpty) {
+      throw ArgumentError('values cannot be empty');
+    }
+
+    Object? last;
+    final attemptLimit = maxAttempts ?? (_readRetryBackoffMs.length + 1);
+    for (var attempt = 0; attempt < attemptLimit; attempt++) {
+      try {
+        if (!_client.isConnected) {
+          await _ensureConnected();
+        }
+        if (!_client.isConnected) {
+          throw StateError('not connected');
+        }
+        final maskedValues = values.map((v) => v & 0xFFFF).toList();
+        _addClientTrace(
+          'send write op=$operationName start=$startAddress count=${maskedValues.length} '
+          'attempt=${attempt + 1}/$attemptLimit',
+        );
+        await _client.writeMultipleRegisters(
+          unitId: _registerMap.unitId,
+          startAddress: startAddress,
+          values: maskedValues,
+        );
+        _addClientTrace(
+          'write ok op=$operationName attempt=${attempt + 1}/$attemptLimit',
+        );
+        return;
+      } catch (e) {
+        last = e;
+        _addClientTrace(
+          'write error op=$operationName attempt=${attempt + 1}/$attemptLimit: $e',
+        );
+        if (_isModbusException(e)) {
+          rethrow;
+        }
+        final mustForceDisconnect = _shouldForceDisconnectAfterReadError(e);
+        if (mustForceDisconnect && _client.isConnected) {
+          _addClientTrace('disconnect after write error op=$operationName: $e');
+          await _client.disconnect();
+        }
+        if (attempt < _readRetryBackoffMs.length &&
+            attempt < (attemptLimit - 1)) {
+          await Future<void>.delayed(
+            Duration(milliseconds: _readRetryBackoffMs[attempt]),
+          );
+          continue;
+        }
+      }
+    }
+    if (last != null) {
+      throw StateError('Write failed: $operationName: $last');
+    }
+    throw StateError('Write failed: $operationName');
+  }
+
   Future<int> _nextRtcSetToken() async {
     var next = (_rtcSetTokenCounter + 1) & 0xFFFF;
     if (next == 0) {
@@ -1180,6 +1444,507 @@ class ScadaController extends ChangeNotifier {
     }
     if (zone.lastAppliedTrigger == pending) {
       _pendingApplyTriggerByZone.remove(zoneId);
+    }
+  }
+
+  void _ensureLightingStatusInitialized() {
+    for (
+      var slaveId = _registerMap.scheduleSlaveMin;
+      slaveId <= _registerMap.scheduleSlaveMax;
+      slaveId++
+    ) {
+      _lightingStatusBySlave.putIfAbsent(
+        slaveId,
+        () => LightingScheduleStatus.initial(slaveId),
+      );
+    }
+  }
+
+  Future<void> _runLightingScheduleQueue(
+    int slaveId,
+    _LightingScheduleTask firstTask,
+  ) async {
+    var task = firstTask;
+    while (true) {
+      final result = await _executeLightingScheduleTask(task);
+      if (!task.completer.isCompleted) {
+        task.completer.complete(result);
+      }
+
+      final next = _latestQueuedScheduleBySlave.remove(slaveId);
+      if (next == null) {
+        _scheduleWorkerBusySlaveIds.remove(slaveId);
+        notifyListeners();
+        return;
+      }
+      _lightingStatusBySlave[slaveId] = lightingStatusForSlave(slaveId).copyWith(
+        draft: next.draft,
+        phase: LightingSchedulePhase.pending,
+        lastAttemptAt: DateTime.now(),
+        clearMessage: true,
+      );
+      notifyListeners();
+      task = next;
+    }
+  }
+
+  Future<LightingScheduleStatus> _executeLightingScheduleTask(
+    _LightingScheduleTask task,
+  ) async {
+    final normalizedDraft = _normalizeLightingDraftForWrite(task.draft);
+    final slaveId = normalizedDraft.slaveId;
+    final mode = task.addressMode;
+    final timeout = task.timeout;
+    final blockBaseOffset = _registerMap.scheduleBlockBaseOffset(slaveId);
+    var current = lightingStatusForSlave(slaveId).copyWith(
+      draft: task.draft,
+      phase: LightingSchedulePhase.pending,
+      lastAttemptAt: DateTime.now(),
+      clearMessage: true,
+    );
+    _lightingStatusBySlave[slaveId] = current;
+    notifyListeners();
+
+    var trigger = current.trigger & 0xFFFF;
+    var lastApplied = current.lastAppliedTrigger & 0xFFFF;
+    var lastResult = current.lastResult & 0xFFFF;
+    var lastIoErr = current.lastIoErr & 0xFFFF;
+    var pollAddress = 0;
+    Object? lastPollError;
+
+    try {
+      final preStateAddress = _registerMap.scheduleAddressForOffset(
+        offset: blockBaseOffset + _registerMap.scheduleApplyTriggerOffset,
+        mode: mode,
+      );
+      final preState = await _readHoldingWithRetry(
+        startAddress: preStateAddress,
+        count: _registerMap.scheduleStateRegisterCount,
+        operationName: 'lighting_pre_state_s${slaveId}_${mode.name}',
+      );
+      if (preState.length < _registerMap.scheduleStateRegisterCount) {
+        throw StateError(
+          'Lighting pre-state read too short: '
+          '${preState.length}/${_registerMap.scheduleStateRegisterCount}',
+        );
+      }
+      final currentApplyTrigger = preState[0] & 0xFFFF;
+      lastApplied = preState[1] & 0xFFFF;
+      lastResult = preState[2] & 0xFFFF;
+      lastIoErr = preState[3] & 0xFFFF;
+      trigger = _nextLightingTrigger(
+        slaveId: slaveId,
+        lastAppliedTrigger: lastApplied,
+      );
+      current = current.copyWith(
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: 'Applying schedule',
+      );
+      _lightingStatusBySlave[slaveId] = current;
+      notifyListeners();
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'pre_state_read',
+        operation: 'FC3_B+16..B+19',
+        address: preStateAddress,
+        count: _registerMap.scheduleStateRegisterCount,
+        responseRegs: preState,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: 'current_apply=$currentApplyTrigger',
+      );
+
+      final payloadAddress = _registerMap.scheduleAddressForOffset(
+        offset: blockBaseOffset,
+        mode: mode,
+      );
+      final payloadRegs = _buildLightingPayload(normalizedDraft);
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'payload_write_req',
+        operation: 'FC16_B+0..B+15',
+        address: payloadAddress,
+        count: payloadRegs.length,
+        requestRegs: payloadRegs,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+      );
+      await _writeMultipleWithRetry(
+        startAddress: payloadAddress,
+        values: payloadRegs,
+        operationName: 'lighting_payload_s${slaveId}_${mode.name}',
+      );
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'payload_write_ok',
+        operation: 'FC16_B+0..B+15',
+        address: payloadAddress,
+        count: payloadRegs.length,
+        requestRegs: payloadRegs,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+      );
+
+      final commitAddress = _registerMap.scheduleAddressForOffset(
+        offset: blockBaseOffset + _registerMap.scheduleApplyTriggerOffset,
+        mode: mode,
+      );
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'commit_write_req',
+        operation: 'FC6_B+16',
+        address: commitAddress,
+        count: 1,
+        requestRegs: <int>[trigger],
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+      );
+      await _writeSingleWithRetry(
+        address: commitAddress,
+        value: trigger,
+        operationName: 'lighting_commit_s${slaveId}_${mode.name}',
+      );
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'commit_write_ok',
+        operation: 'FC6_B+16',
+        address: commitAddress,
+        count: 1,
+        requestRegs: <int>[trigger],
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+      );
+
+      pollAddress = _registerMap.scheduleAddressForOffset(
+        offset: blockBaseOffset + _registerMap.scheduleLastAppliedTriggerOffset,
+        mode: mode,
+      );
+      final deadline = DateTime.now().add(timeout);
+      while (DateTime.now().isBefore(deadline)) {
+        List<int> pollRegs;
+        try {
+          pollRegs = await _readHoldingWithRetry(
+            startAddress: pollAddress,
+            count: _registerMap.scheduleCommitStateRegisterCount,
+            operationName: 'lighting_poll_s${slaveId}_${mode.name}',
+            maxAttempts: 1,
+          );
+          lastPollError = null;
+        } catch (e) {
+          if (_isRetryableTransportError(e)) {
+            lastPollError = e;
+            await _logger.logScheduleTransaction(
+              slaveId: slaveId,
+              event: 'poll_read_error',
+              operation: 'FC3_B+17..B+19',
+              address: pollAddress,
+              count: _registerMap.scheduleCommitStateRegisterCount,
+              trigger: trigger,
+              lastAppliedTrigger: lastApplied,
+              lastResult: lastResult,
+              lastIoErr: lastIoErr,
+              message: e.toString(),
+            );
+            await Future<void>.delayed(
+              Duration(milliseconds: _registerMap.schedulePollingPeriodMs),
+            );
+            continue;
+          }
+          rethrow;
+        }
+        if (pollRegs.length < _registerMap.scheduleCommitStateRegisterCount) {
+          throw StateError(
+            'Lighting poll read too short: '
+            '${pollRegs.length}/${_registerMap.scheduleCommitStateRegisterCount}',
+          );
+        }
+        lastApplied = pollRegs[0] & 0xFFFF;
+        lastResult = pollRegs[1] & 0xFFFF;
+        lastIoErr = pollRegs[2] & 0xFFFF;
+        await _logger.logScheduleTransaction(
+          slaveId: slaveId,
+          event: 'poll_read',
+          operation: 'FC3_B+17..B+19',
+          address: pollAddress,
+          count: _registerMap.scheduleCommitStateRegisterCount,
+          responseRegs: pollRegs,
+          trigger: trigger,
+          lastAppliedTrigger: lastApplied,
+          lastResult: lastResult,
+          lastIoErr: lastIoErr,
+        );
+        final hasServerFailure =
+            lastApplied == trigger && lastResult != 0 && lastResult != 2;
+        current = current.copyWith(
+          trigger: trigger,
+          lastAppliedTrigger: lastApplied,
+          lastResult: lastResult,
+          lastIoErr: lastIoErr,
+          phase: hasServerFailure
+              ? LightingSchedulePhase.failed
+              : LightingSchedulePhase.pending,
+        );
+        _lightingStatusBySlave[slaveId] = current;
+        notifyListeners();
+
+        if (lastApplied == trigger && lastResult == 2) {
+          final success = current.copyWith(
+            phase: LightingSchedulePhase.success,
+            message: 'Applied',
+          );
+          _lightingStatusBySlave[slaveId] = success;
+          notifyListeners();
+          await _logger.logScheduleTransaction(
+            slaveId: slaveId,
+            event: 'applied',
+            operation: 'FC3_B+17..B+19',
+            address: pollAddress,
+            count: _registerMap.scheduleCommitStateRegisterCount,
+            trigger: trigger,
+            lastAppliedTrigger: lastApplied,
+            lastResult: lastResult,
+            lastIoErr: lastIoErr,
+          );
+          return success;
+        }
+
+        if (lastApplied == trigger && lastResult != 0 && lastResult != 2) {
+          final failed = current.copyWith(
+            phase: LightingSchedulePhase.failed,
+            message:
+                'Rejected: ${lightingResultLabel(lastResult)} (io=${lightingIoErrLabel(lastIoErr)})',
+          );
+          _lightingStatusBySlave[slaveId] = failed;
+          notifyListeners();
+          await _logger.logScheduleTransaction(
+            slaveId: slaveId,
+            event: 'failed',
+            operation: 'FC3_B+17..B+19',
+            address: pollAddress,
+            count: _registerMap.scheduleCommitStateRegisterCount,
+            trigger: trigger,
+            lastAppliedTrigger: lastApplied,
+            lastResult: lastResult,
+            lastIoErr: lastIoErr,
+            message: failed.message,
+          );
+          return failed;
+        }
+
+        await Future<void>.delayed(
+          Duration(milliseconds: _registerMap.schedulePollingPeriodMs),
+        );
+      }
+
+      final timedOut = lastApplied != trigger;
+      final timedOutState = current.copyWith(
+        phase: timedOut ? LightingSchedulePhase.timeout : LightingSchedulePhase.failed,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: timedOut
+            ? 'Pending/timeout after ${timeout.inSeconds}s'
+            : 'Timeout with result=${lightingResultLabel(lastResult)}',
+      );
+      _lightingStatusBySlave[slaveId] = timedOutState;
+      notifyListeners();
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: timedOut ? 'timeout_pending' : 'timeout_failed',
+        operation: 'FC3_B+17..B+19',
+        address: pollAddress == 0 ? null : pollAddress,
+        count: _registerMap.scheduleCommitStateRegisterCount,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: lastPollError?.toString(),
+      );
+      return timedOutState;
+    } catch (e) {
+      final failed = current.copyWith(
+        phase: LightingSchedulePhase.failed,
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: e.toString(),
+      );
+      _lightingStatusBySlave[slaveId] = failed;
+      _addClientTrace('lighting schedule failed slave=$slaveId: $e');
+      notifyListeners();
+      await _logger.logScheduleTransaction(
+        slaveId: slaveId,
+        event: 'client_error',
+        operation: 'transaction',
+        trigger: trigger,
+        lastAppliedTrigger: lastApplied,
+        lastResult: lastResult,
+        lastIoErr: lastIoErr,
+        message: e.toString(),
+      );
+      return failed;
+    }
+  }
+
+  void _validateLightingDraft(LightingScheduleDraft draft) {
+    if (!_registerMap.isValidScheduleSlaveId(draft.slaveId)) {
+      throw RangeError(
+        'slave_id=${draft.slaveId} is out of range '
+        '(${_registerMap.scheduleSlaveMin}..${_registerMap.scheduleSlaveMax})',
+      );
+    }
+    if (draft.slots.length != _registerMap.scheduleSlotsCount) {
+      throw StateError(
+        'schedule must contain ${_registerMap.scheduleSlotsCount} slots',
+      );
+    }
+    if (draft.applyValue < 0 || draft.applyValue > 0xFFFF) {
+      throw RangeError('APPLY_VALUE must be 0..65535');
+    }
+    if (draft.expectedActiveCtrlVersion < 0 ||
+        draft.expectedActiveCtrlVersion > 0xFFFFFFFF) {
+      throw RangeError('EXPECTED_ACTIVE_CTRL_VERSION must be uint32');
+    }
+    if (draft.strictVersion && draft.expectedActiveCtrlVersion == 0) {
+      throw StateError(
+        'strict mode requires EXPECTED_ACTIVE_CTRL_VERSION > 0',
+      );
+    }
+    for (var i = 0; i < draft.slots.length; i++) {
+      final slot = draft.slots[i];
+      if (!_isValidHhmm(slot.onHhmm)) {
+        throw StateError('SCH$i ON_HHMM=${slot.onHhmm} is out of range');
+      }
+      if (!_isValidHhmm(slot.offHhmm)) {
+        throw StateError('SCH$i OFF_HHMM=${slot.offHhmm} is out of range');
+      }
+      if (slot.enabled && slot.onHhmm == slot.offHhmm) {
+        throw StateError('SCH$i invalid: EN=1 and ON_HHMM == OFF_HHMM');
+      }
+    }
+  }
+
+  LightingScheduleDraft _normalizeLightingDraftForWrite(
+    LightingScheduleDraft source,
+  ) {
+    final normalizedSlots = source.slots
+        .map(
+          (slot) => slot.enabled
+              ? slot
+              : slot.copyWith(onHhmm: 0, offHhmm: 0),
+        )
+        .toList(growable: false);
+    final expectedVersion = source.strictVersion
+        ? source.expectedActiveCtrlVersion
+        : 0;
+    return source.copyWith(
+      slots: normalizedSlots,
+      expectedActiveCtrlVersion: expectedVersion,
+    );
+  }
+
+  List<int> _buildLightingPayload(LightingScheduleDraft draft) {
+    final payload = <int>[];
+    for (final slot in draft.slots) {
+      payload.add(slot.enabled ? 1 : 0); // EN
+      payload.add(slot.onHhmm & 0xFFFF); // ON_HHMM
+      payload.add(slot.offHhmm & 0xFFFF); // OFF_HHMM
+    }
+    final expectedVersion = draft.expectedActiveCtrlVersion & 0xFFFFFFFF;
+    final hi = (expectedVersion >> 16) & 0xFFFF;
+    final lo = expectedVersion & 0xFFFF;
+    payload.add(draft.applyValue & 0xFFFF); // APPLY_VALUE
+    payload.add(hi); // EXPECTED_ACTIVE_CTRL_VERSION HI
+    payload.add(lo); // EXPECTED_ACTIVE_CTRL_VERSION LO
+    payload.add(_registerMap.scheduleCmdKindValue); // CMD_KIND=1
+    if (payload.length != _registerMap.schedulePayloadRegisterCount) {
+      throw StateError(
+        'Invalid payload length: ${payload.length}/'
+        '${_registerMap.schedulePayloadRegisterCount}',
+      );
+    }
+    return payload;
+  }
+
+  int _nextLightingTrigger({
+    required int slaveId,
+    required int lastAppliedTrigger,
+  }) {
+    var next = ((_lightingTriggerCounterBySlave[slaveId] ?? 0) + 1) & 0xFFFF;
+    if (next == 0) {
+      next = 1;
+    }
+    if (next == (lastAppliedTrigger & 0xFFFF)) {
+      next = (next + 1) & 0xFFFF;
+      if (next == 0) {
+        next = 1;
+      }
+    }
+    _lightingTriggerCounterBySlave[slaveId] = next;
+    return next;
+  }
+
+  bool _isValidHhmm(int value) {
+    if (value < 0 || value > 2359) {
+      return false;
+    }
+    final hh = value ~/ 100;
+    final mm = value % 100;
+    return hh >= 0 && hh <= 23 && mm >= 0 && mm <= 59;
+  }
+
+  String lightingResultLabel(int code) {
+    switch (code & 0xFFFF) {
+      case 0:
+        return 'idle';
+      case 2:
+        return 'applied';
+      case 1301:
+        return 'ack status fail';
+      case 1302:
+        return 'version mismatch';
+      case 1303:
+        return 'invalid cmd kind';
+      case 1304:
+        return 'invalid schedule';
+      case 1305:
+        return 'topology contract';
+      case 1306:
+        return 'transport timeout';
+      default:
+        return 'unknown($code)';
+    }
+  }
+
+  String lightingIoErrLabel(int code) {
+    switch (code & 0xFFFF) {
+      case 0:
+        return 'none';
+      case 1:
+        return 'timeout';
+      case 2:
+        return 'crc';
+      case 3:
+        return 'frame';
+      case 4:
+        return 'uart';
+      default:
+        return 'unknown($code)';
     }
   }
 
@@ -1359,6 +2124,13 @@ class ScadaController extends ChangeNotifier {
   void dispose() {
     _pollTimer?.cancel();
     _connectionSub?.cancel();
+    for (final queued in _latestQueuedScheduleBySlave.values) {
+      if (!queued.completer.isCompleted) {
+        queued.completer.completeError(StateError('controller disposed'));
+      }
+    }
+    _latestQueuedScheduleBySlave.clear();
+    _scheduleWorkerBusySlaveIds.clear();
     unawaited(_client.dispose());
     super.dispose();
   }
@@ -1380,4 +2152,18 @@ class _PointRow {
   final int ageSec;
   final int moduleId;
   final int flags;
+}
+
+class _LightingScheduleTask {
+  const _LightingScheduleTask({
+    required this.draft,
+    required this.addressMode,
+    required this.timeout,
+    required this.completer,
+  });
+
+  final LightingScheduleDraft draft;
+  final ScheduleAddressMode addressMode;
+  final Duration timeout;
+  final Completer<LightingScheduleStatus> completer;
 }

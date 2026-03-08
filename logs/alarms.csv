@@ -1256,3 +1256,127 @@ alid sensor value
 2026-03-02T14:15:45.286654,1,offline,raise,Zone 1 is offline
 2026-03-02T14:15:52.961631,1,invalidSensor,raise,Zone 1: invalid sensor value
 2026-03-02T14:16:06.817289,1,stale,raise,Zone 1: stale data
+2026-03-02T15:15:28.817915,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T10:45:32.775413,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-04T10:55:42.428116,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:02:35.914189,1,stale,raise,Zone 1: stale data
+2026-03-04T11:05:48.031827,1,offline,raise,Zone 1 is offline
+2026-03-04T11:08:50.063768,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T11:09:10.484234,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:10:40.047243,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T11:10:45.532355,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:17:03.030320,1,offline,raise,Zone 1 is offline
+2026-03-04T11:20:10.065138,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T11:20:30.459552,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:27:19.216024,1,offline,raise,Zone 1 is offline
+2026-03-04T11:28:51.783313,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-04T11:29:09.680119,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:31:49.980252,1,stale,raise,Zone 1: stale data
+2026-03-04T11:32:24.851600,1,offline,raise,Zone 1 is offline
+2026-03-04T11:34:46.891774,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T11:35:07.319434,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:35:39.888167,1,stale,raise,Zone 1: stale data
+2026-03-04T11:40:39.269847,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-04T11:40:47.888198,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:51:54.728407,1,offline,raise,Zone 1 is offline
+2026-03-04T11:51:58.760933,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T11:51:58.760933,1,offline,clear,Zone 1 is offline
+2026-03-04T11:52:19.079704,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T11:55:27.732359,1,stale,raise,Zone 1: stale data
+2026-03-04T11:56:57.015207,1,offline,raise,Zone 1 is offline
+2026-03-04T12:02:09.030147,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T12:02:39.499257,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T12:07:34.244250,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T12:51:09.561825,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T12:51:18.635623,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-04T12:51:28.682979,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T14:24:55.414837,1,offline,raise,Zone 1 is offline
+2026-03-04T14:29:19.651078,1,offline,raise,Zone 1 is offline
+2026-03-04T14:29:57.226119,1,stale,raise,Zone 1: stale data
+alid sensor value
+2026-03-04T14:30:27.125907,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-04T18:35:13.804872,1,offline,raise,Zone 1 is offline
+2026-03-05T09:15:40.170303,1,offline,clear,Zone 1 is offline
+2026-03-05T09:16:26.115929,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:16:45.252336,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:21:45.498473,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:21:55.544054,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:22:54.815269,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:23:14.900692,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:40:25.292312,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:47:09.769941,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:52:24.767124,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:53:02.373077,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:53:55.013497,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:54:20.578886,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T09:57:45.147291,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T09:58:45.318551,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:01:00.664760,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:05:23.134793,1,offline,raise,Zone 1 is offline
+2026-03-05T10:05:55.170931,1,offline,clear,Zone 1 is offline
+2026-03-05T10:23:36.003726,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:24:40.744581,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:26:10.076857,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:28:20.587170,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:28:36.106021,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:28:50.700867,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:29:09.795965,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:32:22.593838,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:35:10.284752,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:38:00.476538,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:40:50.135008,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:41:00.164712,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:41:15.683401,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:46:20.320648,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:46:45.853651,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T10:48:44.825359,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T10:49:04.906067,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:10:50.188843,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:11:15.777214,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:11:34.850375,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:15:25.580857,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:16:25.251831,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:16:40.766058,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:24:38.150977,1,offline,raise,Zone 1 is offline
+2026-03-05T11:25:40.175868,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:26:15.549918,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:31:55.262001,1,offline,raise,Zone 1 is offline
+2026-03-05T11:32:05.160157,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:32:15.461671,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:32:40.678780,1,offline,raise,Zone 1 is offline
+2026-03-05T11:33:50.164948,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:34:00.456679,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:46:50.433079,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:47:00.456411,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T11:48:15.211082,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T11:48:30.774100,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T12:03:14.846411,1,offline,raise,Zone 1 is offline
+2026-03-05T12:03:50.170956,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T12:04:00.435875,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T13:38:40.448631,1,offline,raise,Zone 1 is offline
+2026-03-05T13:50:41.142875,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T13:50:54.002861,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T13:51:10.102168,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T13:51:54.877594,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T14:26:13.041417,1,offline,raise,Zone 1 is offline
+2026-03-05T14:26:55.151971,1,offline,clear,Zone 1 is offline
+2026-03-05T14:26:55.151971,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T14:27:15.555579,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-05T15:45:35.401814,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-05T15:46:03.123898,1,offline,raise,Zone 1 is offline
+2026-03-08T09:48:41.279007,1,stale,raise,Zone 1: stale data
+2026-03-08T09:51:30.778697,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-08T09:51:40.765291,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-08T09:55:30.935735,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-08T09:55:45.517594,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-08T11:30:50.970980,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-08T11:31:11.061702,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-08T13:02:35.763108,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-08T13:02:45.799681,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-08T13:12:10.784129,1,offline,raise,Zone 1 is offline
+2026-03-08T13:20:10.743847,1,invalidSensor,raise,Zone 1: invalid sensor value
+2026-03-08T13:20:26.025841,1,invalidSensor,clear,Zone 1: invalid sensor value
+2026-03-08T13:28:53.587249,1,offline,raise,Zone 1 is offline

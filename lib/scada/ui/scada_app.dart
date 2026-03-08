@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
 import '../services/scada_controller.dart';
 
@@ -38,7 +39,7 @@ class _ScadaAppState extends State<ScadaApp> {
         animation: controller,
         builder: (context, _) {
           return DefaultTabController(
-            length: 4,
+            length: 5,
             child: Scaffold(
               appBar: AppBar(
                 title: const Text('Greenhouse SCADA'),
@@ -46,6 +47,7 @@ class _ScadaAppState extends State<ScadaApp> {
                   tabs: [
                     Tab(text: 'Dashboard'),
                     Tab(text: 'Zone'),
+                    Tab(text: 'Lighting'),
                     Tab(text: 'Alarms'),
                     Tab(text: 'Settings'),
                   ],
@@ -71,6 +73,7 @@ class _ScadaAppState extends State<ScadaApp> {
                 children: [
                   _DashboardTab(controller: controller),
                   _ZoneTab(controller: controller),
+                  _LightingScheduleTab(controller: controller),
                   _AlarmsTab(controller: controller),
                   _SettingsTab(controller: controller),
                 ],
@@ -740,6 +743,466 @@ class _TrendChart extends StatelessWidget {
         gridData: const FlGridData(show: true),
       ),
     );
+  }
+}
+
+class _LightingScheduleTab extends StatefulWidget {
+  const _LightingScheduleTab({required this.controller});
+
+  final ScadaController controller;
+
+  @override
+  State<_LightingScheduleTab> createState() => _LightingScheduleTabState();
+}
+
+class _LightingScheduleTabState extends State<_LightingScheduleTab> {
+  int _selectedSlaveId = 1;
+  late final TextEditingController _timeoutCtrl;
+  String _sendStatus = '';
+  bool _sending = false;
+  bool _refreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeoutCtrl = TextEditingController(
+      text: '${widget.controller.schedulePollingTimeout.inSeconds}',
+    );
+  }
+
+  @override
+  void dispose() {
+    _timeoutCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller;
+    final selected = c.lightingStatusForSlave(_selectedSlaveId);
+    final draft = selected.draft;
+    final statuses = c.lightingStatusBySlave;
+
+    return Padding(
+      padding: const EdgeInsets.all(12),
+      child: ListView(
+        children: [
+          Row(
+            children: [
+              const Text('Slave'),
+              const SizedBox(width: 8),
+              DropdownButton<int>(
+                value: _selectedSlaveId,
+                items: List<DropdownMenuItem<int>>.generate(20, (i) {
+                  final id = i + 1;
+                  return DropdownMenuItem<int>(
+                    value: id,
+                    child: Text('$id'),
+                  );
+                }),
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() => _selectedSlaveId = value);
+                },
+              ),
+              const SizedBox(width: 16),
+              const Text('Addr'),
+              const SizedBox(width: 8),
+              DropdownButton<ScheduleAddressMode>(
+                value: c.scheduleAddressMode,
+                items: const [
+                  DropdownMenuItem(
+                    value: ScheduleAddressMode.zeroBased,
+                    child: Text('zero-based'),
+                  ),
+                  DropdownMenuItem(
+                    value: ScheduleAddressMode.style41000,
+                    child: Text('41000-style'),
+                  ),
+                ],
+                onChanged: (mode) {
+                  if (mode != null) {
+                    c.setScheduleAddressMode(mode);
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Text('Timeout, sec'),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 90,
+                child: TextField(
+                  controller: _timeoutCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(isDense: true),
+                ),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: () {
+                  final seconds = int.tryParse(_timeoutCtrl.text.trim());
+                  if (seconds == null || seconds < 1) {
+                    setState(() => _sendStatus = 'Invalid timeout value');
+                    return;
+                  }
+                  c.setSchedulePollingTimeout(Duration(seconds: seconds));
+                  setState(() => _sendStatus = 'Timeout updated');
+                },
+                child: const Text('Apply'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                onPressed: _refreshing
+                    ? null
+                    : () async {
+                        setState(() {
+                          _refreshing = true;
+                          _sendStatus = 'Refreshing diagnostics...';
+                        });
+                        try {
+                          await c.refreshLightingDiagnosticsForSlave(
+                            _selectedSlaveId,
+                          );
+                          if (mounted) {
+                            setState(() => _sendStatus = 'Diagnostics updated');
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            setState(() => _sendStatus = 'Refresh failed: $e');
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() => _refreshing = false);
+                          }
+                        }
+                      },
+                child: Text(_refreshing ? 'Refreshing...' : 'Refresh'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'slave=$_selectedSlaveId | phase=${selected.phase.name} | trigger=${selected.trigger}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'LAST_RESULT=${selected.lastResult} (${c.lightingResultLabel(selected.lastResult)})',
+                  ),
+                  Text(
+                    'LAST_IO_ERR=${selected.lastIoErr} (${c.lightingIoErrLabel(selected.lastIoErr)})',
+                  ),
+                  Text(
+                    'LAST_APPLIED_TRIGGER=${selected.lastAppliedTrigger} | '
+                    'Last attempt=${_formatDateTime(selected.lastAttemptAt)}',
+                  ),
+                  if (selected.message != null && selected.message!.isNotEmpty)
+                    Text('Message: ${selected.message}'),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...List<Widget>.generate(4, (index) {
+            final slot = draft.slots[index];
+            final sameWindow = slot.enabled && slot.onHhmm == slot.offHhmm;
+            return Card(
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'SCH$index',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                        Switch(
+                          value: slot.enabled,
+                          onChanged: (value) {
+                            _updateDraft((current) {
+                              final slots =
+                                  List<LightingScheduleSlot>.from(current.slots);
+                              slots[index] = slots[index].copyWith(
+                                enabled: value,
+                              );
+                              return current.copyWith(slots: slots);
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _pickTime(
+                              context: context,
+                              initial: _timeFromHhmm(slot.onHhmm),
+                              onPicked: (picked) {
+                                _updateDraft((current) {
+                                  final slots = List<LightingScheduleSlot>.from(
+                                    current.slots,
+                                  );
+                                  slots[index] = slots[index].copyWith(
+                                    onHhmm: _hhmmFromTime(picked),
+                                  );
+                                  return current.copyWith(slots: slots);
+                                });
+                              },
+                            ),
+                            child: Text('ON ${_formatHhmm(slot.onHhmm)}'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => _pickTime(
+                              context: context,
+                              initial: _timeFromHhmm(slot.offHhmm),
+                              onPicked: (picked) {
+                                _updateDraft((current) {
+                                  final slots = List<LightingScheduleSlot>.from(
+                                    current.slots,
+                                  );
+                                  slots[index] = slots[index].copyWith(
+                                    offHhmm: _hhmmFromTime(picked),
+                                  );
+                                  return current.copyWith(slots: slots);
+                                });
+                              },
+                            ),
+                            child: Text('OFF ${_formatHhmm(slot.offHhmm)}'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('EN=${slot.enabled ? 1 : 0} ON=${slot.onHhmm} OFF=${slot.offHhmm}'),
+                    if (sameWindow)
+                      const Text(
+                        'Validation error: EN=1 and ON_HHMM == OFF_HHMM',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              SizedBox(
+                width: 110,
+                child: TextFormField(
+                  key: ValueKey('apply_slave_$_selectedSlaveId'),
+                  initialValue: '${draft.applyValue}',
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Apply value',
+                    isDense: true,
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value.trim());
+                    if (parsed == null) {
+                      return;
+                    }
+                    _updateDraft(
+                      (current) => current.copyWith(applyValue: parsed),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 150,
+                child: TextFormField(
+                  key: ValueKey('version_slave_$_selectedSlaveId'),
+                  initialValue: '${draft.expectedActiveCtrlVersion}',
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Expected version',
+                    isDense: true,
+                  ),
+                  onChanged: (value) {
+                    final parsed = int.tryParse(value.trim());
+                    if (parsed == null) {
+                      return;
+                    }
+                    _updateDraft(
+                      (current) =>
+                          current.copyWith(expectedActiveCtrlVersion: parsed),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Strict version'),
+                  value: draft.strictVersion,
+                  onChanged: (value) {
+                    _updateDraft(
+                      (current) => current.copyWith(strictVersion: value ?? false),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton(
+            onPressed: _sending
+                ? null
+                : () async {
+                    setState(() {
+                      _sending = true;
+                      _sendStatus = 'Sending...';
+                    });
+                    try {
+                      final result = await c.sendLightingSchedule(
+                        draft: c.lightingStatusForSlave(_selectedSlaveId).draft,
+                      );
+                      if (mounted) {
+                        setState(
+                          () => _sendStatus =
+                              'Done: ${result.phase.name}, trigger=${result.trigger}, '
+                              'result=${result.lastResult}/${result.lastIoErr}',
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        setState(() => _sendStatus = 'Send failed: $e');
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _sending = false);
+                      }
+                    }
+                  },
+            child: Text(_sending ? 'Sending...' : 'Send schedule (payload->commit)'),
+          ),
+          const SizedBox(height: 6),
+          Text(_sendStatus),
+          const Divider(height: 24),
+          const Text(
+            'Per-slave status',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 260,
+            child: ListView.builder(
+              itemCount: statuses.length,
+              itemBuilder: (context, i) {
+                final st = statuses[i];
+                final enabledSlots = st.draft.slots.where((s) => s.enabled).length;
+                return ListTile(
+                  dense: true,
+                  title: Text(
+                    'slave=${st.slaveId} phase=${st.phase.name} trigger=${st.trigger} enabled_slots=$enabledSlots',
+                  ),
+                  subtitle: Text(
+                    '${_slotsSummary(st.draft.slots)} | '
+                    'applied=${st.lastAppliedTrigger} '
+                    'result=${st.lastResult}(${c.lightingResultLabel(st.lastResult)}) '
+                    'io=${st.lastIoErr}(${c.lightingIoErrLabel(st.lastIoErr)}) '
+                    'last=${_formatDateTime(st.lastAttemptAt)}',
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text('Transaction log file: logs/schedule_tx.csv'),
+        ],
+      ),
+    );
+  }
+
+  void _updateDraft(LightingScheduleDraft Function(LightingScheduleDraft) update) {
+    final current = widget.controller.lightingStatusForSlave(_selectedSlaveId).draft;
+    final next = update(current).copyWith(slaveId: _selectedSlaveId);
+    widget.controller.setLightingDraft(next);
+  }
+
+  Future<void> _pickTime({
+    required BuildContext context,
+    required TimeOfDay initial,
+    required ValueChanged<TimeOfDay> onPicked,
+  }) async {
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked != null) {
+      onPicked(picked);
+    }
+  }
+
+  int _hhmmFromTime(TimeOfDay value) => value.hour * 100 + value.minute;
+
+  TimeOfDay _timeFromHhmm(int hhmm) {
+    var hour = hhmm ~/ 100;
+    var minute = hhmm % 100;
+    if (hour < 0) {
+      hour = 0;
+    } else if (hour > 23) {
+      hour = 23;
+    }
+    if (minute < 0) {
+      minute = 0;
+    } else if (minute > 59) {
+      minute = 59;
+    }
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String _formatHhmm(int hhmm) {
+    var hour = hhmm ~/ 100;
+    var minute = hhmm % 100;
+    if (hour < 0) {
+      hour = 0;
+    } else if (hour > 23) {
+      hour = 23;
+    }
+    if (minute < 0) {
+      minute = 0;
+    } else if (minute > 59) {
+      minute = 59;
+    }
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+  }
+
+  String _formatDateTime(DateTime? value) {
+    if (value == null) {
+      return '-';
+    }
+    return value.toIso8601String();
+  }
+
+  String _slotsSummary(List<LightingScheduleSlot> slots) {
+    final parts = <String>[];
+    for (var i = 0; i < slots.length; i++) {
+      final slot = slots[i];
+      parts.add(
+        'S$i:${slot.enabled ? 1 : 0}/${slot.onHhmm.toString().padLeft(4, '0')}-${slot.offHhmm.toString().padLeft(4, '0')}',
+      );
+    }
+    return parts.join(' ');
   }
 }
 

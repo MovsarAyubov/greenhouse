@@ -6,6 +6,7 @@ class ScadaLogger {
   File? _telemetryFile;
   File? _alarmFile;
   File? _clientTraceFile;
+  File? _scheduleTxFile;
 
   Future<void> init() async {
     final dir = Directory(
@@ -19,6 +20,9 @@ class ScadaLogger {
     _clientTraceFile = File(
       '${dir.path}${Platform.pathSeparator}client_trace.csv',
     );
+    _scheduleTxFile = File(
+      '${dir.path}${Platform.pathSeparator}schedule_tx.csv',
+    );
 
     if (!(_telemetryFile!.existsSync())) {
       await _telemetryFile!.writeAsString(
@@ -30,6 +34,11 @@ class ScadaLogger {
     }
     if (!(_clientTraceFile!.existsSync())) {
       await _clientTraceFile!.writeAsString('time,event\n');
+    }
+    if (!(_scheduleTxFile!.existsSync())) {
+      await _scheduleTxFile!.writeAsString(
+        'time,slave_id,event,operation,address,count,request_regs,response_regs,trigger,last_applied,last_result,last_io_err,message\n',
+      );
     }
   }
 
@@ -70,6 +79,41 @@ class ScadaLogger {
       '$now,${_sanitizeCsv(event)}\n',
       mode: FileMode.append,
     );
+  }
+
+  Future<void> logScheduleTransaction({
+    required int slaveId,
+    required String event,
+    required String operation,
+    int? address,
+    int? count,
+    List<int>? requestRegs,
+    List<int>? responseRegs,
+    int? trigger,
+    int? lastAppliedTrigger,
+    int? lastResult,
+    int? lastIoErr,
+    String? message,
+  }) async {
+    final file = _scheduleTxFile;
+    if (file == null) {
+      return;
+    }
+    final now = DateTime.now().toIso8601String();
+    await file.writeAsString(
+      '$now,$slaveId,${_sanitizeCsv(event)},${_sanitizeCsv(operation)},'
+      '${address ?? ''},${count ?? ''},${_encodeRegs(requestRegs)},${_encodeRegs(responseRegs)},'
+      '${trigger ?? ''},${lastAppliedTrigger ?? ''},${lastResult ?? ''},${lastIoErr ?? ''},'
+      '${_sanitizeCsv(message ?? '')}\n',
+      mode: FileMode.append,
+    );
+  }
+
+  String _encodeRegs(List<int>? values) {
+    if (values == null || values.isEmpty) {
+      return '';
+    }
+    return values.map((v) => (v & 0xFFFF).toString()).join('|');
   }
 
   String _sanitizeCsv(String source) =>
