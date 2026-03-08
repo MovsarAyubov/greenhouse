@@ -6,6 +6,7 @@ class RegisterMap {
     this.directoryBaseCandidates = const <int>[1440],
     this.directoryReadCount = 14,
     this.expectedMapVersion = 2,
+    this.minSupportedMapVersion = 2,
     this.expectedPointStride = 6,
     this.mapVersionReg = 0,
     this.mapFlagsReg = 1,
@@ -14,6 +15,9 @@ class RegisterMap {
     this.pointCountReg = 4,
     this.pointStrideReg = 5,
     this.pointsBaseReg = 6,
+    this.directoryScheduleBaseReg = 30,
+    this.directoryScheduleBlockSizeReg = 31,
+    this.directoryScheduleReadCount = 2,
     this.pointValueHiReg = 0,
     this.pointValueLoReg = 1,
     this.pointQualityReg = 2,
@@ -82,6 +86,7 @@ class RegisterMap {
   final List<int> directoryBaseCandidates;
   final int directoryReadCount;
   final int expectedMapVersion;
+  final int minSupportedMapVersion;
   final int expectedPointStride;
   final int mapVersionReg;
   final int mapFlagsReg;
@@ -90,6 +95,9 @@ class RegisterMap {
   final int pointCountReg;
   final int pointStrideReg;
   final int pointsBaseReg;
+  final int directoryScheduleBaseReg;
+  final int directoryScheduleBlockSizeReg;
+  final int directoryScheduleReadCount;
 
   // Point row contract (stride = 6)
   final int pointValueHiReg;

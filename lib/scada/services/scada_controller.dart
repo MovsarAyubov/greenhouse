@@ -70,6 +70,8 @@ class ScadaController extends ChangeNotifier {
   int _resolvedPointCount = 0;
   int _resolvedPointStride = 0;
   int _resolvedPointsBase = 0;
+  int? _resolvedScheduleBase;
+  int? _resolvedScheduleBlockSize;
   int? _zoneModuleId;
   int _zoneExpectedSensorCount = 0;
   final Map<String, int> _preferredReadStartByOperation = <String, int>{};
@@ -248,9 +250,9 @@ class ScadaController extends ChangeNotifier {
       );
     }
     final mode = _scheduleAddressMode;
-    final readOffset = _registerMap.scheduleBlockBaseOffset(slaveId) +
+    final readOffset = _scheduleBlockBaseOffset(slaveId) +
         _registerMap.scheduleLastAppliedTriggerOffset;
-    final readAddress = _registerMap.scheduleAddressForOffset(
+    final readAddress = _scheduleAddressForOffset(
       offset: readOffset,
       mode: mode,
     );
@@ -892,11 +894,11 @@ class ScadaController extends ChangeNotifier {
         final mapFlags = regs[_registerMap.mapFlagsReg];
         final pointCount = regs[_registerMap.pointCountReg] & 0xFFFF;
         final pointsBase = regs[_registerMap.pointsBaseReg];
-        if (mapVersion != _registerMap.expectedMapVersion ||
+        if (mapVersion < _registerMap.minSupportedMapVersion ||
             pointStride != _registerMap.expectedPointStride) {
           throw StateError(
             'Incompatible map contract: MAP_VERSION=$mapVersion '
-            '(expected ${_registerMap.expectedMapVersion}), '
+            '(minimum ${_registerMap.minSupportedMapVersion}), '
             'POINT_STRIDE=$pointStride (expected ${_registerMap.expectedPointStride})',
           );
         }
@@ -911,12 +913,55 @@ class ScadaController extends ChangeNotifier {
             '(expected ${_registerMap.expectedPointCount})',
           );
         }
-
         _resolvedDirectoryBase = base;
         _resolvedMapFlags = mapFlags;
         _resolvedPointCount = pointCount;
         _resolvedPointStride = pointStride;
         _resolvedPointsBase = pointsBase;
+        _resolvedScheduleBase = null;
+        _resolvedScheduleBlockSize = null;
+        if (mapVersion >= 3) {
+          try {
+            final schedRegs = await _readHoldingWithRetry(
+              startAddress: base + _registerMap.directoryScheduleBaseReg,
+              count: _registerMap.directoryScheduleReadCount,
+              operationName: 'directory_schedule@$base',
+              maxAttempts: 1,
+            );
+            if (schedRegs.length >= _registerMap.directoryScheduleReadCount) {
+              final schedBase = schedRegs[0] & 0xFFFF;
+              final schedBlockSize = schedRegs[1] & 0xFFFF;
+              if (schedBase > 0 && schedBlockSize > 0) {
+                _resolvedScheduleBase = schedBase;
+                _resolvedScheduleBlockSize = schedBlockSize;
+                _addClientTrace(
+                  'directory schedule override base=$schedBase block=$schedBlockSize',
+                );
+              } else {
+                _addClientTrace(
+                  'directory schedule fields ignored base=$schedBase block=$schedBlockSize',
+                );
+              }
+            }
+          } catch (e) {
+            // Optional extension for MAP_VERSION >= 3; ignore on read errors.
+            _addClientTrace('directory schedule extension unavailable: $e');
+          }
+        }
+        final slaveStatusBase = _resolvedScheduleBase ?? _registerMap.scheduleBase;
+        final pointsEnd = pointsBase + (pointCount * pointStride);
+        if (pointsBase < 0 || pointsEnd > slaveStatusBase) {
+          throw StateError(
+            'Invalid points range: POINTS_BASE=$pointsBase '
+            'POINTS_END=$pointsEnd SLAVE_STATUS_BASE=$slaveStatusBase',
+          );
+        }
+        if (mapVersion > _registerMap.expectedMapVersion) {
+          _addClientTrace(
+            'directory extension detected MAP_VERSION=$mapVersion, '
+            'base contract accepted from ${_registerMap.minSupportedMapVersion}',
+          );
+        }
         return;
       } catch (e) {
         lastError = e;
@@ -1495,7 +1540,7 @@ class ScadaController extends ChangeNotifier {
     final slaveId = normalizedDraft.slaveId;
     final mode = task.addressMode;
     final timeout = task.timeout;
-    final blockBaseOffset = _registerMap.scheduleBlockBaseOffset(slaveId);
+    final blockBaseOffset = _scheduleBlockBaseOffset(slaveId);
     var current = lightingStatusForSlave(slaveId).copyWith(
       draft: task.draft,
       phase: LightingSchedulePhase.pending,
@@ -1513,7 +1558,7 @@ class ScadaController extends ChangeNotifier {
     Object? lastPollError;
 
     try {
-      final preStateAddress = _registerMap.scheduleAddressForOffset(
+      final preStateAddress = _scheduleAddressForOffset(
         offset: blockBaseOffset + _registerMap.scheduleApplyTriggerOffset,
         mode: mode,
       );
@@ -1559,7 +1604,7 @@ class ScadaController extends ChangeNotifier {
         message: 'current_apply=$currentApplyTrigger',
       );
 
-      final payloadAddress = _registerMap.scheduleAddressForOffset(
+      final payloadAddress = _scheduleAddressForOffset(
         offset: blockBaseOffset,
         mode: mode,
       );
@@ -1594,7 +1639,7 @@ class ScadaController extends ChangeNotifier {
         lastIoErr: lastIoErr,
       );
 
-      final commitAddress = _registerMap.scheduleAddressForOffset(
+      final commitAddress = _scheduleAddressForOffset(
         offset: blockBaseOffset + _registerMap.scheduleApplyTriggerOffset,
         mode: mode,
       );
@@ -1628,7 +1673,7 @@ class ScadaController extends ChangeNotifier {
         lastIoErr: lastIoErr,
       );
 
-      pollAddress = _registerMap.scheduleAddressForOffset(
+      pollAddress = _scheduleAddressForOffset(
         offset: blockBaseOffset + _registerMap.scheduleLastAppliedTriggerOffset,
         mode: mode,
       );
@@ -2100,6 +2145,8 @@ class ScadaController extends ChangeNotifier {
     _resolvedPointCount = 0;
     _resolvedPointStride = 0;
     _resolvedPointsBase = 0;
+    _resolvedScheduleBase = null;
+    _resolvedScheduleBlockSize = null;
     _zoneModuleId = null;
     _zoneExpectedSensorCount = 0;
     _preferredReadStartByOperation.clear();
@@ -2108,6 +2155,21 @@ class ScadaController extends ChangeNotifier {
     _lastDegradedReconnectAt = DateTime.fromMillisecondsSinceEpoch(0);
     _consecutiveFailedPolls = 0;
     _connectivityPolicyState = 0;
+  }
+
+  int _scheduleBlockBaseOffset(int slaveId) {
+    final base = _resolvedScheduleBase ?? _registerMap.scheduleBase;
+    final blockSize = _resolvedScheduleBlockSize ?? _registerMap.scheduleBlockSize;
+    return base + (slaveId - 1) * blockSize;
+  }
+
+  int _scheduleAddressForOffset({
+    required int offset,
+    required ScheduleAddressMode mode,
+  }) {
+    return mode == ScheduleAddressMode.zeroBased
+        ? offset
+        : _registerMap.scheduleAddressBase41000 + offset;
   }
 
   int _normalizePollPeriodMs(int value) {
