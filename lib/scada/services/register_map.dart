@@ -1,194 +1,180 @@
-import '../models/lighting_schedule_models.dart';
-
 class RegisterMap {
   const RegisterMap({
     this.unitId = 1,
-    this.directoryBaseCandidates = const <int>[1440],
-    this.directoryReadCount = 14,
-    this.expectedMapVersion = 2,
-    this.minSupportedMapVersion = 2,
+    this.pointsBase = 0,
+    this.slaveStatusBase = 1080,
+    this.cmdBase = 1240,
+    this.directoryBase = 1264,
+    this.cfgBase = 1296,
+    this.diagBase = 1376,
+    this.topologyBase = 1408,
+    this.directoryReadCount = 32,
+    this.expectedMapVersion = 4,
     this.expectedPointStride = 6,
+    this.expectedMaxPoints = 180,
+    this.expectedCmdBlockSize = 24,
+    this.expectedStatusBlockSize = 8,
     this.mapVersionReg = 0,
     this.mapFlagsReg = 1,
-    this.topologyGenerationHiReg = 2,
-    this.topologyGenerationLoReg = 3,
     this.pointCountReg = 4,
     this.pointStrideReg = 5,
     this.pointsBaseReg = 6,
-    this.directoryScheduleBaseReg = 30,
-    this.directoryScheduleBlockSizeReg = 31,
-    this.directoryScheduleReadCount = 2,
+    this.slaveStatusBaseReg = 7,
+    this.cmdBaseReg = 8,
+    this.maxPointsReg = 11,
+    this.cmdBlockSizeReg = 12,
+    this.statusBlockSizeReg = 13,
+    this.rtcHourOffset = 14,
+    this.rtcMinuteOffset = 15,
+    this.rtcSetHourOffset = 16,
+    this.rtcSetMinuteOffset = 17,
+    this.rtcSetTokenOffset = 18,
+    this.rtcSetAppliedTokenOffset = 19,
+    this.rtcSetResultOffset = 20,
+    this.pointRowStride = 6,
     this.pointValueHiReg = 0,
     this.pointValueLoReg = 1,
     this.pointQualityReg = 2,
     this.pointAgeSecReg = 3,
     this.pointModuleIdReg = 4,
     this.pointFlagsReg = 5,
-    this.pointValidFlagMask = 0x0001,
-    this.sensorCount = 9,
-    this.weatherPointStartIndex = 0,
-    this.weatherPointCount = 9,
-    this.topologyBase = 1584,
-    this.topologyActiveOffset = 3,
+    this.slaveStatusOnlineFlagMask = 0x0001,
+    this.slaveStatusStaleFlagMask = 0x0002,
+    this.slaveStatusStatusOffset = 0,
+    this.slaveStatusLastOkAgeOffset = 1,
+    this.slaveStatusErrTimeoutOffset = 2,
+    this.slaveStatusErrCrcOffset = 3,
+    this.slaveStatusErrExceptionOffset = 4,
+    this.slaveStatusDataVersionOffset = 5,
+    this.slaveStatusValidMaskOffset = 6,
+    this.slaveStatusOutStateMaskOffset = 7,
+    this.cmdTargetSlaveIdOffset = 0,
+    this.cmdTargetModuleIdOffset = 1,
+    this.cmdProfileIdOffset = 2,
+    this.cmdPayloadLenOffset = 3,
+    this.cmdPayloadBaseOffset = 4,
+    this.cmdTriggerOffset = 20,
+    this.cmdLastAppliedTriggerOffset = 21,
+    this.cmdResultOffset = 22,
+    this.cmdIoErrOffset = 23,
+    this.schedulePayloadRegisterCount = 16,
+    this.schedulePollingTimeoutMs = 25000,
+    this.schedulePollingPeriodMs = 500,
+    this.topologySubmitTokenOffset = 0,
+    this.topologyResultCodeOffset = 1,
+    this.topologyResultTokenOffset = 2,
+    this.topologyActiveFlagsOffset = 3,
+    this.topologyVersionMajorOffset = 4,
+    this.topologyVersionMinorOffset = 5,
     this.topologyGenerationHiOffset = 6,
     this.topologyGenerationLoOffset = 7,
-    this.expectedTopologyGeneration = 8,
-    this.expectedTopologyActiveFlag = 1,
-    this.directoryPointCountAddress = 1444,
-    this.rtcHourAddress = 1454,
-    this.rtcMinuteAddress = 1455,
-    this.rtcSetHourAddress = 1456,
-    this.rtcSetMinuteAddress = 1457,
-    this.rtcSetTokenAddress = 1458,
-    this.rtcSetAppliedTokenAddress = 1459,
-    this.rtcSetResultAddress = 1460,
-    this.expectedPointCount = 12,
-    this.weatherExpectedModuleId = 201,
-    this.weatherPublishStartIndex = 3,
-    this.mapBase = 41000,
-    this.zoneBlockSize = 64,
-    this.outCmdMaskReg = 11,
-    this.modeReg = 20,
-    this.setTempReg = 21,
-    this.setHumReg = 22,
-    this.hystTempReg = 23,
-    this.hystHumReg = 24,
-    this.minOnSecReg = 25,
-    this.minOffSecReg = 26,
-    this.applyTriggerReg = 60,
-    this.lastAppliedTriggerReg = 61,
-    this.scheduleBase = 1728,
-    this.scheduleBlockSize = 20,
-    this.scheduleSlaveMin = 1,
-    this.scheduleSlaveMax = 20,
-    this.scheduleSlotsCount = 4,
-    this.scheduleSlotStride = 3,
-    this.scheduleApplyValueOffset = 12,
-    this.scheduleExpectedVersionHiOffset = 13,
-    this.scheduleExpectedVersionLoOffset = 14,
-    this.scheduleCmdKindOffset = 15,
-    this.scheduleApplyTriggerOffset = 16,
-    this.scheduleLastAppliedTriggerOffset = 17,
-    this.scheduleLastResultOffset = 18,
-    this.scheduleLastIoErrOffset = 19,
-    this.schedulePayloadRegisterCount = 16,
-    this.scheduleStateRegisterCount = 4,
-    this.scheduleCommitStateRegisterCount = 3,
-    this.scheduleCmdKindValue = 1,
-    this.scheduleAddressBase41000 = 41000,
-    this.schedulePollingPeriodMs = 500,
-    this.schedulePollingTimeoutMs = 25000,
+    this.topologySizeHiOffset = 8,
+    this.topologySizeLoOffset = 9,
+    this.topologyReqChunkIndexOffset = 10,
+    this.topologyReqChunkWordsOffset = 11,
+    this.topologyReqTotalSizeHiOffset = 12,
+    this.topologyReqTotalSizeLoOffset = 13,
+    this.topologyReqChunkCrcHiOffset = 14,
+    this.topologyReqChunkCrcLoOffset = 15,
+    this.topologyReqFlagsOffset = 16,
+    this.topologyReqGenerationHiOffset = 17,
+    this.topologyReqGenerationLoOffset = 18,
+    this.topologyChunkDataOffset = 20,
+    this.topologyChunkWordsMax = 120,
+    this.topologyResultQueued = 1,
+    this.topologyResultApplied = 2,
   });
 
   final int unitId;
+  final int pointsBase;
+  final int slaveStatusBase;
+  final int cmdBase;
+  final int directoryBase;
+  final int cfgBase;
+  final int diagBase;
+  final int topologyBase;
 
-  // Directory contract (start at 1440 or 42440)
-  final List<int> directoryBaseCandidates;
   final int directoryReadCount;
   final int expectedMapVersion;
-  final int minSupportedMapVersion;
   final int expectedPointStride;
+  final int expectedMaxPoints;
+  final int expectedCmdBlockSize;
+  final int expectedStatusBlockSize;
+
   final int mapVersionReg;
   final int mapFlagsReg;
-  final int topologyGenerationHiReg;
-  final int topologyGenerationLoReg;
   final int pointCountReg;
   final int pointStrideReg;
   final int pointsBaseReg;
-  final int directoryScheduleBaseReg;
-  final int directoryScheduleBlockSizeReg;
-  final int directoryScheduleReadCount;
+  final int slaveStatusBaseReg;
+  final int cmdBaseReg;
+  final int maxPointsReg;
+  final int cmdBlockSizeReg;
+  final int statusBlockSizeReg;
+  final int rtcHourOffset;
+  final int rtcMinuteOffset;
+  final int rtcSetHourOffset;
+  final int rtcSetMinuteOffset;
+  final int rtcSetTokenOffset;
+  final int rtcSetAppliedTokenOffset;
+  final int rtcSetResultOffset;
 
-  // Point row contract (stride = 6)
+  final int pointRowStride;
   final int pointValueHiReg;
   final int pointValueLoReg;
   final int pointQualityReg;
   final int pointAgeSecReg;
   final int pointModuleIdReg;
   final int pointFlagsReg;
-  final int pointValidFlagMask;
 
-  // UI sensor count shown by current SCADA screen.
-  final int sensorCount;
-  final int weatherPointStartIndex;
-  final int weatherPointCount;
-  final int topologyBase;
-  final int topologyActiveOffset;
+  final int slaveStatusOnlineFlagMask;
+  final int slaveStatusStaleFlagMask;
+  final int slaveStatusStatusOffset;
+  final int slaveStatusLastOkAgeOffset;
+  final int slaveStatusErrTimeoutOffset;
+  final int slaveStatusErrCrcOffset;
+  final int slaveStatusErrExceptionOffset;
+  final int slaveStatusDataVersionOffset;
+  final int slaveStatusValidMaskOffset;
+  final int slaveStatusOutStateMaskOffset;
+
+  final int cmdTargetSlaveIdOffset;
+  final int cmdTargetModuleIdOffset;
+  final int cmdProfileIdOffset;
+  final int cmdPayloadLenOffset;
+  final int cmdPayloadBaseOffset;
+  final int cmdTriggerOffset;
+  final int cmdLastAppliedTriggerOffset;
+  final int cmdResultOffset;
+  final int cmdIoErrOffset;
+
+  final int schedulePayloadRegisterCount;
+  final int schedulePollingTimeoutMs;
+  final int schedulePollingPeriodMs;
+
+  final int topologySubmitTokenOffset;
+  final int topologyResultCodeOffset;
+  final int topologyResultTokenOffset;
+  final int topologyActiveFlagsOffset;
+  final int topologyVersionMajorOffset;
+  final int topologyVersionMinorOffset;
   final int topologyGenerationHiOffset;
   final int topologyGenerationLoOffset;
-  final int expectedTopologyGeneration;
-  final int expectedTopologyActiveFlag;
-  final int directoryPointCountAddress;
-  final int rtcHourAddress;
-  final int rtcMinuteAddress;
-  final int rtcSetHourAddress;
-  final int rtcSetMinuteAddress;
-  final int rtcSetTokenAddress;
-  final int rtcSetAppliedTokenAddress;
-  final int rtcSetResultAddress;
-  final int expectedPointCount;
-  final int weatherExpectedModuleId;
-  final int weatherPublishStartIndex;
-
-  // Legacy write window (kept for command path).
-  final int mapBase;
-  final int zoneBlockSize;
-  final int outCmdMaskReg;
-  final int modeReg;
-  final int setTempReg;
-  final int setHumReg;
-  final int hystTempReg;
-  final int hystHumReg;
-  final int minOnSecReg;
-  final int minOffSecReg;
-  final int applyTriggerReg;
-  final int lastAppliedTriggerReg;
-  final int scheduleBase;
-  final int scheduleBlockSize;
-  final int scheduleSlaveMin;
-  final int scheduleSlaveMax;
-  final int scheduleSlotsCount;
-  final int scheduleSlotStride;
-  final int scheduleApplyValueOffset;
-  final int scheduleExpectedVersionHiOffset;
-  final int scheduleExpectedVersionLoOffset;
-  final int scheduleCmdKindOffset;
-  final int scheduleApplyTriggerOffset;
-  final int scheduleLastAppliedTriggerOffset;
-  final int scheduleLastResultOffset;
-  final int scheduleLastIoErrOffset;
-  final int schedulePayloadRegisterCount;
-  final int scheduleStateRegisterCount;
-  final int scheduleCommitStateRegisterCount;
-  final int scheduleCmdKindValue;
-  final int scheduleAddressBase41000;
-  final int schedulePollingPeriodMs;
-  final int schedulePollingTimeoutMs;
-
-  int zoneBase(int zoneId) => mapBase + (zoneId - 1) * zoneBlockSize;
-  bool isValidScheduleSlaveId(int slaveId) =>
-      slaveId >= scheduleSlaveMin && slaveId <= scheduleSlaveMax;
-
-  int scheduleBlockBaseOffset(int slaveId) =>
-      scheduleBase + (slaveId - 1) * scheduleBlockSize;
-
-  int scheduleAddressForOffset({
-    required int offset,
-    required ScheduleAddressMode mode,
-  }) {
-    return mode == ScheduleAddressMode.zeroBased
-        ? offset
-        : scheduleAddressBase41000 + offset;
-  }
-
-  int scheduleRegisterAddress({
-    required int slaveId,
-    required int blockOffset,
-    required ScheduleAddressMode mode,
-  }) {
-    final absoluteOffset = scheduleBlockBaseOffset(slaveId) + blockOffset;
-    return scheduleAddressForOffset(offset: absoluteOffset, mode: mode);
-  }
+  final int topologySizeHiOffset;
+  final int topologySizeLoOffset;
+  final int topologyReqChunkIndexOffset;
+  final int topologyReqChunkWordsOffset;
+  final int topologyReqTotalSizeHiOffset;
+  final int topologyReqTotalSizeLoOffset;
+  final int topologyReqChunkCrcHiOffset;
+  final int topologyReqChunkCrcLoOffset;
+  final int topologyReqFlagsOffset;
+  final int topologyReqGenerationHiOffset;
+  final int topologyReqGenerationLoOffset;
+  final int topologyChunkDataOffset;
+  final int topologyChunkWordsMax;
+  final int topologyResultQueued;
+  final int topologyResultApplied;
 
   static const RegisterMap assumed = RegisterMap();
 }

@@ -85,3 +85,47 @@ time,slave_id,event,operation,address,count,request_regs,response_regs,trigger,l
 2026-03-08T14:01:14.596064,1,payload_write_ok,FC16_B+0..B+15,1728,16,0|0|0|0|0|0|0|0|0|0|0|0|122|0|0|1,,7,6,2,0,
 2026-03-08T14:01:14.599138,1,commit_write_req,FC6_B+16,1744,1,7,,7,6,2,0,
 2026-03-08T14:01:18.463192,1,client_error,transaction,,,,,7,6,2,0,Bad state: Write failed: lighting_commit_s1_zeroBased: ModbusTcpException: response timeout (2 consecutive)
+2026-03-10T11:39:25.514750,1,pre_state_read,FC3_B+16..B+19,1080,4,,1|0|1|0,1,0,1,0,current_apply=1
+2026-03-10T11:39:25.546113,1,payload_write_req,FC16_B+0..B+15,1240,16,1|1139|1140|0|0|0|0|0|0|0|0|0|122|0|0|1,,1,0,1,0,
+2026-03-10T11:39:26.074008,1,payload_write_ok,FC16_B+0..B+15,1240,16,1|1139|1140|0|0|0|0|0|0|0|0|0|122|0|0|1,,1,0,1,0,
+2026-03-10T11:39:26.075544,1,commit_write_req,FC6_B+16,1256,1,1,,1,0,1,0,
+2026-03-10T11:39:29.068688,1,commit_write_ok,FC6_B+16,1256,1,1,,1,0,1,0,
+2026-03-10T11:39:30.081725,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:32.085125,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:34.086441,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:36.393878,1,poll_read_error,FC3_B+17..B+19,1081,3,,,1,0,1,0,Bad state: Read failed: lighting_poll_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive)
+2026-03-10T11:39:38.090208,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:40.394537,1,poll_read_error,FC3_B+17..B+19,1081,3,,,1,0,1,0,Bad state: Read failed: lighting_poll_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive)
+2026-03-10T11:39:42.704254,1,poll_read_error,FC3_B+17..B+19,1081,3,,,1,0,1,0,Bad state: Read failed: lighting_poll_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive)
+2026-03-10T11:39:44.097197,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:46.097637,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:48.401705,1,poll_read_error,FC3_B+17..B+19,1081,3,,,1,0,1,0,Bad state: Read failed: lighting_poll_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive)
+2026-03-10T11:39:50.111983,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:51.136490,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:53.444349,1,poll_read_error,FC3_B+17..B+19,1081,3,,,1,0,1,0,Bad state: Read failed: lighting_poll_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive)
+2026-03-10T11:39:55.111606,1,poll_read,FC3_B+17..B+19,1081,3,,0|1|0,1,0,1,0,
+2026-03-10T11:39:55.616262,1,timeout_pending,FC3_B+17..B+19,1081,3,,,1,0,1,0,
+2026-03-10T11:40:28.507792,1,client_error,transaction,,,,,1,0,1,0,Bad state: Read failed: lighting_pre_state_s1_zeroBased: ModbusTcpException: response timeout (1 consecutive) [degraded  timeout_streak=3]
+2026-03-10T12:38:53.992404,1,pre_cmd_read,FC3_CMD+0..+23,1240,24,,1|1139|1140|0|0|0|0|0|0|0|0|0|122|0|0|1|1|0|0|0|0|0|0|0,1,0,0,0,current_target_slave=1
+2026-03-10T12:38:54.026879,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|1|4|16|1|1239|1400|0|0|0|0|0|0|0|0|0|122|0|0|1,,1,0,0,0,
+2026-03-10T12:38:56.990926,1,payload_write_ok,FC16_CMD+0..+19,1240,20,1|1|4|16|1|1239|1400|0|0|0|0|0|0|0|0|0|122|0|0|1,,1,0,0,0,
+2026-03-10T12:38:56.996349,1,commit_write_req,FC6_CMD+20,1260,1,1,,1,0,0,0,
+2026-03-10T12:38:57.984355,1,commit_write_ok,FC6_CMD+20,1260,1,1,,1,0,0,0,
+2026-03-10T12:38:59.794598,1,poll_read_error,FC3_CMD+21..+23,1261,3,,,1,0,0,0,Bad state: Read failed: lighting_poll_s1: ModbusTcpException: response timeout (2 consecutive) [degraded  timeout_streak=2]
+2026-03-10T12:39:02.145648,1,poll_read_error,FC3_CMD+21..+23,1261,3,,,1,0,0,0,Bad state: Read failed: lighting_poll_s1: ModbusTcpException: response timeout (2 consecutive) [degraded  timeout_streak=4]
+2026-03-10T12:39:04.468996,1,poll_read_error,FC3_CMD+21..+23,1261,3,,,1,0,0,0,Bad state: Read failed: lighting_poll_s1: ModbusTcpException: response timeout (3 consecutive) [degraded  timeout_streak=5]
+2026-03-10T12:39:05.988444,1,poll_read,FC3_CMD+21..+23,1261,3,,1|11|0,1,1,11,0,
+2026-03-10T12:39:05.996181,1,failed,FC3_CMD+21..+23,1261,3,,,1,1,11,0,Rejected: unknown(11) (io=none)
+2026-03-10T14:04:14.675249,1,client_error,transaction,,,,,1,1,11,0,Bad state: Read failed: lighting_pre_state_s1: ModbusTcpException: response timeout (1 consecutive) [degraded  timeout_streak=3]
+2026-03-10T14:06:21.612163,1,client_error,transaction,,,,,1,1,11,0,Bad state: Read failed: lighting_pre_state_s1: ModbusTcpException: response timeout (1 consecutive) [degraded  timeout_streak=3]
+2026-03-11T12:09:20.552513,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|1|1209|1211|0|0|0|0|0|0|0|0|0|1|0|0|1,,1,0,,,
+2026-03-11T12:09:23.543319,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|1|1209|1211|0|0|0|0|0|0|0|0|0|1|0|0|1,,2,0,,,
+2026-03-11T12:09:29.549080,101,1,poll_read,FC3_CMD+21..+23,1261,3,,1|1|0,1,1,1,0,
+2026-03-11T12:09:40.559118,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|0|0|0|0|0|0|0|0|0|0|0|0|1|0|0|1,,3,2,,,
+2026-03-11T12:09:49.564616,101,1,poll_read,FC3_CMD+21..+23,1261,3,,3|2|0,3,3,2,0,
+2026-03-11T12:09:52.559751,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|1|1209|1211|0|0|0|0|0|0|0|0|0|1|0|0|1,,4,3,,,
+2026-03-11T12:09:57.075424,101,1,poll_read,FC3_CMD+21..+23,1261,3,,3|1|0,4,3,1,0,
+2026-03-11T13:27:43.065005,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|1|1325|1328|1|1330|1335|0|0|0|0|0|0|1|0|0|1,,1,4,,,
+2026-03-11T13:27:52.070236,101,1,poll_read,FC3_CMD+21..+23,1261,3,,1|2|0,1,1,2,0,
+2026-03-11T13:53:57.710474,101,1,payload_write_req,FC16_CMD+0..+19,1240,20,1|101|5001|16|0|0|0|1|1355|1400|0|0|0|0|0|0|1|0|0|1,,2,0,,,
+2026-03-11T13:54:04.227763,101,1,poll_read,FC3_CMD+21..+23,1261,3,,2|2|0,2,2,2,0,

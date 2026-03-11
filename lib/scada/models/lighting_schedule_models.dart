@@ -1,9 +1,6 @@
-enum ScheduleAddressMode { zeroBased, style41000 }
-
 enum LightingSchedulePhase {
   idle,
   pending,
-  queued,
   success,
   failed,
   timeout,
@@ -41,13 +38,17 @@ class LightingScheduleSlot {
 
 class LightingScheduleDraft {
   const LightingScheduleDraft({
+    required this.moduleId,
+    required this.zoneId,
     required this.slaveId,
     required this.slots,
-    this.applyValue = 122,
+    this.applyValue = 1,
     this.expectedActiveCtrlVersion = 0,
     this.strictVersion = false,
   });
 
+  final int moduleId;
+  final int zoneId;
   final int slaveId;
   final List<LightingScheduleSlot> slots;
   final int applyValue;
@@ -55,6 +56,8 @@ class LightingScheduleDraft {
   final bool strictVersion;
 
   LightingScheduleDraft copyWith({
+    int? moduleId,
+    int? zoneId,
     int? slaveId,
     List<LightingScheduleSlot>? slots,
     int? applyValue,
@@ -62,6 +65,8 @@ class LightingScheduleDraft {
     bool? strictVersion,
   }) {
     return LightingScheduleDraft(
+      moduleId: moduleId ?? this.moduleId,
+      zoneId: zoneId ?? this.zoneId,
       slaveId: slaveId ?? this.slaveId,
       slots: slots ?? this.slots,
       applyValue: applyValue ?? this.applyValue,
@@ -71,8 +76,14 @@ class LightingScheduleDraft {
     );
   }
 
-  static LightingScheduleDraft initial({required int slaveId}) {
+  static LightingScheduleDraft initial({
+    required int moduleId,
+    required int zoneId,
+    required int slaveId,
+  }) {
     return LightingScheduleDraft(
+      moduleId: moduleId,
+      zoneId: zoneId,
       slaveId: slaveId,
       slots: List<LightingScheduleSlot>.generate(
         4,
@@ -84,6 +95,8 @@ class LightingScheduleDraft {
 
 class LightingScheduleStatus {
   const LightingScheduleStatus({
+    required this.moduleId,
+    required this.zoneId,
     required this.slaveId,
     required this.phase,
     required this.draft,
@@ -95,6 +108,8 @@ class LightingScheduleStatus {
     this.message,
   });
 
+  final int moduleId;
+  final int zoneId;
   final int slaveId;
   final LightingSchedulePhase phase;
   final LightingScheduleDraft draft;
@@ -117,6 +132,8 @@ class LightingScheduleStatus {
     bool clearMessage = false,
   }) {
     return LightingScheduleStatus(
+      moduleId: moduleId,
+      zoneId: zoneId,
       slaveId: slaveId,
       phase: phase ?? this.phase,
       draft: draft ?? this.draft,
@@ -129,11 +146,21 @@ class LightingScheduleStatus {
     );
   }
 
-  static LightingScheduleStatus initial(int slaveId) {
+  static LightingScheduleStatus initial({
+    required int moduleId,
+    required int zoneId,
+    required int slaveId,
+  }) {
     return LightingScheduleStatus(
+      moduleId: moduleId,
+      zoneId: zoneId,
       slaveId: slaveId,
       phase: LightingSchedulePhase.idle,
-      draft: LightingScheduleDraft.initial(slaveId: slaveId),
+      draft: LightingScheduleDraft.initial(
+        moduleId: moduleId,
+        zoneId: zoneId,
+        slaveId: slaveId,
+      ),
       trigger: 0,
       lastAppliedTrigger: 0,
       lastResult: 0,

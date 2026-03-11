@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+enum ModbusAddressMode { zeroBased, style4xxxx }
+
 class ModbusTcpException implements Exception {
   ModbusTcpException(this.message);
 
@@ -16,11 +18,8 @@ class ModbusTcpClient {
     this.connectTimeout = const Duration(seconds: 4),
     this.responseTimeout = const Duration(milliseconds: 1800),
     this.maxConsecutiveTimeoutsBeforeDisconnect = 3,
+    this.addressMode = ModbusAddressMode.zeroBased,
   });
-
-  final Duration connectTimeout;
-  final Duration responseTimeout;
-  final int maxConsecutiveTimeoutsBeforeDisconnect;
 
   Socket? _socket;
   StreamSubscription<List<int>>? _readSub;
@@ -32,6 +31,11 @@ class ModbusTcpClient {
       StreamController<bool>.broadcast();
   bool _connected = false;
   int _consecutiveTimeouts = 0;
+
+  final int maxConsecutiveTimeoutsBeforeDisconnect;
+  Duration connectTimeout;
+  Duration responseTimeout;
+  ModbusAddressMode addressMode;
 
   Stream<bool> get connection => _connectionController.stream;
   bool get isConnected => _connected;
@@ -82,7 +86,7 @@ class ModbusTcpClient {
     final pdu = Uint8List(5);
     final bd = ByteData.sublistView(pdu);
     pdu[0] = 0x03;
-    bd.setUint16(1, startAddress, Endian.big);
+    bd.setUint16(1, _normalizeAddress(startAddress), Endian.big);
     bd.setUint16(3, count, Endian.big);
     final resp = await _request(unitId: unitId, pdu: pdu);
     if (resp.length < 2 || resp[0] != 0x03) {
@@ -107,7 +111,7 @@ class ModbusTcpClient {
     final pdu = Uint8List(5);
     final bd = ByteData.sublistView(pdu);
     pdu[0] = 0x06;
-    bd.setUint16(1, address, Endian.big);
+    bd.setUint16(1, _normalizeAddress(address), Endian.big);
     bd.setUint16(3, value & 0xFFFF, Endian.big);
     final resp = await _request(unitId: unitId, pdu: pdu);
     if (resp.length < 5 || resp[0] != 0x06) {
@@ -126,7 +130,7 @@ class ModbusTcpClient {
     final pdu = Uint8List(6 + values.length * 2);
     final bd = ByteData.sublistView(pdu);
     pdu[0] = 0x10;
-    bd.setUint16(1, startAddress, Endian.big);
+    bd.setUint16(1, _normalizeAddress(startAddress), Endian.big);
     bd.setUint16(3, values.length, Endian.big);
     pdu[5] = values.length * 2;
     for (var i = 0; i < values.length; i++) {
@@ -173,13 +177,16 @@ class ModbusTcpClient {
           _pending.remove(txId);
         }
         _consecutiveTimeouts += 1;
-        final e = ModbusTcpException(
-          'response timeout (${_consecutiveTimeouts} consecutive)',
+        final error = ModbusTcpException(
+          'response timeout ($_consecutiveTimeouts consecutive)',
         );
         if (!completer.isCompleted) {
-          completer.completeError(e);
+          completer.completeError(error);
         }
-        throw e;
+        if (_consecutiveTimeouts >= maxConsecutiveTimeoutsBeforeDisconnect) {
+          unawaited(disconnect());
+        }
+        throw error;
       },
     );
   }
@@ -201,35 +208,29 @@ class ModbusTcpClient {
 
   void _onChunk(List<int> chunk) {
     _rxBuffer.addAll(chunk);
-
     while (_rxBuffer.length >= 7) {
       final head = Uint8List.fromList(_rxBuffer.sublist(0, 7));
       final h = ByteData.sublistView(head);
       final txId = h.getUint16(0, Endian.big);
       final protoId = h.getUint16(2, Endian.big);
       final len = h.getUint16(4, Endian.big);
-
       if (protoId != 0 || len < 2) {
         _onDisconnected();
         return;
       }
-
       final fullLen = 6 + len;
       if (_rxBuffer.length < fullLen) {
         return;
       }
-
       final adu = Uint8List.fromList(_rxBuffer.sublist(0, fullLen));
       _rxBuffer.removeRange(0, fullLen);
-
       final pdu = Uint8List.fromList(adu.sublist(7));
       final pending = _pending.remove(txId);
       if (pending == null || pending.isCompleted) {
         continue;
       }
       _consecutiveTimeouts = 0;
-
-      if (pdu.isNotEmpty && (pdu[0] & 0x80) == 0x80) {
+      if (pdu.isNotEmpty && (pdu[0] & 0x80) != 0) {
         final code = pdu.length > 1 ? pdu[1] : 0;
         pending.completeError(
           ModbusTcpException('modbus exception code: $code'),
@@ -244,6 +245,23 @@ class ModbusTcpClient {
     unawaited(disconnect());
   }
 
+  int _normalizeAddress(int address) {
+    if (address < 0) {
+      throw ModbusTcpException('address must be >= 0');
+    }
+    switch (addressMode) {
+      case ModbusAddressMode.zeroBased:
+        return address;
+      case ModbusAddressMode.style4xxxx:
+        if (address < 40001 || address > 49999) {
+          throw ModbusTcpException(
+            '4xxxx addressing requires literal 4xxxx address, got $address',
+          );
+        }
+        return address;
+    }
+  }
+
   int _nextTransactionId() {
     final value = _transactionId & 0xFFFF;
     _transactionId = (_transactionId + 1) & 0xFFFF;
@@ -251,9 +269,9 @@ class ModbusTcpClient {
   }
 
   void _failAllPending(Object error) {
-    for (final c in _pending.values) {
-      if (!c.isCompleted) {
-        c.completeError(error);
+    for (final pending in _pending.values) {
+      if (!pending.isCompleted) {
+        pending.completeError(error);
       }
     }
     _pending.clear();
