@@ -238,49 +238,54 @@ class ScadaController extends ChangeNotifier {
     if (resolver == null) {
       return const <ResolvedPointValue>[];
     }
-    return resolver.pointsForModule(moduleId).map((point) {
-      final telemetry = _telemetryByPublishIndex[point.publishIndex];
-      final message = telemetry == null
-          ? 'No runtime row for publish_index=${point.publishIndex}'
-          : _qualityLabel(telemetry.quality);
-      return ResolvedPointValue(
-        point: point,
-        telemetry: telemetry,
-        pointContractState: ScadaCompatibilityState.ready,
-        statusMessage: message,
-      );
-    }).toList(growable: false);
+    return resolver
+        .pointsForModule(moduleId)
+        .map((point) {
+          final telemetry = _telemetryByPublishIndex[point.publishIndex];
+          final message = telemetry == null
+              ? 'No runtime row for publish_index=${point.publishIndex}'
+              : _qualityLabel(telemetry.quality);
+          return ResolvedPointValue(
+            point: point,
+            telemetry: telemetry,
+            pointContractState: ScadaCompatibilityState.ready,
+            statusMessage: message,
+          );
+        })
+        .toList(growable: false);
   }
 
   List<SemanticFieldView> weatherFieldsForModule(int moduleId) {
-    return _weatherSemantics.map((semantic) {
-      final point = topologyResolver?.pointBySemantic(
-        moduleId: moduleId,
-        semanticName: semantic.semanticName,
-      );
-      if (point == null) {
-        return SemanticFieldView(
-          semanticName: semantic.semanticName,
-          label: semantic.label,
-          unit: semantic.unit,
-          decimals: semantic.decimals,
-          point: null,
-          telemetry: null,
-          state: ScadaCompatibilityState.pointContractMissing,
-          message: 'Point contract missing',
-        );
-      }
-      return SemanticFieldView(
-        semanticName: semantic.semanticName,
-        label: semantic.label,
-        unit: semantic.unit,
-        decimals: semantic.decimals,
-        point: point,
-        telemetry: _telemetryByPublishIndex[point.publishIndex],
-        state: ScadaCompatibilityState.ready,
-        message: 'publish_index=${point.publishIndex}',
-      );
-    }).toList(growable: false);
+    return _weatherSemantics
+        .map((semantic) {
+          final point = topologyResolver?.pointBySemantic(
+            moduleId: moduleId,
+            semanticName: semantic.semanticName,
+          );
+          if (point == null) {
+            return SemanticFieldView(
+              semanticName: semantic.semanticName,
+              label: semantic.label,
+              unit: semantic.unit,
+              decimals: semantic.decimals,
+              point: null,
+              telemetry: null,
+              state: ScadaCompatibilityState.pointContractMissing,
+              message: 'Point contract missing',
+            );
+          }
+          return SemanticFieldView(
+            semanticName: semantic.semanticName,
+            label: semantic.label,
+            unit: semantic.unit,
+            decimals: semantic.decimals,
+            point: point,
+            telemetry: _telemetryByPublishIndex[point.publishIndex],
+            state: ScadaCompatibilityState.ready,
+            message: 'publish_index=${point.publishIndex}',
+          );
+        })
+        .toList(growable: false);
   }
 
   LightingScheduleStatus lightingStatusForModule(int moduleId) {
@@ -441,8 +446,8 @@ class ScadaController extends ChangeNotifier {
     );
     while (DateTime.now().isBefore(deadline)) {
       final regs = await _readHoldingWithRetry(
-        startAddress: _registerMap.directoryBase +
-            _registerMap.rtcSetAppliedTokenOffset,
+        startAddress:
+            _registerMap.directoryBase + _registerMap.rtcSetAppliedTokenOffset,
         count: 2,
         operationName: 'rtc_set_state',
       );
@@ -527,7 +532,9 @@ class ScadaController extends ChangeNotifier {
   void _applyClientConfig() {
     _client.addressMode = config.addressMode;
     _client.connectTimeout = Duration(milliseconds: config.timeouts.connectMs);
-    _client.responseTimeout = Duration(milliseconds: config.timeouts.responseMs);
+    _client.responseTimeout = Duration(
+      milliseconds: config.timeouts.responseMs,
+    );
   }
 
   void _startPolling() {
@@ -685,7 +692,8 @@ class ScadaController extends ChangeNotifier {
     while (DateTime.now().isBefore(deadline)) {
       final regs = await _readHoldingWithRetry(
         startAddress:
-            directorySnapshot!.cmdBase + _registerMap.cmdLastAppliedTriggerOffset,
+            directorySnapshot!.cmdBase +
+            _registerMap.cmdLastAppliedTriggerOffset,
         count: 3,
         operationName: 'schedule_poll',
       );
@@ -698,7 +706,8 @@ class ScadaController extends ChangeNotifier {
         event: 'poll_read',
         operation: 'FC3_CMD+21..+23',
         address:
-            directorySnapshot!.cmdBase + _registerMap.cmdLastAppliedTriggerOffset,
+            directorySnapshot!.cmdBase +
+            _registerMap.cmdLastAppliedTriggerOffset,
         count: 3,
         responseRegs: regs,
         trigger: trigger,
@@ -751,6 +760,31 @@ class ScadaController extends ChangeNotifier {
     required String operationName,
     int maxAttempts = 2,
   }) async {
+    if (count < 1) {
+      throw RangeError.range(count, 1, null, 'count');
+    }
+    if (count > 125) {
+      final regs = <int>[];
+      var offset = 0;
+      while (offset < count) {
+        final chunkCount = (count - offset) > 125 ? 125 : (count - offset);
+        final chunk = await _readHoldingWithRetry(
+          startAddress: startAddress + offset,
+          count: chunkCount,
+          operationName: '$operationName+$offset',
+          maxAttempts: maxAttempts,
+        );
+        if (chunk.length != chunkCount) {
+          throw StateError(
+            'Short read: op=$operationName offset=$offset '
+            'expected=$chunkCount actual=${chunk.length}',
+          );
+        }
+        regs.addAll(chunk);
+        offset += chunkCount;
+      }
+      return regs;
+    }
     Object? lastFailure;
     for (var attempt = 0; attempt < maxAttempts; attempt++) {
       try {
@@ -764,7 +798,9 @@ class ScadaController extends ChangeNotifier {
         if (!_isRetryableTransportError(e)) {
           rethrow;
         }
-        _addClientTrace('read retry op=$operationName attempt=${attempt + 1}: $e');
+        _addClientTrace(
+          'read retry op=$operationName attempt=${attempt + 1}: $e',
+        );
         if (attempt + 1 < maxAttempts) {
           await Future<void>.delayed(const Duration(milliseconds: 200));
         }
@@ -852,8 +888,8 @@ class ScadaController extends ChangeNotifier {
 
   Future<int> _nextRtcSetToken() async {
     final regs = await _readHoldingWithRetry(
-      startAddress: _registerMap.directoryBase +
-          _registerMap.rtcSetAppliedTokenOffset,
+      startAddress:
+          _registerMap.directoryBase + _registerMap.rtcSetAppliedTokenOffset,
       count: 1,
       operationName: 'rtc_set_token_precheck',
       maxAttempts: 1,
@@ -918,26 +954,32 @@ class ScadaController extends ChangeNotifier {
       if (moduleId <= 0) {
         continue;
       }
-      grouped.putIfAbsent(moduleId, () => <RuntimeTelemetryPointView>[]).add(
-        RuntimeTelemetryPointView(
-          publishIndex: entry.key,
-          telemetry: entry.value,
-        ),
-      );
+      grouped
+          .putIfAbsent(moduleId, () => <RuntimeTelemetryPointView>[])
+          .add(
+            RuntimeTelemetryPointView(
+              publishIndex: entry.key,
+              telemetry: entry.value,
+            ),
+          );
     }
     final moduleIds = grouped.keys.toList()..sort();
-    return moduleIds.map((moduleId) {
-      final points = grouped[moduleId]!
-        ..sort((left, right) => left.publishIndex.compareTo(right.publishIndex));
-      final kind = _runtimeModuleKind(moduleId);
-      return RuntimeModuleTelemetryView(
-        moduleId: moduleId,
-        kind: kind,
-        title: _runtimeModuleTitle(moduleId, kind),
-        subtitle: 'runtime rows=${points.length}  module_id=$moduleId',
-        points: List<RuntimeTelemetryPointView>.unmodifiable(points),
-      );
-    }).toList(growable: false);
+    return moduleIds
+        .map((moduleId) {
+          final points = grouped[moduleId]!
+            ..sort(
+              (left, right) => left.publishIndex.compareTo(right.publishIndex),
+            );
+          final kind = _runtimeModuleKind(moduleId);
+          return RuntimeModuleTelemetryView(
+            moduleId: moduleId,
+            kind: kind,
+            title: _runtimeModuleTitle(moduleId, kind),
+            subtitle: 'runtime rows=${points.length}  module_id=$moduleId',
+            points: List<RuntimeTelemetryPointView>.unmodifiable(points),
+          );
+        })
+        .toList(growable: false);
   }
 
   void _rebuildScheduleStates() {
@@ -946,7 +988,9 @@ class ScadaController extends ChangeNotifier {
       _scheduleStatusByModuleId.clear();
       return;
     }
-    final validModuleIds = resolver.zoneModules.map((item) => item.moduleId).toSet();
+    final validModuleIds = resolver.zoneModules
+        .map((item) => item.moduleId)
+        .toSet();
     _scheduleStatusByModuleId.removeWhere(
       (moduleId, _) => !validModuleIds.contains(moduleId),
     );
@@ -978,7 +1022,8 @@ class ScadaController extends ChangeNotifier {
     if (!directory.topologyActive || !device.isActive) {
       compatibility = const CompatibilityStatus(
         state: ScadaCompatibilityState.deviceTopologyInactive,
-        message: 'Device topology is inactive. Only bootstrap and upload are allowed.',
+        message:
+            'Device topology is inactive. Only bootstrap and upload are allowed.',
       );
       return;
     }

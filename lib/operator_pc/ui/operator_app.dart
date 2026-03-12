@@ -292,17 +292,30 @@ class _SetpointsTab extends StatefulWidget {
 }
 
 class _SetpointsTabState extends State<_SetpointsTab> {
-  final TextEditingController _versionCtrl = TextEditingController(text: '1');
-  final TextEditingController _userCtrl = TextEditingController(
-    text: 'operator',
-  );
-  final TextEditingController _payloadCtrl = TextEditingController(
-    text:
-        '24.5,70.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
-  );
+  late final TextEditingController _versionCtrl;
+  late final TextEditingController _userCtrl;
+  late final TextEditingController _payloadCtrl;
+  bool _syncingDraft = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.controller.setpointDraft;
+    _versionCtrl = TextEditingController(text: draft.versionText);
+    _userCtrl = TextEditingController(text: draft.userText);
+    _payloadCtrl = TextEditingController(text: draft.payloadText);
+    _versionCtrl.addListener(_persistDraft);
+    _userCtrl.addListener(_persistDraft);
+    _payloadCtrl.addListener(_persistDraft);
+    widget.controller.addListener(_syncDraftFromController);
+  }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_syncDraftFromController);
+    _versionCtrl.removeListener(_persistDraft);
+    _userCtrl.removeListener(_persistDraft);
+    _payloadCtrl.removeListener(_persistDraft);
     _versionCtrl.dispose();
     _userCtrl.dispose();
     _payloadCtrl.dispose();
@@ -321,6 +334,10 @@ class _SetpointsTabState extends State<_SetpointsTab> {
           Text(
             'Current config[0..3]: ${c.currentConfig.take(4).map((v) => v.toStringAsFixed(2)).join(', ')}',
           ),
+          if (c.setpointDraft.savedAt != null)
+            Text(
+              'Local draft saved: ${DateFormat('yyyy-MM-dd HH:mm:ss').format(c.setpointDraft.savedAt!.toLocal())}',
+            ),
           const SizedBox(height: 8),
           Text('Apply status: ${c.setpointStatus}'),
           const SizedBox(height: 12),
@@ -390,6 +407,31 @@ class _SetpointsTabState extends State<_SetpointsTab> {
         .map((e) => e.trim())
         .where((e) => e.isNotEmpty);
     return tokens.map(double.parse).toList();
+  }
+
+  void _persistDraft() {
+    if (_syncingDraft) {
+      return;
+    }
+    widget.controller.updateSetpointDraft(
+      versionText: _versionCtrl.text,
+      userText: _userCtrl.text,
+      payloadText: _payloadCtrl.text,
+    );
+  }
+
+  void _syncDraftFromController() {
+    final draft = widget.controller.setpointDraft;
+    if (_versionCtrl.text == draft.versionText &&
+        _userCtrl.text == draft.userText &&
+        _payloadCtrl.text == draft.payloadText) {
+      return;
+    }
+    _syncingDraft = true;
+    _versionCtrl.text = draft.versionText;
+    _userCtrl.text = draft.userText;
+    _payloadCtrl.text = draft.payloadText;
+    _syncingDraft = false;
   }
 }
 

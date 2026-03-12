@@ -30,110 +30,151 @@ void main() {
       expect(controller.scheduleDisabledReasonForModule(101), isNull);
     });
 
-    test('generation mismatch blocks commands but keeps topology loaded', () async {
-      final controller = ScadaController(
-        client: _FakeModbusTcpClient(generation: 88),
-        configStore: _FakeConfigStore(),
-        logger: _FakeLogger(),
-        topologyStore: _FakeTopologyStore(
-          snapshot: _snapshot(
-            manifest: _manifest(generation: 77, includeSchedule: true),
+    test(
+      'generation mismatch blocks commands but keeps topology loaded',
+      () async {
+        final controller = ScadaController(
+          client: _FakeModbusTcpClient(generation: 88),
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: _snapshot(
+              manifest: _manifest(generation: 77, includeSchedule: true),
+            ),
           ),
-        ),
-      );
+        );
 
-      await controller.refreshSession();
+        await controller.refreshSession();
 
-      expect(
-        controller.compatibility.state,
-        ScadaCompatibilityState.topologyGenerationMismatch,
-      );
-      expect(
-        controller.scheduleDisabledReasonForModule(101),
-        contains('Topology mismatch'),
-      );
-    });
+        expect(
+          controller.compatibility.state,
+          ScadaCompatibilityState.topologyGenerationMismatch,
+        );
+        expect(
+          controller.scheduleDisabledReasonForModule(101),
+          contains('Topology mismatch'),
+        );
+      },
+    );
 
-    test('missing schedule contract is exposed as command contract missing', () async {
-      final controller = ScadaController(
-        client: _FakeModbusTcpClient(generation: 77),
-        configStore: _FakeConfigStore(),
-        logger: _FakeLogger(),
-        topologyStore: _FakeTopologyStore(
-          snapshot: _snapshot(
-            manifest: _manifest(generation: 77, includeSchedule: false),
+    test(
+      'missing schedule contract is exposed as command contract missing',
+      () async {
+        final controller = ScadaController(
+          client: _FakeModbusTcpClient(generation: 77),
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: _snapshot(
+              manifest: _manifest(generation: 77, includeSchedule: false),
+            ),
           ),
-        ),
-      );
+        );
 
-      await controller.refreshSession();
+        await controller.refreshSession();
 
-      expect(controller.compatibility.state, ScadaCompatibilityState.ready);
-      expect(
-        controller.scheduleDisabledReasonForModule(101),
-        'Schedule command profile is absent for this module.',
-      );
-    });
+        expect(controller.compatibility.state, ScadaCompatibilityState.ready);
+        expect(
+          controller.scheduleDisabledReasonForModule(101),
+          'Schedule command profile is absent for this module.',
+        );
+      },
+    );
 
-    test('bootstrap timeout does not overwrite local topology state as map incompatible', () async {
-      final controller = ScadaController(
-        client: _TimeoutModbusTcpClient(),
-        configStore: _FakeConfigStore(),
-        logger: _FakeLogger(),
-        topologyStore: _FakeTopologyStore(
-          snapshot: const TopologyStoreSnapshot(
-            manifest: null,
-            blob: null,
-            blobCrc32: null,
-            manifestError: null,
-            blobError: null,
-            semanticCatalogPath: null,
-            semanticCatalogError: null,
+    test(
+      'bootstrap timeout does not overwrite local topology state as map incompatible',
+      () async {
+        final controller = ScadaController(
+          client: _TimeoutModbusTcpClient(),
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: const TopologyStoreSnapshot(
+              manifest: null,
+              blob: null,
+              blobCrc32: null,
+              manifestError: null,
+              blobError: null,
+              semanticCatalogPath: null,
+              semanticCatalogError: null,
+            ),
           ),
-        ),
-      );
+        );
 
-      await controller.refreshSession();
+        await controller.refreshSession();
 
-      expect(
-        controller.compatibility.state,
-        ScadaCompatibilityState.localTopologyMissing,
-      );
-      expect(controller.lastError, contains('response timeout'));
-    });
+        expect(
+          controller.compatibility.state,
+          ScadaCompatibilityState.localTopologyMissing,
+        );
+        expect(controller.lastError, contains('response timeout'));
+      },
+    );
 
-    test('runtime telemetry groups are exposed when local topology is missing', () async {
-      final controller = ScadaController(
-        client: _RuntimeTelemetryModbusTcpClient(),
-        configStore: _FakeConfigStore(),
-        logger: _FakeLogger(),
-        topologyStore: _FakeTopologyStore(
-          snapshot: const TopologyStoreSnapshot(
-            manifest: null,
-            blob: null,
-            blobCrc32: null,
-            manifestError: null,
-            blobError: null,
-            semanticCatalogPath: null,
-            semanticCatalogError: null,
+    test(
+      'runtime telemetry groups are exposed when local topology is missing',
+      () async {
+        final controller = ScadaController(
+          client: _RuntimeTelemetryModbusTcpClient(),
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: const TopologyStoreSnapshot(
+              manifest: null,
+              blob: null,
+              blobCrc32: null,
+              manifestError: null,
+              blobError: null,
+              semanticCatalogPath: null,
+              semanticCatalogError: null,
+            ),
           ),
-        ),
-      );
+        );
 
-      await controller.init();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+        await controller.init();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      expect(
-        controller.compatibility.state,
-        ScadaCompatibilityState.localTopologyMissing,
-      );
-      expect(
-        controller.runtimeTelemetryModules.map((item) => item.moduleId),
-        orderedEquals(const <int>[101, 201]),
-      );
+        expect(
+          controller.compatibility.state,
+          ScadaCompatibilityState.localTopologyMissing,
+        );
+        expect(
+          controller.runtimeTelemetryModules.map((item) => item.moduleId),
+          orderedEquals(const <int>[101, 201]),
+        );
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
+
+    test(
+      'polling splits slave status reads that exceed Modbus 125-register limit',
+      () async {
+        final client = _ChunkTrackingModbusTcpClient(generation: 77);
+        final controller = ScadaController(
+          client: client,
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: _snapshot(
+              manifest: _manifestManySlaves(
+                generation: 77,
+                slaveIds: List<int>.generate(16, (index) => index + 1),
+              ),
+            ),
+          ),
+        );
+
+        await controller.init();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(controller.lastError, isNull);
+        expect(client.calls, contains('1080:125'));
+        expect(client.calls, contains('1205:3'));
+
+        controller.dispose();
+      },
+    );
   });
 }
 
@@ -223,6 +264,50 @@ TopologyManifest _manifest({
             },
           ]
         : const <Map<String, dynamic>>[],
+    'policies': const <Map<String, dynamic>>[],
+  });
+}
+
+TopologyManifest _manifestManySlaves({
+  required int generation,
+  required List<int> slaveIds,
+}) {
+  return TopologyManifest.fromJson(<String, dynamic>{
+    'schema_version': '2.0',
+    'generation': generation,
+    'topology_id': 1,
+    'modules': slaveIds
+        .map(
+          (slaveId) => <String, dynamic>{
+            'module_id': 100 + slaveId,
+            'module_type': 1,
+            'bus_type': 1,
+            'bus_index': slaveId - 1,
+            'slave_id': slaveId,
+            'zone_id': slaveId,
+            'capability_mask': 0,
+            'user_param0': 0,
+            'user_param1': 0,
+          },
+        )
+        .toList(growable: false),
+    'requests': const <Map<String, dynamic>>[],
+    'points': const <Map<String, dynamic>>[
+      <String, dynamic>{
+        'point_id': 1,
+        'module_id': 101,
+        'req_id': 1,
+        'point_type': 5,
+        'scale_pow10': 0,
+        'publish_index': 0,
+        'quality_policy': 1,
+        'stale_timeout_s': 10,
+        'alarm_low': 0,
+        'alarm_high': 0,
+        'semantic_name': 'outside_temperature',
+      },
+    ],
+    'commands': const <Map<String, dynamic>>[],
     'policies': const <Map<String, dynamic>>[],
   });
 }
@@ -388,18 +473,7 @@ class _RuntimeTelemetryModbusTcpClient extends ModbusTcpClient {
       return regs.sublist(0, count);
     }
     if (startAddress == 1408) {
-      return <int>[
-        0,
-        0,
-        0,
-        0x0001,
-        2,
-        0,
-        0,
-        8,
-        0,
-        444,
-      ].sublist(0, count);
+      return <int>[0, 0, 0, 0x0001, 2, 0, 0, 8, 0, 444].sublist(0, count);
     }
     if (startAddress == 0) {
       final rows = <List<int>>[
@@ -455,6 +529,103 @@ class _TimeoutModbusTcpClient extends ModbusTcpClient {
     required int count,
   }) async {
     throw ModbusTcpException('response timeout (1 consecutive)');
+  }
+
+  @override
+  Future<void> writeSingleRegister({
+    required int unitId,
+    required int address,
+    required int value,
+  }) async {}
+
+  @override
+  Future<void> writeMultipleRegisters({
+    required int unitId,
+    required int startAddress,
+    required List<int> values,
+  }) async {}
+
+  @override
+  Future<void> dispose() async {
+    await _stream.close();
+  }
+}
+
+class _ChunkTrackingModbusTcpClient extends ModbusTcpClient {
+  _ChunkTrackingModbusTcpClient({required this.generation});
+
+  final int generation;
+  final StreamController<bool> _stream = StreamController<bool>.broadcast();
+  final List<String> calls = <String>[];
+
+  @override
+  bool get isConnected => true;
+
+  @override
+  Stream<bool> get connection => _stream.stream;
+
+  @override
+  Future<void> connect(String host, int port) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    calls.add('$startAddress:$count');
+    if (count > 125) {
+      throw ModbusTcpException('read count must be between 1 and 125');
+    }
+    if (startAddress == 1264) {
+      final regs = List<int>.filled(32, 0);
+      regs[0] = 4;
+      regs[1] = 0x0003;
+      regs[4] = 1;
+      regs[5] = 6;
+      regs[6] = 0;
+      regs[7] = 1080;
+      regs[8] = 1240;
+      regs[11] = 180;
+      regs[12] = 24;
+      regs[13] = 8;
+      regs[14] = 13;
+      regs[15] = 2;
+      return regs.sublist(0, count);
+    }
+    if (startAddress == 1408) {
+      return <int>[
+        0,
+        0,
+        0,
+        0x0001,
+        2,
+        0,
+        (generation >> 16) & 0xFFFF,
+        generation & 0xFFFF,
+        0,
+        540,
+      ].sublist(0, count);
+    }
+    if (startAddress == 0) {
+      return _pointRow(
+        value: 24.5,
+        quality: 0,
+        ageSec: 1,
+        moduleId: 101,
+        flags: 1,
+      ).sublist(0, count);
+    }
+    if (startAddress >= 1080 && startAddress < 1208) {
+      return List<int>.filled(count, 0);
+    }
+    if (startAddress == 1278) {
+      return <int>[13, 2].sublist(0, count);
+    }
+    return List<int>.filled(count, 0);
   }
 
   @override

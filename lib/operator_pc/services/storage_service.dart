@@ -14,11 +14,14 @@ class StorageService {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
 
-    final dbPath = p.join(await databaseFactory.getDatabasesPath(), 'greenhouse_operator.db');
+    final dbPath = p.join(
+      await databaseFactory.getDatabasesPath(),
+      'greenhouse_operator.db',
+    );
     _db = await databaseFactory.openDatabase(
       dbPath,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onCreate: (db, _) async {
           await db.execute('''
             CREATE TABLE telemetry(
@@ -49,9 +52,28 @@ class StorageService {
               summary TEXT
             )
           ''');
+
+          await _createSetpointDraftTable(db);
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await _createSetpointDraftTable(db);
+          }
         },
       ),
     );
+  }
+
+  Future<void> _createSetpointDraftTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS setpoint_draft(
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        time_utc TEXT NOT NULL,
+        version_text TEXT NOT NULL,
+        user_text TEXT NOT NULL,
+        payload_text TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> logSnapshot(List<SensorPoint> sensors) async {
@@ -77,18 +99,14 @@ class StorageService {
     if (db == null) {
       return;
     }
-    await db.insert(
-      'events',
-      {
-        'time_utc': event.timestamp.toUtc().toIso8601String(),
-        'event_id': event.eventId,
-        'severity': event.severity.index,
-        'code': event.code,
-        'source': event.source,
-        'value': event.value,
-      },
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await db.insert('events', {
+      'time_utc': event.timestamp.toUtc().toIso8601String(),
+      'event_id': event.eventId,
+      'severity': event.severity.index,
+      'code': event.code,
+      'source': event.source,
+      'value': event.value,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
   }
 
   Future<void> logSetpointChange({
@@ -110,7 +128,48 @@ class StorageService {
     });
   }
 
-  Future<List<Map<String, Object?>>> telemetryBetween(DateTime from, DateTime to) async {
+  Future<void> saveSetpointDraft(LocalSetpointDraft draft) async {
+    final db = _db;
+    if (db == null) {
+      return;
+    }
+    await db.insert('setpoint_draft', {
+      'id': 1,
+      'time_utc': (draft.savedAt ?? DateTime.now()).toUtc().toIso8601String(),
+      'version_text': draft.versionText,
+      'user_text': draft.userText,
+      'payload_text': draft.payloadText,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<LocalSetpointDraft?> loadSetpointDraft() async {
+    final db = _db;
+    if (db == null) {
+      return null;
+    }
+    final rows = await db.query(
+      'setpoint_draft',
+      where: 'id = ?',
+      whereArgs: const [1],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    final row = rows.first;
+    final savedAtText = row['time_utc'] as String?;
+    return LocalSetpointDraft(
+      versionText: (row['version_text'] as String?) ?? '',
+      userText: (row['user_text'] as String?) ?? '',
+      payloadText: (row['payload_text'] as String?) ?? '',
+      savedAt: savedAtText == null ? null : DateTime.tryParse(savedAtText),
+    );
+  }
+
+  Future<List<Map<String, Object?>>> telemetryBetween(
+    DateTime from,
+    DateTime to,
+  ) async {
     final db = _db;
     if (db == null) {
       return <Map<String, Object?>>[];
@@ -123,7 +182,10 @@ class StorageService {
     );
   }
 
-  Future<List<Map<String, Object?>>> eventsBetween(DateTime from, DateTime to) async {
+  Future<List<Map<String, Object?>>> eventsBetween(
+    DateTime from,
+    DateTime to,
+  ) async {
     final db = _db;
     if (db == null) {
       return <Map<String, Object?>>[];
@@ -139,7 +201,8 @@ class StorageService {
   Future<String> exportCsv({
     required DateTime from,
     required DateTime to,
-    required ({int blockNo, int channelIndex})? Function(int sensorId) resolveSensor,
+    required ({int blockNo, int channelIndex})? Function(int sensorId)
+    resolveSensor,
     required String Function(int channelIndex) channelNameByIndex,
     required String Function(int source) decodeSource,
   }) async {
@@ -155,7 +218,9 @@ class StorageService {
     final outPath = p.join(outDir.path, 'report_$stamp.csv');
     final sb = StringBuffer();
 
-    sb.writeln('section,TimeUtc,sensor_id,BlockNo,ChannelName,Value,Quality,event_id,severity,code,source,source_decoded');
+    sb.writeln(
+      'section,TimeUtc,sensor_id,BlockNo,ChannelName,Value,Quality,event_id,severity,code,source,source_decoded',
+    );
     for (final row in telemetry) {
       final sensorId = (row['sensor_id'] as int?) ?? -1;
       final mapped = sensorId >= 0 ? resolveSensor(sensorId) : null;
@@ -181,7 +246,8 @@ class StorageService {
   Future<String> exportXlsx({
     required DateTime from,
     required DateTime to,
-    required ({int blockNo, int channelIndex})? Function(int sensorId) resolveSensor,
+    required ({int blockNo, int channelIndex})? Function(int sensorId)
+    resolveSensor,
     required String Function(int channelIndex) channelNameByIndex,
     required String Function(int source) decodeSource,
   }) async {

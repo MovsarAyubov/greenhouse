@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
@@ -8,10 +9,7 @@ import 'protocol.dart';
 import 'storage_service.dart';
 
 class AppController extends ChangeNotifier {
-  AppController({
-    required this.host,
-    required this.port,
-  }) {
+  AppController({required this.host, required this.port}) {
     _client = MasterTcpClient(host: host, port: port);
   }
 
@@ -47,12 +45,14 @@ class AppController extends ChangeNotifier {
   int rawTxBytes = 0;
   int rawTxFrames = 0;
   List<double> currentConfig = List<double>.filled(32, 0);
+  LocalSetpointDraft setpointDraft = LocalSetpointDraft.defaults();
   int channelsPerBlock = kChannelsPerBlock;
   List<BlockLayoutItem> blockLayoutItems = const <BlockLayoutItem>[];
 
   StreamSubscription<bool>? _connSub;
   StreamSubscription<ProtocolFrame>? _frameSub;
   Timer? _statusPollTimer;
+  Timer? _setpointDraftSaveTimer;
   Completer<int>? _setpointValidateAck;
   Completer<({bool applied, int version})>? _setpointApplyAck;
 
@@ -61,6 +61,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     await storage.init();
+    final savedDraft = await storage.loadSetpointDraft();
+    if (savedDraft != null) {
+      setpointDraft = savedDraft;
+    }
 
     _connSub = _client.connection.listen((connected) {
       status = status.copyWith(connected: connected);
@@ -78,6 +82,7 @@ class AppController extends ChangeNotifier {
 
     _frameSub = _client.frames.listen(_onFrame);
     await _client.start();
+    notifyListeners();
   }
 
   Future<void> _runResync() async {
@@ -263,7 +268,10 @@ class AppController extends ChangeNotifier {
       );
     });
 
-    status = status.copyWith(lastSnapshotAt: ts, lastSnapshotId: snap.snapshotId);
+    status = status.copyWith(
+      lastSnapshotAt: ts,
+      lastSnapshotId: snap.snapshotId,
+    );
     notifyListeners();
 
     unawaited(storage.logSnapshot(sensors));
@@ -331,6 +339,13 @@ class AppController extends ChangeNotifier {
 
     setpointBusy = true;
     setpointStatus = 'in_progress';
+    setpointDraft = setpointDraft.copyWith(
+      versionText: '$newVersion',
+      userText: user,
+      payloadText: _formatSetpointValues(values),
+      savedAt: DateTime.now(),
+    );
+    await storage.saveSetpointDraft(setpointDraft);
     notifyListeners();
 
     try {
@@ -341,11 +356,7 @@ class AppController extends ChangeNotifier {
       final configPayload = Uint8List(128);
       final cfg = ByteData.sublistView(configPayload);
       for (var i = 0; i < 32; i++) {
-        cfg.setFloat32(
-          i * 4,
-          i < values.length ? values[i] : 0,
-          Endian.little,
-        );
+        cfg.setFloat32(i * 4, i < values.length ? values[i] : 0, Endian.little);
       }
       final payloadCrc = crc32(configPayload);
 
@@ -364,7 +375,9 @@ class AppController extends ChangeNotifier {
       }
 
       await _client.sendFrame(MsgType.setpointsApplyReq, Uint8List(0));
-      final apply = await _setpointApplyAck!.future.timeout(_setpointApplyTimeout);
+      final apply = await _setpointApplyAck!.future.timeout(
+        _setpointApplyTimeout,
+      );
       if (!apply.applied) {
         setpointStatus = 'apply_failed';
         return;
@@ -388,6 +401,23 @@ class AppController extends ChangeNotifier {
       setpointBusy = false;
       notifyListeners();
     }
+  }
+
+  void updateSetpointDraft({
+    String? versionText,
+    String? userText,
+    String? payloadText,
+  }) {
+    setpointDraft = setpointDraft.copyWith(
+      versionText: versionText,
+      userText: userText,
+      payloadText: payloadText,
+      savedAt: DateTime.now(),
+    );
+    _setpointDraftSaveTimer?.cancel();
+    _setpointDraftSaveTimer = Timer(const Duration(milliseconds: 300), () {
+      unawaited(storage.saveSetpointDraft(setpointDraft));
+    });
   }
 
   void _parseSetpointValidate(Uint8List payload) {
@@ -492,7 +522,10 @@ class AppController extends ChangeNotifier {
       final start = item.sensorBase;
       final end = item.sensorBase + item.sensorCount;
       if (sensorId >= start && sensorId < end) {
-        return (blockNo: item.blockNo, channelIndex: sensorId - item.sensorBase);
+        return (
+          blockNo: item.blockNo,
+          channelIndex: sensorId - item.sensorBase,
+        );
       }
     }
     return null;
@@ -511,8 +544,16 @@ class AppController extends ChangeNotifier {
     _connSub?.cancel();
     _frameSub?.cancel();
     _stopStatusPoll();
+    _setpointDraftSaveTimer?.cancel();
     unawaited(_client.dispose());
     unawaited(storage.dispose());
     super.dispose();
+  }
+
+  String _formatSetpointValues(List<double> values) {
+    return List<String>.generate(
+      32,
+      (index) => index < values.length ? values[index].toString() : '0',
+    ).join(',');
   }
 }
