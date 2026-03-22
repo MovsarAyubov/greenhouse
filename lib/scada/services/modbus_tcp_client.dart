@@ -24,29 +24,43 @@ class ModbusTcpClient {
   Socket? _socket;
   StreamSubscription<List<int>>? _readSub;
   int _transactionId = 1;
-  final Map<int, Completer<Uint8List>> _pending = <int, Completer<Uint8List>>{};
   final List<int> _rxBuffer = <int>[];
   Future<void> _requestChain = Future<void>.value();
   final StreamController<bool> _connectionController =
       StreamController<bool>.broadcast();
   bool _connected = false;
   int _consecutiveTimeouts = 0;
+  Completer<Uint8List>? _activeRequest;
+  int? _activeTransactionId;
+  String? _lastHost;
+  int? _lastPort;
+  int _connectionId = 0;
+  int _requestId = 0;
 
   final int maxConsecutiveTimeoutsBeforeDisconnect;
   Duration connectTimeout;
   Duration responseTimeout;
   ModbusAddressMode addressMode;
+  void Function(String message)? traceSink;
 
   Stream<bool> get connection => _connectionController.stream;
   bool get isConnected => _connected;
 
   Future<void> connect(String host, int port) async {
+    final previousHost = _lastHost;
+    final previousPort = _lastPort;
+    _lastHost = host;
+    _lastPort = port;
     if (_socket != null) {
-      return;
+      if (previousHost == host && previousPort == port) {
+        return;
+      }
+      await disconnect();
     }
     final socket = await Socket.connect(host, port, timeout: connectTimeout);
     socket.setOption(SocketOption.tcpNoDelay, true);
     _socket = socket;
+    _connectionId += 1;
     _readSub = socket.listen(
       _onChunk,
       onDone: _onDisconnected,
@@ -55,6 +69,7 @@ class ModbusTcpClient {
     );
     _setConnected(true);
     _consecutiveTimeouts = 0;
+    _trace('connect conn=$_connectionId host=$host port=$port');
   }
 
   Future<void> disconnect() async {
@@ -71,8 +86,9 @@ class ModbusTcpClient {
       socket.destroy();
     }
 
-    _failAllPending(ModbusTcpException('disconnected'));
+    _failActiveRequest(ModbusTcpException('disconnected'));
     _setConnected(false);
+    _trace('disconnect conn=$_connectionId');
   }
 
   Future<List<int>> readHoldingRegisters({
@@ -143,52 +159,94 @@ class ModbusTcpClient {
   }
 
   Future<Uint8List> _request({required int unitId, required Uint8List pdu}) {
-    final completer = Completer<Uint8List>();
-    int? requestTxId;
-    _requestChain = _requestChain.catchError((_) {}).then((_) async {
+    final requestId = ++_requestId;
+    final fc = pdu.isEmpty ? 0 : pdu[0];
+    final startAddress = pdu.length >= 3
+        ? ((pdu[1] & 0xFF) << 8) | (pdu[2] & 0xFF)
+        : -1;
+    final qtyOrValueCount = pdu.length >= 5
+        ? ((pdu[3] & 0xFF) << 8) | (pdu[4] & 0xFF)
+        : -1;
+    _trace(
+      'request enqueue req=$requestId conn=$_connectionId '
+      'fc=$fc start=$startAddress size=$qtyOrValueCount',
+    );
+    final operation = _requestChain.catchError((_) {}).then((_) async {
+      final stopwatch = Stopwatch()..start();
+      var finishLogged = false;
+      await _ensureConnected();
       final socket = _socket;
       if (socket == null) {
-        completer.completeError(ModbusTcpException('not connected'));
-        return;
+        throw ModbusTcpException('not connected');
       }
 
       final txId = _nextTransactionId();
-      requestTxId = txId;
-      _pending[txId] = completer;
+      final completer = Completer<Uint8List>();
+      _activeTransactionId = txId;
+      _activeRequest = completer;
       final adu = _buildAdu(txId: txId, unitId: unitId, pdu: pdu);
+      _trace(
+        'request start req=$requestId conn=$_connectionId tx=$txId '
+        'fc=$fc start=$startAddress size=$qtyOrValueCount',
+      );
 
       try {
         socket.add(adu);
         await socket.flush();
       } catch (e) {
-        _pending.remove(txId);
-        if (!completer.isCompleted) {
-          completer.completeError(e);
-        }
+        _clearActiveRequest();
         await disconnect();
+        _trace(
+          'request finish req=$requestId conn=$_connectionId tx=$txId '
+          'result=send_error duration_ms=${stopwatch.elapsedMilliseconds} '
+          'error=$e',
+        );
+        finishLogged = true;
+        rethrow;
+      }
+
+      try {
+        final response = await completer.future.timeout(
+          responseTimeout,
+          onTimeout: () {
+            _consecutiveTimeouts += 1;
+            final error = ModbusTcpException(
+              'response timeout ($_consecutiveTimeouts consecutive)',
+            );
+            _failActiveRequest(error);
+            _trace(
+              'request finish req=$requestId conn=$_connectionId tx=$txId '
+              'result=response_timeout duration_ms=${stopwatch.elapsedMilliseconds} '
+              'streak=$_consecutiveTimeouts',
+            );
+            finishLogged = true;
+            if (_consecutiveTimeouts >=
+                maxConsecutiveTimeoutsBeforeDisconnect) {
+              unawaited(disconnect());
+            }
+            throw error;
+          },
+        );
+        _trace(
+          'request finish req=$requestId conn=$_connectionId tx=$txId '
+          'result=ok duration_ms=${stopwatch.elapsedMilliseconds}',
+        );
+        finishLogged = true;
+        return response;
+      } catch (e) {
+        if (!finishLogged) {
+          _trace(
+            'request finish req=$requestId conn=$_connectionId tx=$txId '
+            'result=error duration_ms=${stopwatch.elapsedMilliseconds} error=$e',
+          );
+        }
+        rethrow;
+      } finally {
+        _clearActiveRequest();
       }
     });
-
-    return completer.future.timeout(
-      responseTimeout,
-      onTimeout: () {
-        final txId = requestTxId;
-        if (txId != null) {
-          _pending.remove(txId);
-        }
-        _consecutiveTimeouts += 1;
-        final error = ModbusTcpException(
-          'response timeout ($_consecutiveTimeouts consecutive)',
-        );
-        if (!completer.isCompleted) {
-          completer.completeError(error);
-        }
-        if (_consecutiveTimeouts >= maxConsecutiveTimeoutsBeforeDisconnect) {
-          unawaited(disconnect());
-        }
-        throw error;
-      },
-    );
+    _requestChain = operation.then((_) {}, onError: (_) {});
+    return operation;
   }
 
   Uint8List _buildAdu({
@@ -225,8 +283,11 @@ class ModbusTcpClient {
       final adu = Uint8List.fromList(_rxBuffer.sublist(0, fullLen));
       _rxBuffer.removeRange(0, fullLen);
       final pdu = Uint8List.fromList(adu.sublist(7));
-      final pending = _pending.remove(txId);
+      final pending = _activeRequest;
       if (pending == null || pending.isCompleted) {
+        continue;
+      }
+      if (_activeTransactionId != txId) {
         continue;
       }
       _consecutiveTimeouts = 0;
@@ -243,6 +304,18 @@ class ModbusTcpClient {
 
   void _onDisconnected() {
     unawaited(disconnect());
+  }
+
+  Future<void> _ensureConnected() async {
+    if (_socket != null) {
+      return;
+    }
+    final host = _lastHost;
+    final port = _lastPort;
+    if (host == null || port == null) {
+      throw ModbusTcpException('not connected');
+    }
+    await connect(host, port);
   }
 
   int _normalizeAddress(int address) {
@@ -268,13 +341,12 @@ class ModbusTcpClient {
     return value;
   }
 
-  void _failAllPending(Object error) {
-    for (final pending in _pending.values) {
-      if (!pending.isCompleted) {
-        pending.completeError(error);
-      }
+  void _failActiveRequest(Object error) {
+    final pending = _activeRequest;
+    if (pending != null && !pending.isCompleted) {
+      pending.completeError(error);
     }
-    _pending.clear();
+    _clearActiveRequest();
   }
 
   void _setConnected(bool value) {
@@ -283,6 +355,15 @@ class ModbusTcpClient {
     }
     _connected = value;
     _connectionController.add(value);
+  }
+
+  void _clearActiveRequest() {
+    _activeRequest = null;
+    _activeTransactionId = null;
+  }
+
+  void _trace(String message) {
+    traceSink?.call(message);
   }
 
   Future<void> dispose() async {

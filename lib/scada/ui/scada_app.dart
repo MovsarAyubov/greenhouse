@@ -47,10 +47,7 @@ class _ScadaAppState extends State<ScadaApp> {
             ...controller.zoneModules.map(
               (module) => _TabEntry(
                 label: 'Zone ${module.zoneId}',
-                child: _ZoneModuleTab(
-                  controller: controller,
-                  module: module,
-                ),
+                child: _ZoneModuleTab(controller: controller, module: module),
               ),
             ),
             if (controller.weatherModules.isNotEmpty)
@@ -113,7 +110,8 @@ class _DashboardTab extends StatelessWidget {
             children: [
               Text('State: ${controller.compatibility.state.name}'),
               Text(controller.compatibility.message),
-              if (controller.lastError != null) Text('Last error: ${controller.lastError}'),
+              if (controller.lastError != null)
+                Text('Last error: ${controller.lastError}'),
               Text('RTC: ${controller.serverRtcText}'),
             ],
           ),
@@ -142,16 +140,22 @@ class _DashboardTab extends StatelessWidget {
                 Text(
                   'schema=${store.manifest!.schemaVersion} generation=${store.manifest!.generation}',
                 ),
-              if (store.manifestError != null) Text('Manifest error: ${store.manifestError}'),
-              Text('Semantic catalog: ${store.hasSemanticCatalog ? 'loaded' : 'missing'}'),
+              if (store.manifestError != null)
+                Text('Manifest error: ${store.manifestError}'),
+              Text(
+                'Semantic catalog: ${store.hasSemanticCatalog ? 'loaded' : 'missing'}',
+              ),
               if (store.semanticCatalogPath != null)
                 Text('Semantic path: ${store.semanticCatalogPath}'),
               if (store.semanticCatalogError != null)
                 Text('Semantic error: ${store.semanticCatalogError}'),
               Text('Blob: ${store.hasBlob ? 'loaded' : 'missing'}'),
               if (store.blobCrc32 != null)
-                Text('Blob CRC32: 0x${store.blobCrc32!.toRadixString(16).toUpperCase()}'),
-              if (store.blobError != null) Text('Blob error: ${store.blobError}'),
+                Text(
+                  'Blob CRC32: 0x${store.blobCrc32!.toRadixString(16).toUpperCase()}',
+                ),
+              if (store.blobError != null)
+                Text('Blob error: ${store.blobError}'),
             ],
           ),
         ),
@@ -180,10 +184,7 @@ class _DashboardTab extends StatelessWidget {
 }
 
 class _ZoneModuleTab extends StatelessWidget {
-  const _ZoneModuleTab({
-    required this.controller,
-    required this.module,
-  });
+  const _ZoneModuleTab({required this.controller, required this.module});
 
   final ScadaController controller;
   final TopologyModule module;
@@ -193,7 +194,9 @@ class _ZoneModuleTab extends StatelessWidget {
     final status = controller.slaveStatusForModule(module.moduleId);
     final points = controller.resolvedPointsForModule(module.moduleId);
     final scheduleStatus = controller.lightingStatusForModule(module.moduleId);
-    final disabledReason = controller.scheduleDisabledReasonForModule(module.moduleId);
+    final disabledReason = controller.scheduleDisabledReasonForModule(
+      module.moduleId,
+    );
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -203,7 +206,9 @@ class _ZoneModuleTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('module_id=${module.moduleId}, slave_id=${module.slaveId}'),
-              Text('zone_id=${module.zoneId}, capability=0x${module.capabilityMask.toRadixString(16)}'),
+              Text(
+                'zone_id=${module.zoneId}, capability=0x${module.capabilityMask.toRadixString(16)}',
+              ),
               Text(
                 'online=${status?.online == true ? 'yes' : 'no'} stale=${status?.stale == true ? 'yes' : 'no'}',
               ),
@@ -228,7 +233,9 @@ class _ZoneModuleTab extends StatelessWidget {
                     trailing: Text(
                       _formatPointValue(item.point, item.telemetry),
                       style: TextStyle(
-                        color: item.telemetry?.isUsable == true ? null : Colors.grey,
+                        color: item.telemetry?.isUsable == true
+                            ? null
+                            : Colors.grey,
                       ),
                     ),
                   ),
@@ -261,7 +268,8 @@ class _WeatherTab extends StatelessWidget {
             (module) => _InfoCard(
               title: module.title,
               child: Column(
-                children: controller.weatherFieldsForModule(module.moduleId)
+                children: controller
+                    .weatherFieldsForModule(module.moduleId)
                     .map(
                       (field) => ListTile(
                         dense: true,
@@ -270,7 +278,9 @@ class _WeatherTab extends StatelessWidget {
                         trailing: Text(
                           _formatSemanticField(field),
                           style: TextStyle(
-                            color: field.state == ScadaCompatibilityState.pointContractMissing
+                            color:
+                                field.state ==
+                                    ScadaCompatibilityState.pointContractMissing
                                 ? Colors.grey
                                 : null,
                           ),
@@ -315,14 +325,17 @@ class _ScheduleCard extends StatelessWidget {
                   value: slot.enabled,
                   onChanged: disabledReason == null
                       ? (value) {
-                          controller.updateLightingDraft(
-                            module.moduleId,
-                            (current) {
-                              final slots = List<LightingScheduleSlot>.from(current.slots);
-                              slots[index] = slots[index].copyWith(enabled: value);
-                              return current.copyWith(slots: slots);
-                            },
-                          );
+                          controller.updateLightingDraft(module.moduleId, (
+                            current,
+                          ) {
+                            final slots = List<LightingScheduleSlot>.from(
+                              current.slots,
+                            );
+                            slots[index] = slots[index].copyWith(
+                              enabled: value,
+                            );
+                            return current.copyWith(slots: slots);
+                          });
                         }
                       : null,
                 ),
@@ -331,34 +344,42 @@ class _ScheduleCard extends StatelessWidget {
                 TextButton(
                   onPressed: disabledReason == null
                       ? () => _pickTime(
-                            context,
-                            slot.onHhmm,
-                            (value) => controller.updateLightingDraft(
-                              module.moduleId,
-                              (current) {
-                                final slots = List<LightingScheduleSlot>.from(current.slots);
-                                slots[index] = slots[index].copyWith(onHhmm: value);
-                                return current.copyWith(slots: slots);
-                              },
-                            ),
-                          )
+                          context,
+                          slot.onHhmm,
+                          (value) => controller.updateLightingDraft(
+                            module.moduleId,
+                            (current) {
+                              final slots = List<LightingScheduleSlot>.from(
+                                current.slots,
+                              );
+                              slots[index] = slots[index].copyWith(
+                                onHhmm: value,
+                              );
+                              return current.copyWith(slots: slots);
+                            },
+                          ),
+                        )
                       : null,
                   child: Text('ON ${_formatHhmm(slot.onHhmm)}'),
                 ),
                 TextButton(
                   onPressed: disabledReason == null
                       ? () => _pickTime(
-                            context,
-                            slot.offHhmm,
-                            (value) => controller.updateLightingDraft(
-                              module.moduleId,
-                              (current) {
-                                final slots = List<LightingScheduleSlot>.from(current.slots);
-                                slots[index] = slots[index].copyWith(offHhmm: value);
-                                return current.copyWith(slots: slots);
-                              },
-                            ),
-                          )
+                          context,
+                          slot.offHhmm,
+                          (value) => controller.updateLightingDraft(
+                            module.moduleId,
+                            (current) {
+                              final slots = List<LightingScheduleSlot>.from(
+                                current.slots,
+                              );
+                              slots[index] = slots[index].copyWith(
+                                offHhmm: value,
+                              );
+                              return current.copyWith(slots: slots);
+                            },
+                          ),
+                        )
                       : null,
                   child: Text('OFF ${_formatHhmm(slot.offHhmm)}'),
                 ),
@@ -388,7 +409,9 @@ class _ScheduleCard extends StatelessWidget {
               Expanded(
                 child: TextFormField(
                   initialValue: '${draft.expectedActiveCtrlVersion}',
-                  decoration: const InputDecoration(labelText: 'Expected version'),
+                  decoration: const InputDecoration(
+                    labelText: 'Expected version',
+                  ),
                   keyboardType: TextInputType.number,
                   onChanged: (value) {
                     final parsed = int.tryParse(value.trim());
@@ -411,20 +434,19 @@ class _ScheduleCard extends StatelessWidget {
             value: draft.strictVersion,
             onChanged: disabledReason == null
                 ? (value) => controller.updateLightingDraft(
-                      module.moduleId,
-                      (current) =>
-                          current.copyWith(strictVersion: value ?? false),
-                    )
+                    module.moduleId,
+                    (current) =>
+                        current.copyWith(strictVersion: value ?? false),
+                  )
                 : null,
           ),
           if (disabledReason != null)
-            Text(
-              disabledReason!,
-              style: const TextStyle(color: Colors.orange),
-            ),
+            Text(disabledReason!, style: const TextStyle(color: Colors.orange)),
           ElevatedButton(
             onPressed: disabledReason == null
-                ? () => unawaited(controller.sendScheduleForModule(module.moduleId))
+                ? () => unawaited(
+                    controller.sendScheduleForModule(module.moduleId),
+                  )
                 : null,
             child: const Text('Send schedule'),
           ),
@@ -465,13 +487,19 @@ class _SettingsTab extends StatefulWidget {
 class _SettingsTabState extends State<_SettingsTab> {
   late final TextEditingController _hostCtrl;
   late final TextEditingController _portCtrl;
+  late final TextEditingController _unitIdCtrl;
   late final TextEditingController _manifestCtrl;
   late final TextEditingController _blobCtrl;
   late final TextEditingController _semanticCtrl;
   late final TextEditingController _pollCtrl;
+  late final TextEditingController _diagPollCtrl;
+  late final TextEditingController _responseTimeoutCtrl;
+  late final TextEditingController _retryCountCtrl;
+  late final TextEditingController _retryBackoffCtrl;
   late final TextEditingController _rtcHourCtrl;
   late final TextEditingController _rtcMinuteCtrl;
   ModbusAddressMode _addressMode = ModbusAddressMode.zeroBased;
+  bool _pausePollingDuringWrites = true;
   String _status = '';
 
   @override
@@ -480,23 +508,53 @@ class _SettingsTabState extends State<_SettingsTab> {
     final config = widget.controller.config;
     _hostCtrl = TextEditingController(text: config.deviceConnection.host);
     _portCtrl = TextEditingController(text: '${config.deviceConnection.port}');
-    _manifestCtrl = TextEditingController(text: config.localTopologyManifestPath);
+    _unitIdCtrl = TextEditingController(
+      text: '${config.deviceConnection.unitId}',
+    );
+    _manifestCtrl = TextEditingController(
+      text: config.localTopologyManifestPath,
+    );
     _blobCtrl = TextEditingController(text: config.localTopologyBlobPath);
     _semanticCtrl = TextEditingController(text: config.semanticCatalogPath);
-    _pollCtrl = TextEditingController(text: '${config.pollIntervals.telemetryMs}');
-    _rtcHourCtrl = TextEditingController(text: '${widget.controller.serverRtcHour ?? 0}');
-    _rtcMinuteCtrl = TextEditingController(text: '${widget.controller.serverRtcMinute ?? 0}');
+    _pollCtrl = TextEditingController(
+      text: '${config.pollIntervals.telemetryMs}',
+    );
+    _diagPollCtrl = TextEditingController(
+      text: '${config.pollIntervals.diagMs}',
+    );
+    _responseTimeoutCtrl = TextEditingController(
+      text: '${config.timeouts.responseMs}',
+    );
+    _retryCountCtrl = TextEditingController(
+      text: '${config.transport.retryCount}',
+    );
+    _retryBackoffCtrl = TextEditingController(
+      text: '${config.timeouts.retryBackoffMs}',
+    );
+    _rtcHourCtrl = TextEditingController(
+      text: '${widget.controller.serverRtcHour ?? 0}',
+    );
+    _rtcMinuteCtrl = TextEditingController(
+      text: '${widget.controller.serverRtcMinute ?? 0}',
+    );
     _addressMode = config.addressMode;
+    _pausePollingDuringWrites =
+        config.featureFlags.pausePollingDuringWriteWorkflows;
   }
 
   @override
   void dispose() {
     _hostCtrl.dispose();
     _portCtrl.dispose();
+    _unitIdCtrl.dispose();
     _manifestCtrl.dispose();
     _blobCtrl.dispose();
     _semanticCtrl.dispose();
     _pollCtrl.dispose();
+    _diagPollCtrl.dispose();
+    _responseTimeoutCtrl.dispose();
+    _retryCountCtrl.dispose();
+    _retryBackoffCtrl.dispose();
     _rtcHourCtrl.dispose();
     _rtcMinuteCtrl.dispose();
     super.dispose();
@@ -508,10 +566,18 @@ class _SettingsTabState extends State<_SettingsTab> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        TextField(controller: _hostCtrl, decoration: const InputDecoration(labelText: 'Host')),
+        TextField(
+          controller: _hostCtrl,
+          decoration: const InputDecoration(labelText: 'Host'),
+        ),
         TextField(
           controller: _portCtrl,
           decoration: const InputDecoration(labelText: 'Port'),
+          keyboardType: TextInputType.number,
+        ),
+        TextField(
+          controller: _unitIdCtrl,
+          decoration: const InputDecoration(labelText: 'Unit ID'),
           keyboardType: TextInputType.number,
         ),
         DropdownButtonFormField<ModbusAddressMode>(
@@ -533,7 +599,9 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         TextField(
           controller: _manifestCtrl,
-          decoration: const InputDecoration(labelText: 'Topology manifest path'),
+          decoration: const InputDecoration(
+            labelText: 'Topology manifest path',
+          ),
         ),
         TextField(
           controller: _blobCtrl,
@@ -548,6 +616,34 @@ class _SettingsTabState extends State<_SettingsTab> {
           decoration: const InputDecoration(labelText: 'Telemetry poll ms'),
           keyboardType: TextInputType.number,
         ),
+        TextField(
+          controller: _diagPollCtrl,
+          decoration: const InputDecoration(labelText: 'Diag poll ms'),
+          keyboardType: TextInputType.number,
+        ),
+        TextField(
+          controller: _responseTimeoutCtrl,
+          decoration: const InputDecoration(labelText: 'Response timeout ms'),
+          keyboardType: TextInputType.number,
+        ),
+        TextField(
+          controller: _retryCountCtrl,
+          decoration: const InputDecoration(labelText: 'Retry count'),
+          keyboardType: TextInputType.number,
+        ),
+        TextField(
+          controller: _retryBackoffCtrl,
+          decoration: const InputDecoration(labelText: 'Retry backoff ms'),
+          keyboardType: TextInputType.number,
+        ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Pause polling during write workflows'),
+          value: _pausePollingDuringWrites,
+          onChanged: (value) {
+            setState(() => _pausePollingDuringWrites = value);
+          },
+        ),
         const SizedBox(height: 12),
         Wrap(
           spacing: 8,
@@ -558,16 +654,40 @@ class _SettingsTabState extends State<_SettingsTab> {
                 final next = controller.config.copyWith(
                   deviceConnection: controller.config.deviceConnection.copyWith(
                     host: _hostCtrl.text.trim(),
-                    port: int.tryParse(_portCtrl.text.trim()) ??
+                    port:
+                        int.tryParse(_portCtrl.text.trim()) ??
                         controller.config.deviceConnection.port,
+                    unitId:
+                        int.tryParse(_unitIdCtrl.text.trim()) ??
+                        controller.config.deviceConnection.unitId,
                   ),
                   addressMode: _addressMode,
                   localTopologyManifestPath: _manifestCtrl.text.trim(),
                   localTopologyBlobPath: _blobCtrl.text.trim(),
                   semanticCatalogPath: _semanticCtrl.text.trim(),
                   pollIntervals: controller.config.pollIntervals.copyWith(
-                    telemetryMs: int.tryParse(_pollCtrl.text.trim()) ??
+                    telemetryMs:
+                        int.tryParse(_pollCtrl.text.trim()) ??
                         controller.config.pollIntervals.telemetryMs,
+                    diagMs:
+                        int.tryParse(_diagPollCtrl.text.trim()) ??
+                        controller.config.pollIntervals.diagMs,
+                  ),
+                  timeouts: controller.config.timeouts.copyWith(
+                    responseMs:
+                        int.tryParse(_responseTimeoutCtrl.text.trim()) ??
+                        controller.config.timeouts.responseMs,
+                    retryBackoffMs:
+                        int.tryParse(_retryBackoffCtrl.text.trim()) ??
+                        controller.config.timeouts.retryBackoffMs,
+                  ),
+                  transport: controller.config.transport.copyWith(
+                    retryCount:
+                        int.tryParse(_retryCountCtrl.text.trim()) ??
+                        controller.config.transport.retryCount,
+                  ),
+                  featureFlags: controller.config.featureFlags.copyWith(
+                    pausePollingDuringWriteWorkflows: _pausePollingDuringWrites,
                   ),
                 );
                 await controller.saveConfig(next);
@@ -640,6 +760,32 @@ class _SettingsTabState extends State<_SettingsTab> {
         if (controller.serverRtcLastError != null)
           Text('RTC error: ${controller.serverRtcLastError}'),
         const Divider(height: 24),
+        const Text('Diagnostics'),
+        Text('Polling paused: ${controller.pollingPaused ? 'yes' : 'no'}'),
+        if (controller.diagnosticsLastUpdate != null)
+          Text('Updated: ${controller.diagnosticsLastUpdate}'),
+        if (controller.diagnosticsSnapshot != null) ...[
+          Text(
+            'TCP accept/recvTimeout/stale/malformed/send='
+            '${controller.diagnosticsSnapshot!.tcpAcceptErrCount}/'
+            '${controller.diagnosticsSnapshot!.tcpRecvTimeoutCount}/'
+            '${controller.diagnosticsSnapshot!.tcpStaleCloseCount}/'
+            '${controller.diagnosticsSnapshot!.tcpMalformedMbapCount}/'
+            '${controller.diagnosticsSnapshot!.tcpSendErrCount}',
+          ),
+          Text('TCP last err: ${controller.diagnosticsSnapshot!.tcpLastErr}'),
+          Text(
+            'Boot/power/error/wdg/fault='
+            '${controller.diagnosticsSnapshot!.bootCount}/'
+            '${controller.diagnosticsSnapshot!.powerOnCount}/'
+            '${controller.diagnosticsSnapshot!.errorHandlerCount}/'
+            '${controller.diagnosticsSnapshot!.watchdogMissCount}/'
+            '${controller.diagnosticsSnapshot!.faultResetCount}',
+          ),
+        ],
+        if (controller.diagnosticsLastError != null)
+          Text('Diagnostics error: ${controller.diagnosticsLastError}'),
+        const Divider(height: 24),
         const Text('Trace'),
         SelectableText(
           controller.clientTrace.take(60).join('\n'),
@@ -651,10 +797,7 @@ class _SettingsTabState extends State<_SettingsTab> {
 }
 
 class _InfoCard extends StatelessWidget {
-  const _InfoCard({
-    required this.title,
-    required this.child,
-  });
+  const _InfoCard({required this.title, required this.child});
 
   final String title;
   final Widget child;
@@ -679,10 +822,7 @@ class _InfoCard extends StatelessWidget {
 }
 
 class _TabEntry {
-  const _TabEntry({
-    required this.label,
-    required this.child,
-  });
+  const _TabEntry({required this.label, required this.child});
 
   final String label;
   final Widget child;

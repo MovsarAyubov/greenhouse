@@ -29,6 +29,23 @@ class LightingScheduleSlot {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'enabled': enabled,
+      'on_hhmm': onHhmm,
+      'off_hhmm': offHhmm,
+    };
+  }
+
+  static LightingScheduleSlot fromJson(Object? value) {
+    final map = _mapValue(value);
+    return LightingScheduleSlot(
+      enabled: _readBoolValue(map['enabled']) ?? false,
+      onHhmm: _readIntValue(map['on_hhmm']) ?? 0,
+      offHhmm: _readIntValue(map['off_hhmm']) ?? 0,
+    );
+  }
+
   static LightingScheduleSlot disabled() => const LightingScheduleSlot(
     enabled: false,
     onHhmm: 0,
@@ -37,6 +54,8 @@ class LightingScheduleSlot {
 }
 
 class LightingScheduleDraft {
+  static const int slotCount = 4;
+
   const LightingScheduleDraft({
     required this.moduleId,
     required this.zoneId,
@@ -76,6 +95,55 @@ class LightingScheduleDraft {
     );
   }
 
+  LightingScheduleDraft rebind({
+    required int moduleId,
+    required int zoneId,
+    required int slaveId,
+  }) {
+    return copyWith(
+      moduleId: moduleId,
+      zoneId: zoneId,
+      slaveId: slaveId,
+      slots: _normalizeSlots(slots),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'module_id': moduleId,
+      'zone_id': zoneId,
+      'slave_id': slaveId,
+      'slots': slots.map((slot) => slot.toJson()).toList(growable: false),
+      'apply_value': applyValue,
+      'expected_active_ctrl_version': expectedActiveCtrlVersion,
+      'strict_version': strictVersion,
+    };
+  }
+
+  static LightingScheduleDraft? fromJson(Object? value) {
+    final map = _mapValue(value);
+    final moduleId = _readIntValue(map['module_id']);
+    final zoneId = _readIntValue(map['zone_id']);
+    final slaveId = _readIntValue(map['slave_id']);
+    if (moduleId == null || zoneId == null || slaveId == null) {
+      return null;
+    }
+    final rawSlots = map['slots'];
+    final slots = rawSlots is List
+        ? rawSlots.map(LightingScheduleSlot.fromJson)
+        : const <LightingScheduleSlot>[];
+    return LightingScheduleDraft(
+      moduleId: moduleId,
+      zoneId: zoneId,
+      slaveId: slaveId,
+      slots: _normalizeSlots(slots),
+      applyValue: _readIntValue(map['apply_value']) ?? 1,
+      expectedActiveCtrlVersion:
+          _readIntValue(map['expected_active_ctrl_version']) ?? 0,
+      strictVersion: _readBoolValue(map['strict_version']) ?? false,
+    );
+  }
+
   static LightingScheduleDraft initial({
     required int moduleId,
     required int zoneId,
@@ -86,10 +154,20 @@ class LightingScheduleDraft {
       zoneId: zoneId,
       slaveId: slaveId,
       slots: List<LightingScheduleSlot>.generate(
-        4,
+        slotCount,
         (_) => LightingScheduleSlot.disabled(),
       ),
     );
+  }
+
+  static List<LightingScheduleSlot> _normalizeSlots(
+    Iterable<LightingScheduleSlot> slots,
+  ) {
+    final normalized = slots.take(slotCount).toList(growable: true);
+    while (normalized.length < slotCount) {
+      normalized.add(LightingScheduleSlot.disabled());
+    }
+    return List<LightingScheduleSlot>.unmodifiable(normalized);
   }
 }
 
@@ -121,6 +199,9 @@ class LightingScheduleStatus {
   final String? message;
 
   LightingScheduleStatus copyWith({
+    int? moduleId,
+    int? zoneId,
+    int? slaveId,
     LightingSchedulePhase? phase,
     LightingScheduleDraft? draft,
     int? trigger,
@@ -132,9 +213,9 @@ class LightingScheduleStatus {
     bool clearMessage = false,
   }) {
     return LightingScheduleStatus(
-      moduleId: moduleId,
-      zoneId: zoneId,
-      slaveId: slaveId,
+      moduleId: moduleId ?? this.moduleId,
+      zoneId: zoneId ?? this.zoneId,
+      slaveId: slaveId ?? this.slaveId,
       phase: phase ?? this.phase,
       draft: draft ?? this.draft,
       trigger: trigger ?? this.trigger,
@@ -167,4 +248,43 @@ class LightingScheduleStatus {
       lastIoErr: 0,
     );
   }
+}
+
+Map<String, dynamic> _mapValue(Object? value) {
+  if (value is Map<String, dynamic>) {
+    return value;
+  }
+  if (value is Map) {
+    return value.map((key, item) => MapEntry(key.toString(), item));
+  }
+  return <String, dynamic>{};
+}
+
+int? _readIntValue(Object? value) {
+  if (value is int) {
+    return value;
+  }
+  if (value is String) {
+    return int.tryParse(value.trim());
+  }
+  return null;
+}
+
+bool? _readBoolValue(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is int) {
+    return value != 0;
+  }
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') {
+      return true;
+    }
+    if (normalized == 'false' || normalized == '0') {
+      return false;
+    }
+  }
+  return null;
 }

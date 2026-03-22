@@ -6,6 +6,7 @@ class ScadaLogger {
   File? _telemetryFile;
   File? _clientTraceFile;
   File? _scheduleTxFile;
+  Future<void> _writeChain = Future<void>.value();
 
   Future<void> init() async {
     final dir = Directory(
@@ -50,10 +51,10 @@ class ScadaLogger {
       return;
     }
     final now = DateTime.now().toIso8601String();
-    await file.writeAsString(
+    await _append(
+      file,
       '$now,$moduleId,${point.pointId},${point.publishIndex},'
       '${value.toStringAsFixed(3)},$quality,$ageSec,$flags\n',
-      mode: FileMode.append,
     );
   }
 
@@ -63,10 +64,7 @@ class ScadaLogger {
       return;
     }
     final now = DateTime.now().toIso8601String();
-    await file.writeAsString(
-      '$now,${_sanitizeCsv(event)}\n',
-      mode: FileMode.append,
-    );
+    await _append(file, '$now,${_sanitizeCsv(event)}\n');
   }
 
   Future<void> logScheduleTransaction({
@@ -89,13 +87,20 @@ class ScadaLogger {
       return;
     }
     final now = DateTime.now().toIso8601String();
-    await file.writeAsString(
+    await _append(
+      file,
       '$now,$moduleId,$slaveId,${_sanitizeCsv(event)},${_sanitizeCsv(operation)},'
       '${address ?? ''},${count ?? ''},${_encodeRegs(requestRegs)},${_encodeRegs(responseRegs)},'
       '${trigger ?? ''},${lastAppliedTrigger ?? ''},${lastResult ?? ''},${lastIoErr ?? ''},'
       '${_sanitizeCsv(message ?? '')}\n',
-      mode: FileMode.append,
     );
+  }
+
+  Future<void> _append(File file, String line) {
+    _writeChain = _writeChain.catchError((_) {}).then((_) {
+      return file.writeAsString(line, mode: FileMode.append);
+    });
+    return _writeChain;
   }
 
   String _encodeRegs(List<int>? values) {

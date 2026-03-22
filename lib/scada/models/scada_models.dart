@@ -12,11 +12,7 @@ class DeviceConnectionConfig {
   final int port;
   final int unitId;
 
-  DeviceConnectionConfig copyWith({
-    String? host,
-    int? port,
-    int? unitId,
-  }) {
+  DeviceConnectionConfig copyWith({String? host, int? port, int? unitId}) {
     return DeviceConnectionConfig(
       host: host ?? this.host,
       port: port ?? this.port,
@@ -28,21 +24,25 @@ class DeviceConnectionConfig {
 class PollIntervalsConfig {
   const PollIntervalsConfig({
     required this.telemetryMs,
+    required this.diagMs,
     required this.commandPollMs,
     required this.uploadPollMs,
   });
 
   final int telemetryMs;
+  final int diagMs;
   final int commandPollMs;
   final int uploadPollMs;
 
   PollIntervalsConfig copyWith({
     int? telemetryMs,
+    int? diagMs,
     int? commandPollMs,
     int? uploadPollMs,
   }) {
     return PollIntervalsConfig(
       telemetryMs: telemetryMs ?? this.telemetryMs,
+      diagMs: diagMs ?? this.diagMs,
       commandPollMs: commandPollMs ?? this.commandPollMs,
       uploadPollMs: uploadPollMs ?? this.uploadPollMs,
     );
@@ -53,6 +53,7 @@ class TimeoutConfig {
   const TimeoutConfig({
     required this.connectMs,
     required this.responseMs,
+    required this.retryBackoffMs,
     required this.commandMs,
     required this.uploadChunkMs,
     required this.uploadCommitMs,
@@ -60,6 +61,7 @@ class TimeoutConfig {
 
   final int connectMs;
   final int responseMs;
+  final int retryBackoffMs;
   final int commandMs;
   final int uploadChunkMs;
   final int uploadCommitMs;
@@ -67,6 +69,7 @@ class TimeoutConfig {
   TimeoutConfig copyWith({
     int? connectMs,
     int? responseMs,
+    int? retryBackoffMs,
     int? commandMs,
     int? uploadChunkMs,
     int? uploadCommitMs,
@@ -74,6 +77,7 @@ class TimeoutConfig {
     return TimeoutConfig(
       connectMs: connectMs ?? this.connectMs,
       responseMs: responseMs ?? this.responseMs,
+      retryBackoffMs: retryBackoffMs ?? this.retryBackoffMs,
       commandMs: commandMs ?? this.commandMs,
       uploadChunkMs: uploadChunkMs ?? this.uploadChunkMs,
       uploadCommitMs: uploadCommitMs ?? this.uploadCommitMs,
@@ -81,18 +85,31 @@ class TimeoutConfig {
   }
 }
 
+class TransportConfig {
+  const TransportConfig({required this.retryCount});
+
+  final int retryCount;
+
+  TransportConfig copyWith({int? retryCount}) {
+    return TransportConfig(retryCount: retryCount ?? this.retryCount);
+  }
+}
+
 class FeatureFlagsConfig {
   const FeatureFlagsConfig({
     required this.allowTelemetryOnGenerationMismatch,
     required this.showUnsupportedPoints,
+    required this.pausePollingDuringWriteWorkflows,
   });
 
   final bool allowTelemetryOnGenerationMismatch;
   final bool showUnsupportedPoints;
+  final bool pausePollingDuringWriteWorkflows;
 
   FeatureFlagsConfig copyWith({
     bool? allowTelemetryOnGenerationMismatch,
     bool? showUnsupportedPoints,
+    bool? pausePollingDuringWriteWorkflows,
   }) {
     return FeatureFlagsConfig(
       allowTelemetryOnGenerationMismatch:
@@ -100,6 +117,9 @@ class FeatureFlagsConfig {
           this.allowTelemetryOnGenerationMismatch,
       showUnsupportedPoints:
           showUnsupportedPoints ?? this.showUnsupportedPoints,
+      pausePollingDuringWriteWorkflows:
+          pausePollingDuringWriteWorkflows ??
+          this.pausePollingDuringWriteWorkflows,
     );
   }
 }
@@ -113,6 +133,7 @@ class ScadaConfig {
     required this.semanticCatalogPath,
     required this.pollIntervals,
     required this.timeouts,
+    required this.transport,
     required this.featureFlags,
   });
 
@@ -123,6 +144,7 @@ class ScadaConfig {
   final String semanticCatalogPath;
   final PollIntervalsConfig pollIntervals;
   final TimeoutConfig timeouts;
+  final TransportConfig transport;
   final FeatureFlagsConfig featureFlags;
 
   ScadaConfig copyWith({
@@ -133,6 +155,7 @@ class ScadaConfig {
     String? semanticCatalogPath,
     PollIntervalsConfig? pollIntervals,
     TimeoutConfig? timeouts,
+    TransportConfig? transport,
     FeatureFlagsConfig? featureFlags,
   }) {
     return ScadaConfig(
@@ -140,10 +163,12 @@ class ScadaConfig {
       addressMode: addressMode ?? this.addressMode,
       localTopologyManifestPath:
           localTopologyManifestPath ?? this.localTopologyManifestPath,
-      localTopologyBlobPath: localTopologyBlobPath ?? this.localTopologyBlobPath,
+      localTopologyBlobPath:
+          localTopologyBlobPath ?? this.localTopologyBlobPath,
       semanticCatalogPath: semanticCatalogPath ?? this.semanticCatalogPath,
       pollIntervals: pollIntervals ?? this.pollIntervals,
       timeouts: timeouts ?? this.timeouts,
+      transport: transport ?? this.transport,
       featureFlags: featureFlags ?? this.featureFlags,
     );
   }
@@ -160,19 +185,23 @@ class ScadaConfig {
     semanticCatalogPath: '',
     pollIntervals: const PollIntervalsConfig(
       telemetryMs: 5000,
+      diagMs: 30000,
       commandPollMs: 500,
       uploadPollMs: 100,
     ),
     timeouts: const TimeoutConfig(
       connectMs: 4000,
-      responseMs: 1800,
+      responseMs: 1000,
+      retryBackoffMs: 100,
       commandMs: 25000,
       uploadChunkMs: 3000,
       uploadCommitMs: 15000,
     ),
+    transport: const TransportConfig(retryCount: 0),
     featureFlags: const FeatureFlagsConfig(
       allowTelemetryOnGenerationMismatch: true,
       showUnsupportedPoints: true,
+      pausePollingDuringWriteWorkflows: true,
     ),
   );
 }
@@ -238,6 +267,44 @@ class SlaveStatusSnapshot {
   bool get stale => (statusFlags & 0x0002) != 0;
 }
 
+class DiagnosticsSnapshot {
+  const DiagnosticsSnapshot({
+    required this.bootCount,
+    required this.powerOnCount,
+    required this.errorHandlerCount,
+    required this.watchdogMissCount,
+    required this.faultResetCount,
+    required this.lastEventCode,
+    required this.lastResetReason,
+    required this.lastErrorCode,
+    required this.modbusTimeout0,
+    required this.modbusTimeout1,
+    required this.tcpAcceptErrCount,
+    required this.tcpRecvTimeoutCount,
+    required this.tcpStaleCloseCount,
+    required this.tcpMalformedMbapCount,
+    required this.tcpSendErrCount,
+    required this.tcpLastErr,
+  });
+
+  final int bootCount;
+  final int powerOnCount;
+  final int errorHandlerCount;
+  final int watchdogMissCount;
+  final int faultResetCount;
+  final int lastEventCode;
+  final int lastResetReason;
+  final int lastErrorCode;
+  final int modbusTimeout0;
+  final int modbusTimeout1;
+  final int tcpAcceptErrCount;
+  final int tcpRecvTimeoutCount;
+  final int tcpStaleCloseCount;
+  final int tcpMalformedMbapCount;
+  final int tcpSendErrCount;
+  final int tcpLastErr;
+}
+
 class ModuleSummary {
   const ModuleSummary({
     required this.module,
@@ -272,11 +339,7 @@ class SemanticFieldView {
   final String message;
 }
 
-enum RuntimeModuleKind {
-  zone,
-  weather,
-  other,
-}
+enum RuntimeModuleKind { zone, weather, other }
 
 class RuntimeTelemetryPointView {
   const RuntimeTelemetryPointView({

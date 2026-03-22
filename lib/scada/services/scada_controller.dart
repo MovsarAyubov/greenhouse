@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 
 import '../models/lighting_schedule_models.dart';
@@ -26,7 +27,9 @@ class ScadaController extends ChangeNotifier {
        _logger = logger ?? ScadaLogger(),
        _registerMap = registerMap ?? RegisterMap.assumed,
        _topologyStore = topologyStore ?? TopologyStore(),
-       _commandBuilder = const CommandBuilder();
+       _commandBuilder = const CommandBuilder() {
+    _client.traceSink = _addClientTrace;
+  }
 
   final ModbusTcpClient _client;
   final ConfigStore _configStore;
@@ -56,6 +59,9 @@ class ScadaController extends ChangeNotifier {
   DateTime? serverRtcLastUpdate;
   int? serverRtcHour;
   int? serverRtcMinute;
+  DiagnosticsSnapshot? diagnosticsSnapshot;
+  DateTime? diagnosticsLastUpdate;
+  String? diagnosticsLastError;
 
   CompatibilityStatus compatibility = const CompatibilityStatus(
     state: ScadaCompatibilityState.localTopologyMissing,
@@ -71,6 +77,8 @@ class ScadaController extends ChangeNotifier {
       <int, PointTelemetryValue>{};
   final Map<int, SlaveStatusSnapshot> _slaveStatusBySlaveId =
       <int, SlaveStatusSnapshot>{};
+  final Map<int, LightingScheduleDraft> _persistedLightingDraftByModuleId =
+      <int, LightingScheduleDraft>{};
   final Map<int, LightingScheduleStatus> _scheduleStatusByModuleId =
       <int, LightingScheduleStatus>{};
   final List<String> _clientTrace = <String>[];
@@ -79,6 +87,20 @@ class ScadaController extends ChangeNotifier {
   Timer? _pollTimer;
   int _lightingTriggerCounter = 0;
   int _topologySubmitToken = 100;
+  int _pollingPauseDepth = 0;
+  DateTime? _lastDiagnosticsPollAt;
+  DateTime? _lastSessionRefreshAttemptAt;
+  bool _disposed = false;
+
+  // Use the full Modbus FC3 window now that the server handles large reads
+  // without the earlier timeout/stall behavior.
+  static const int _maxPointRegsPerRead = 125;
+  static const int _maxSlaveStatusRegsPerRead = 125;
+  static const Duration _sessionRefreshInterval = Duration(seconds: 30);
+  static const int _minScheduleApplyWaitMs = 2000;
+  static const int _scheduleResultIdle = 0;
+  static const int _scheduleResultQueued = 1;
+  static const int _scheduleResultApplied = 2;
 
   List<String> get clientTrace => List<String>.unmodifiable(_clientTrace);
   List<TopologyModule> get zoneModules =>
@@ -128,6 +150,8 @@ class ScadaController extends ChangeNotifier {
       compatibility.state == ScadaCompatibilityState.ready ||
       compatibility.state == ScadaCompatibilityState.topologyGenerationMismatch;
 
+  bool get pollingPaused => _pollingPauseDepth > 0;
+
   bool get canUploadTopology =>
       compatibility.state != ScadaCompatibilityState.mapIncompatible &&
       topologySnapshot.blob != null &&
@@ -142,10 +166,16 @@ class ScadaController extends ChangeNotifier {
 
   Future<void> init() async {
     config = await _configStore.load();
+    _persistedLightingDraftByModuleId
+      ..clear()
+      ..addAll(await _configStore.loadLightingDrafts());
     await _logger.init();
     _applyClientConfig();
     _connectionSub = _client.connection.listen((value) {
       connected = value;
+      if (!value) {
+        _lastSessionRefreshAttemptAt = null;
+      }
       _addClientTrace(value ? 'connected' : 'disconnected');
       notifyListeners();
     });
@@ -171,12 +201,26 @@ class ScadaController extends ChangeNotifier {
     await _loadLocalTopology();
   }
 
-  Future<void> refreshSession() async {
-    await _loadLocalTopology(notifyAfterLoad: false, recomputeAfterLoad: false);
-    if (!_client.isConnected) {
-      notifyListeners();
+  Future<void> refreshSession({
+    bool reloadLocalTopology = true,
+    bool abortOnTransportError = false,
+  }) async {
+    if (_disposed) {
       return;
     }
+    if (reloadLocalTopology) {
+      await _loadLocalTopology(
+        notifyAfterLoad: false,
+        recomputeAfterLoad: false,
+      );
+    }
+    if (!_client.isConnected) {
+      if (!_disposed) {
+        notifyListeners();
+      }
+      return;
+    }
+    _lastSessionRefreshAttemptAt = DateTime.now();
     final bootstrap = await _registerMapRuntime.bootstrap();
     if (bootstrap.directory != null) {
       directorySnapshot = bootstrap.directory;
@@ -194,7 +238,13 @@ class ScadaController extends ChangeNotifier {
       lastError = bootstrap.bootstrapError;
       _addClientTrace('bootstrap read error: ${bootstrap.bootstrapError}');
       _recomputeCompatibility();
-      notifyListeners();
+      if (abortOnTransportError &&
+          _isRetryableTransportError(bootstrap.bootstrapError!)) {
+        throw _PollingTransportAbort(bootstrap.bootstrapError!);
+      }
+      if (!_disposed) {
+        notifyListeners();
+      }
       return;
     }
     if (bootstrap.contractError != null) {
@@ -209,7 +259,9 @@ class ScadaController extends ChangeNotifier {
       _topologySubmitToken,
       deviceTopologyMetadata?.resultToken ?? 0,
     );
-    notifyListeners();
+    if (!_disposed) {
+      notifyListeners();
+    }
   }
 
   Future<void> _loadLocalTopology({
@@ -301,6 +353,8 @@ class ScadaController extends ChangeNotifier {
       moduleId: module.moduleId,
       zoneId: module.zoneId,
       slaveId: module.slaveId,
+    ).copyWith(
+      draft: _draftForModule(module: module),
     );
     _scheduleStatusByModuleId[moduleId] = created;
     return created;
@@ -365,51 +419,57 @@ class ScadaController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _ensureMapCompatible();
-      final preState = await _readHoldingWithRetry(
-        startAddress: directorySnapshot!.cmdBase,
-        count: _registerMap.expectedCmdBlockSize,
-        operationName: 'schedule_pre_state',
-      );
-      final lastApplied =
-          preState[_registerMap.cmdLastAppliedTriggerOffset] & 0xFFFF;
-      final trigger = _nextLightingTrigger(lastAppliedTrigger: lastApplied);
-      final payloadRegs = <int>[
-        request.targetSlaveId & 0xFFFF,
-        request.targetModuleId & 0xFFFF,
-        request.cmdProfileId & 0xFFFF,
-        request.payload.length & 0xFFFF,
-        ...request.payload,
-      ];
-      await _logger.logScheduleTransaction(
-        moduleId: module.moduleId,
-        slaveId: module.slaveId,
-        event: 'payload_write_req',
-        operation: 'FC16_CMD+0..+19',
-        address: directorySnapshot!.cmdBase,
-        count: payloadRegs.length,
-        requestRegs: payloadRegs,
-        trigger: trigger,
-        lastAppliedTrigger: lastApplied,
-      );
-      await _writeMultipleWithRetry(
-        startAddress: directorySnapshot!.cmdBase,
-        values: payloadRegs,
-        operationName: 'schedule_payload',
-      );
-      await _writeSingleWithRetry(
-        address: directorySnapshot!.cmdBase + _registerMap.cmdTriggerOffset,
-        value: trigger,
-        operationName: 'schedule_trigger',
-      );
+      final status = await _runWithPollingPause('schedule_apply', () async {
+        await _ensureMapCompatible();
+        final preState = await _readHoldingWithRetry(
+          startAddress: directorySnapshot!.cmdBase,
+          count: _registerMap.expectedCmdBlockSize,
+          operationName: 'schedule_pre_state',
+        );
+        final lastApplied =
+            preState[_registerMap.cmdLastAppliedTriggerOffset] & 0xFFFF;
+        final trigger = _nextLightingTrigger(lastAppliedTrigger: lastApplied);
+        final payloadRegs = <int>[
+          request.targetSlaveId & 0xFFFF,
+          request.targetModuleId & 0xFFFF,
+          request.cmdProfileId & 0xFFFF,
+          request.payload.length & 0xFFFF,
+          ...request.payload,
+        ];
+        await _logger.logScheduleTransaction(
+          moduleId: module.moduleId,
+          slaveId: module.slaveId,
+          event: 'payload_write_req',
+          operation: 'FC16_CMD+0..+19',
+          address: directorySnapshot!.cmdBase,
+          count: payloadRegs.length,
+          requestRegs: payloadRegs,
+          trigger: trigger,
+          lastAppliedTrigger: lastApplied,
+        );
+        await _writeMultipleWithRetry(
+          startAddress: directorySnapshot!.cmdBase,
+          values: payloadRegs,
+          operationName: 'schedule_payload',
+        );
+        await _writeSingleWithRetry(
+          address: directorySnapshot!.cmdBase + _registerMap.cmdTriggerOffset,
+          value: trigger,
+          operationName: 'schedule_trigger',
+        );
+        await _persistLastSentLightingDraft(
+          module: module,
+          draft: current.draft,
+        );
 
-      final status = await _pollForScheduleResult(
-        module: module,
-        trigger: trigger,
-        timeoutMs: request.timeoutMs > 0
-            ? request.timeoutMs
-            : config.timeouts.commandMs,
-      );
+        return _pollForScheduleResult(
+          module: module,
+          trigger: trigger,
+          timeoutMs: request.timeoutMs > 0
+              ? request.timeoutMs
+              : config.timeouts.commandMs,
+        );
+      });
       _scheduleStatusByModuleId[moduleId] = status;
     } catch (e) {
       _scheduleStatusByModuleId[moduleId] = current.copyWith(
@@ -433,38 +493,42 @@ class ScadaController extends ChangeNotifier {
     if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
       throw RangeError('RTC_SET out of range');
     }
-    await _ensureMapCompatible();
-    final token = await _nextRtcSetToken();
-    await _writeMultipleWithRetry(
-      startAddress: _registerMap.directoryBase + _registerMap.rtcSetHourOffset,
-      values: <int>[hour, minute, token],
-      operationName: 'rtc_set_triplet',
-    );
-
-    final deadline = DateTime.now().add(
-      Duration(milliseconds: config.timeouts.commandMs),
-    );
-    while (DateTime.now().isBefore(deadline)) {
-      final regs = await _readHoldingWithRetry(
+    await _runWithPollingPause('rtc_set', () async {
+      await _ensureMapCompatible();
+      final token = await _nextRtcSetToken();
+      await _writeMultipleWithRetry(
         startAddress:
-            _registerMap.directoryBase + _registerMap.rtcSetAppliedTokenOffset,
-        count: 2,
-        operationName: 'rtc_set_state',
+            _registerMap.directoryBase + _registerMap.rtcSetHourOffset,
+        values: <int>[hour, minute, token],
+        operationName: 'rtc_set_triplet',
       );
-      final lastAppliedToken = regs[0] & 0xFFFF;
-      final result = regs[1] & 0xFFFF;
-      if (lastAppliedToken == token) {
-        if (result == 2) {
-          await refreshSession();
-          return;
+
+      final deadline = DateTime.now().add(
+        Duration(milliseconds: config.timeouts.commandMs),
+      );
+      while (DateTime.now().isBefore(deadline)) {
+        final regs = await _readHoldingWithRetry(
+          startAddress:
+              _registerMap.directoryBase +
+              _registerMap.rtcSetAppliedTokenOffset,
+          count: 2,
+          operationName: 'rtc_set_state',
+        );
+        final lastAppliedToken = regs[0] & 0xFFFF;
+        final result = regs[1] & 0xFFFF;
+        if (lastAppliedToken == token) {
+          if (result == 2) {
+            await refreshSession();
+            return;
+          }
+          throw StateError('RTC_SET failed: $result');
         }
-        throw StateError('RTC_SET failed: $result');
+        await Future<void>.delayed(
+          Duration(milliseconds: config.pollIntervals.commandPollMs),
+        );
       }
-      await Future<void>.delayed(
-        Duration(milliseconds: config.pollIntervals.commandPollMs),
-      );
-    }
-    throw TimeoutException('RTC_SET not confirmed');
+      throw TimeoutException('RTC_SET not confirmed');
+    });
   }
 
   Future<void> uploadTopology() async {
@@ -475,17 +539,21 @@ class ScadaController extends ChangeNotifier {
     uploadStatus = 'Uploading topology...';
     notifyListeners();
     try {
-      await _ensureMapCompatible();
-      final manifest = topologySnapshot.manifest!;
-      final blob = topologySnapshot.blob!;
-      final summary = await _topologyUploader.upload(
-        blob: blob,
-        generation: manifest.generation,
-        startToken: _topologySubmitToken + 1,
-        pollInterval: Duration(milliseconds: config.pollIntervals.uploadPollMs),
-        chunkTimeout: Duration(milliseconds: config.timeouts.uploadChunkMs),
-        commitTimeout: Duration(milliseconds: config.timeouts.uploadCommitMs),
-      );
+      final summary = await _runWithPollingPause('topology_upload', () async {
+        await _ensureMapCompatible();
+        final manifest = topologySnapshot.manifest!;
+        final blob = topologySnapshot.blob!;
+        return _topologyUploader.upload(
+          blob: blob,
+          generation: manifest.generation,
+          startToken: _topologySubmitToken + 1,
+          pollInterval: Duration(
+            milliseconds: config.pollIntervals.uploadPollMs,
+          ),
+          chunkTimeout: Duration(milliseconds: config.timeouts.uploadChunkMs),
+          commitTimeout: Duration(milliseconds: config.timeouts.uploadCommitMs),
+        );
+      });
       _topologySubmitToken += summary.chunksUploaded;
       _telemetryByPublishIndex.clear();
       _slaveStatusBySlaveId.clear();
@@ -547,7 +615,11 @@ class ScadaController extends ChangeNotifier {
   }
 
   Future<void> _pollTick() async {
-    if (polling || topologyUploading || scheduleSending) {
+    if (_disposed ||
+        polling ||
+        topologyUploading ||
+        scheduleSending ||
+        pollingPaused) {
       return;
     }
     polling = true;
@@ -558,10 +630,10 @@ class ScadaController extends ChangeNotifier {
       if (!_client.isConnected) {
         return;
       }
-      await refreshSession();
-      if (canUseRtc) {
-        await _pollRtc();
-      }
+      await _refreshSessionIfDue(
+        force: directorySnapshot == null || deviceTopologyMetadata == null,
+      );
+      await _pollDiagnosticsIfDue();
       if (canReadTelemetry || canReadRuntimeTelemetryFallback) {
         await _pollTelemetry();
       } else {
@@ -569,28 +641,72 @@ class ScadaController extends ChangeNotifier {
         _slaveStatusBySlaveId.clear();
       }
       lastError = null;
+    } on _PollingTransportAbort catch (e) {
+      lastError = e.message;
+      _addClientTrace('poll cycle aborted: ${e.message}');
     } catch (e) {
       lastError = e.toString();
       _addClientTrace('poll error: $e');
     } finally {
       polling = false;
-      notifyListeners();
+      if (!_disposed) {
+        notifyListeners();
+      }
     }
   }
 
-  Future<void> _pollRtc() async {
+  Future<void> _refreshSessionIfDue({bool force = false}) async {
+    final lastAttemptAt = _lastSessionRefreshAttemptAt;
+    if (!force &&
+        lastAttemptAt != null &&
+        DateTime.now().difference(lastAttemptAt) < _sessionRefreshInterval) {
+      return;
+    }
+    await refreshSession(
+      reloadLocalTopology: false,
+      abortOnTransportError: true,
+    );
+  }
+
+  Future<void> _pollDiagnosticsIfDue() async {
+    final lastPollAt = _lastDiagnosticsPollAt;
+    final intervalMs = config.pollIntervals.diagMs;
+    if (lastPollAt != null &&
+        DateTime.now().difference(lastPollAt).inMilliseconds < intervalMs) {
+      return;
+    }
+    _lastDiagnosticsPollAt = DateTime.now();
     try {
       final regs = await _readHoldingWithRetry(
-        startAddress: _registerMap.directoryBase + _registerMap.rtcHourOffset,
-        count: 2,
-        operationName: 'rtc_hhmm',
+        startAddress: _registerMap.diagBase,
+        count: 32,
+        operationName: 'diag_window',
       );
-      serverRtcHour = regs[0] & 0xFFFF;
-      serverRtcMinute = regs[1] & 0xFFFF;
-      serverRtcLastUpdate = DateTime.now();
-      serverRtcLastError = null;
+      diagnosticsSnapshot = DiagnosticsSnapshot(
+        bootCount: _joinU32(regs[0], regs[1]),
+        powerOnCount: _joinU32(regs[2], regs[3]),
+        errorHandlerCount: _joinU32(regs[4], regs[5]),
+        watchdogMissCount: _joinU32(regs[6], regs[7]),
+        faultResetCount: _joinU32(regs[8], regs[9]),
+        lastEventCode: _joinU32(regs[10], regs[11]),
+        lastResetReason: _joinU32(regs[12], regs[13]),
+        lastErrorCode: _joinU32(regs[14], regs[15]),
+        modbusTimeout0: _joinU32(regs[16], regs[17]),
+        modbusTimeout1: _joinU32(regs[18], regs[19]),
+        tcpAcceptErrCount: _joinU32(regs[20], regs[21]),
+        tcpRecvTimeoutCount: _joinU32(regs[22], regs[23]),
+        tcpStaleCloseCount: _joinU32(regs[24], regs[25]),
+        tcpMalformedMbapCount: _joinU32(regs[26], regs[27]),
+        tcpSendErrCount: _joinU32(regs[28], regs[29]),
+        tcpLastErr: _toSignedI32(regs[30], regs[31]),
+      );
+      diagnosticsLastUpdate = DateTime.now();
+      diagnosticsLastError = null;
     } catch (e) {
-      serverRtcLastError = e.toString();
+      diagnosticsLastError = e.toString();
+      if (_isRetryableTransportError(e)) {
+        throw _PollingTransportAbort(e.toString());
+      }
     }
   }
 
@@ -613,11 +729,17 @@ class ScadaController extends ChangeNotifier {
     RegisterDirectorySnapshot directory,
   ) async {
     final out = <int, PointTelemetryValue>{};
+    final maxRowsPerChunk = directory.pointStride <= 0
+        ? 1
+        : ((_maxPointRegsPerRead ~/ directory.pointStride) < 1
+              ? 1
+              : (_maxPointRegsPerRead ~/ directory.pointStride));
     var row = 0;
     while (row < directory.pointCount) {
-      final rowsInChunk = (directory.pointCount - row) > 20
-          ? 20
-          : (directory.pointCount - row);
+      final remainingRows = directory.pointCount - row;
+      final rowsInChunk = remainingRows > maxRowsPerChunk
+          ? maxRowsPerChunk
+          : remainingRows;
       final regs = await _readHoldingWithRetry(
         startAddress: directory.pointsBase + row * directory.pointStride,
         count: rowsInChunk * directory.pointStride,
@@ -646,38 +768,89 @@ class ScadaController extends ChangeNotifier {
     if (resolver == null || resolver.manifest.modules.isEmpty) {
       return const <int, SlaveStatusSnapshot>{};
     }
-    final maxSlaveId = resolver.manifest.modules
+    final slaveIds = resolver.manifest.modules
         .map((module) => module.slaveId)
-        .fold<int>(0, (prev, value) => value > prev ? value : prev);
-    if (maxSlaveId <= 0) {
+        .where((slaveId) => slaveId > 0)
+        .toSet()
+        .toList(growable: false)
+      ..sort();
+    if (slaveIds.isEmpty) {
       return const <int, SlaveStatusSnapshot>{};
     }
-    final regs = await _readHoldingWithRetry(
-      startAddress: _registerMap.slaveStatusBase,
-      count: maxSlaveId * _registerMap.expectedStatusBlockSize,
-      operationName: 'slave_status',
-    );
     final out = <int, SlaveStatusSnapshot>{};
-    for (var slaveId = 1; slaveId <= maxSlaveId; slaveId++) {
-      final base = (slaveId - 1) * _registerMap.expectedStatusBlockSize;
-      out[slaveId] = SlaveStatusSnapshot(
-        statusFlags: regs[base + _registerMap.slaveStatusStatusOffset] & 0xFFFF,
-        lastOkAgeSec:
-            regs[base + _registerMap.slaveStatusLastOkAgeOffset] & 0xFFFF,
-        errTimeout:
-            regs[base + _registerMap.slaveStatusErrTimeoutOffset] & 0xFFFF,
-        errCrc: regs[base + _registerMap.slaveStatusErrCrcOffset] & 0xFFFF,
-        errException:
-            regs[base + _registerMap.slaveStatusErrExceptionOffset] & 0xFFFF,
-        dataVersion:
-            regs[base + _registerMap.slaveStatusDataVersionOffset] & 0xFFFF,
-        validMask:
-            regs[base + _registerMap.slaveStatusValidMaskOffset] & 0xFFFF,
-        outStateMask:
-            regs[base + _registerMap.slaveStatusOutStateMaskOffset] & 0xFFFF,
+    final regsPerStatus = _registerMap.expectedStatusBlockSize;
+    final maxStatusesPerChunk = regsPerStatus <= 0
+        ? 1
+        : ((_maxSlaveStatusRegsPerRead ~/ regsPerStatus) < 1
+              ? 1
+              : (_maxSlaveStatusRegsPerRead ~/ regsPerStatus));
+    var runStart = slaveIds.first;
+    var runEnd = runStart;
+    for (var index = 1; index <= slaveIds.length; index++) {
+      final currentSlaveId = index < slaveIds.length ? slaveIds[index] : -1;
+      if (currentSlaveId == runEnd + 1) {
+        runEnd = currentSlaveId;
+        continue;
+      }
+
+      await _readSlaveStatusRange(
+        firstSlaveId: runStart,
+        lastSlaveId: runEnd,
+        regsPerStatus: regsPerStatus,
+        maxStatusesPerChunk: maxStatusesPerChunk,
+        out: out,
       );
+
+      if (index < slaveIds.length) {
+        runStart = currentSlaveId;
+        runEnd = currentSlaveId;
+      }
     }
     return out;
+  }
+
+  Future<void> _readSlaveStatusRange({
+    required int firstSlaveId,
+    required int lastSlaveId,
+    required int regsPerStatus,
+    required int maxStatusesPerChunk,
+    required Map<int, SlaveStatusSnapshot> out,
+  }) async {
+    var slaveId = firstSlaveId;
+    while (slaveId <= lastSlaveId) {
+      final remaining = lastSlaveId - slaveId + 1;
+      final statusesInChunk = remaining > maxStatusesPerChunk
+          ? maxStatusesPerChunk
+          : remaining;
+      final regs = await _readHoldingWithRetry(
+        startAddress:
+            _registerMap.slaveStatusBase + (slaveId - 1) * regsPerStatus,
+        count: statusesInChunk * regsPerStatus,
+        operationName: 'slave_status_${slaveId - 1}',
+      );
+      for (var index = 0; index < statusesInChunk; index++) {
+        final base = index * regsPerStatus;
+        final currentSlaveId = slaveId + index;
+        out[currentSlaveId] = SlaveStatusSnapshot(
+          statusFlags:
+              regs[base + _registerMap.slaveStatusStatusOffset] & 0xFFFF,
+          lastOkAgeSec:
+              regs[base + _registerMap.slaveStatusLastOkAgeOffset] & 0xFFFF,
+          errTimeout:
+              regs[base + _registerMap.slaveStatusErrTimeoutOffset] & 0xFFFF,
+          errCrc: regs[base + _registerMap.slaveStatusErrCrcOffset] & 0xFFFF,
+          errException:
+              regs[base + _registerMap.slaveStatusErrExceptionOffset] & 0xFFFF,
+          dataVersion:
+              regs[base + _registerMap.slaveStatusDataVersionOffset] & 0xFFFF,
+          validMask:
+              regs[base + _registerMap.slaveStatusValidMaskOffset] & 0xFFFF,
+          outStateMask:
+              regs[base + _registerMap.slaveStatusOutStateMaskOffset] & 0xFFFF,
+        );
+      }
+      slaveId += statusesInChunk;
+    }
   }
 
   Future<LightingScheduleStatus> _pollForScheduleResult({
@@ -685,10 +858,14 @@ class ScadaController extends ChangeNotifier {
     required int trigger,
     required int timeoutMs,
   }) async {
-    final deadline = DateTime.now().add(Duration(milliseconds: timeoutMs));
+    final effectiveTimeoutMs = timeoutMs < _minScheduleApplyWaitMs
+        ? _minScheduleApplyWaitMs
+        : timeoutMs;
+    final deadline = DateTime.now().add(Duration(milliseconds: effectiveTimeoutMs));
     var lastApplied = 0;
     var lastResult = 0;
     var lastIoErr = 0;
+    LightingScheduleStatus? deferredFailure;
     while (DateTime.now().isBefore(deadline)) {
       final regs = await _readHoldingWithRetry(
         startAddress:
@@ -715,7 +892,7 @@ class ScadaController extends ChangeNotifier {
         lastResult: lastResult,
         lastIoErr: lastIoErr,
       );
-      if (lastApplied == trigger && lastResult == 2) {
+      if (lastApplied == trigger && lastResult == _scheduleResultApplied) {
         return lightingStatusForModule(module.moduleId).copyWith(
           phase: LightingSchedulePhase.success,
           trigger: trigger,
@@ -726,8 +903,12 @@ class ScadaController extends ChangeNotifier {
           message: 'Applied',
         );
       }
-      if (lastApplied == trigger && lastResult != 0 && lastResult != 2) {
-        return lightingStatusForModule(module.moduleId).copyWith(
+      if (lastApplied == trigger && lastResult == _scheduleResultQueued) {
+        deferredFailure = null;
+      } else if (lastApplied == trigger &&
+          lastResult != _scheduleResultIdle &&
+          lastResult != _scheduleResultApplied) {
+        deferredFailure = lightingStatusForModule(module.moduleId).copyWith(
           phase: LightingSchedulePhase.failed,
           trigger: trigger,
           lastAppliedTrigger: lastApplied,
@@ -743,6 +924,9 @@ class ScadaController extends ChangeNotifier {
         Duration(milliseconds: config.pollIntervals.commandPollMs),
       );
     }
+    if (deferredFailure != null) {
+      return deferredFailure;
+    }
     return lightingStatusForModule(module.moduleId).copyWith(
       phase: LightingSchedulePhase.timeout,
       trigger: trigger,
@@ -750,7 +934,7 @@ class ScadaController extends ChangeNotifier {
       lastResult: lastResult,
       lastIoErr: lastIoErr,
       lastAttemptAt: DateTime.now(),
-      message: 'Pending/timeout after ${timeoutMs}ms',
+      message: 'Pending/timeout after ${effectiveTimeoutMs}ms',
     );
   }
 
@@ -758,8 +942,9 @@ class ScadaController extends ChangeNotifier {
     required int startAddress,
     required int count,
     required String operationName,
-    int maxAttempts = 2,
+    int? maxAttempts,
   }) async {
+    final attempts = maxAttempts ?? _transportAttemptCount;
     if (count < 1) {
       throw RangeError.range(count, 1, null, 'count');
     }
@@ -772,7 +957,7 @@ class ScadaController extends ChangeNotifier {
           startAddress: startAddress + offset,
           count: chunkCount,
           operationName: '$operationName+$offset',
-          maxAttempts: maxAttempts,
+          maxAttempts: attempts,
         );
         if (chunk.length != chunkCount) {
           throw StateError(
@@ -786,7 +971,7 @@ class ScadaController extends ChangeNotifier {
       return regs;
     }
     Object? lastFailure;
-    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         return await _client.readHoldingRegisters(
           unitId: config.deviceConnection.unitId,
@@ -799,10 +984,12 @@ class ScadaController extends ChangeNotifier {
           rethrow;
         }
         _addClientTrace(
-          'read retry op=$operationName attempt=${attempt + 1}: $e',
+          'read retry op=$operationName attempt=${attempt + 1}/$attempts: $e',
         );
-        if (attempt + 1 < maxAttempts) {
-          await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (attempt + 1 < attempts) {
+          await Future<void>.delayed(
+            Duration(milliseconds: config.timeouts.retryBackoffMs),
+          );
         }
       }
     }
@@ -814,10 +1001,11 @@ class ScadaController extends ChangeNotifier {
     required int address,
     required int value,
     required String operationName,
-    int maxAttempts = 2,
+    int? maxAttempts,
   }) async {
+    final attempts = maxAttempts ?? _transportAttemptCount;
     Object? lastFailure;
-    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         await _client.writeSingleRegister(
           unitId: config.deviceConnection.unitId,
@@ -831,10 +1019,12 @@ class ScadaController extends ChangeNotifier {
           rethrow;
         }
         _addClientTrace(
-          'write single retry op=$operationName attempt=${attempt + 1}: $e',
+          'write single retry op=$operationName attempt=${attempt + 1}/$attempts: $e',
         );
-        if (attempt + 1 < maxAttempts) {
-          await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (attempt + 1 < attempts) {
+          await Future<void>.delayed(
+            Duration(milliseconds: config.timeouts.retryBackoffMs),
+          );
         }
       }
     }
@@ -846,10 +1036,11 @@ class ScadaController extends ChangeNotifier {
     required int startAddress,
     required List<int> values,
     required String operationName,
-    int maxAttempts = 2,
+    int? maxAttempts,
   }) async {
+    final attempts = maxAttempts ?? _transportAttemptCount;
     Object? lastFailure;
-    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+    for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         await _client.writeMultipleRegisters(
           unitId: config.deviceConnection.unitId,
@@ -863,10 +1054,12 @@ class ScadaController extends ChangeNotifier {
           rethrow;
         }
         _addClientTrace(
-          'write multiple retry op=$operationName attempt=${attempt + 1}: $e',
+          'write multiple retry op=$operationName attempt=${attempt + 1}/$attempts: $e',
         );
-        if (attempt + 1 < maxAttempts) {
-          await Future<void>.delayed(const Duration(milliseconds: 200));
+        if (attempt + 1 < attempts) {
+          await Future<void>.delayed(
+            Duration(milliseconds: config.timeouts.retryBackoffMs),
+          );
         }
       }
     }
@@ -883,6 +1076,50 @@ class ScadaController extends ChangeNotifier {
     }
     if (compatibility.state == ScadaCompatibilityState.mapIncompatible) {
       throw StateError(compatibility.message);
+    }
+  }
+
+  int get _transportAttemptCount {
+    final retryCount = config.transport.retryCount;
+    return retryCount < 0 ? 1 : retryCount + 1;
+  }
+
+  Future<T> _runWithPollingPause<T>(
+    String reason,
+    Future<T> Function() action,
+  ) async {
+    final shouldPause = config.featureFlags.pausePollingDuringWriteWorkflows;
+    if (shouldPause) {
+      _pollingPauseDepth += 1;
+      _addClientTrace(
+        'polling paused reason=$reason depth=$_pollingPauseDepth',
+      );
+      if (!_disposed) {
+        notifyListeners();
+      }
+      while (polling) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+    }
+    try {
+      return await action();
+    } finally {
+      if (shouldPause) {
+        _pollingPauseDepth -= 1;
+        _addClientTrace(
+          'polling resumed reason=$reason depth=$_pollingPauseDepth',
+        );
+        if (_pollingPauseDepth <= 0) {
+          _pollingPauseDepth = 0;
+          if (!_disposed) {
+            unawaited(refreshSession());
+            unawaited(_pollTick());
+          }
+        }
+        if (!_disposed) {
+          notifyListeners();
+        }
+      }
     }
   }
 
@@ -908,6 +1145,13 @@ class ScadaController extends ChangeNotifier {
     return next;
   }
 
+  int _joinU32(int hi, int lo) => ((hi & 0xFFFF) << 16) | (lo & 0xFFFF);
+
+  int _toSignedI32(int hi, int lo) {
+    final value = _joinU32(hi, lo);
+    return value >= 0x80000000 ? value - 0x100000000 : value;
+  }
+
   int _nextLightingTrigger({required int lastAppliedTrigger}) {
     var next = (_lightingTriggerCounter + 1) & 0xFFFF;
     if (next == 0) {
@@ -925,6 +1169,7 @@ class ScadaController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _pollTimer?.cancel();
     _connectionSub?.cancel();
     unawaited(_client.dispose());
@@ -995,13 +1240,61 @@ class ScadaController extends ChangeNotifier {
       (moduleId, _) => !validModuleIds.contains(moduleId),
     );
     for (final module in resolver.zoneModules) {
-      _scheduleStatusByModuleId.putIfAbsent(
-        module.moduleId,
-        () => LightingScheduleStatus.initial(
+      final existing = _scheduleStatusByModuleId[module.moduleId];
+      final draft = _draftForModule(
+        module: module,
+        currentDraft: existing?.draft,
+      );
+      final status =
+          existing?.copyWith(
+            moduleId: module.moduleId,
+            zoneId: module.zoneId,
+            slaveId: module.slaveId,
+            draft: draft,
+          ) ??
+          LightingScheduleStatus.initial(
+            moduleId: module.moduleId,
+            zoneId: module.zoneId,
+            slaveId: module.slaveId,
+          ).copyWith(draft: draft);
+      _scheduleStatusByModuleId[module.moduleId] = status;
+    }
+  }
+
+  LightingScheduleDraft _draftForModule({
+    required TopologyModule module,
+    LightingScheduleDraft? currentDraft,
+  }) {
+    final baseDraft =
+        currentDraft ?? _persistedLightingDraftByModuleId[module.moduleId];
+    return (baseDraft ??
+            LightingScheduleDraft.initial(
+              moduleId: module.moduleId,
+              zoneId: module.zoneId,
+              slaveId: module.slaveId,
+            ))
+        .rebind(
           moduleId: module.moduleId,
           zoneId: module.zoneId,
           slaveId: module.slaveId,
-        ),
+        );
+  }
+
+  Future<void> _persistLastSentLightingDraft({
+    required TopologyModule module,
+    required LightingScheduleDraft draft,
+  }) async {
+    final persistedDraft = draft.rebind(
+      moduleId: module.moduleId,
+      zoneId: module.zoneId,
+      slaveId: module.slaveId,
+    );
+    _persistedLightingDraftByModuleId[module.moduleId] = persistedDraft;
+    try {
+      await _configStore.saveLightingDrafts(_persistedLightingDraftByModuleId);
+    } catch (e) {
+      _addClientTrace(
+        'schedule cache save failed module=${module.moduleId}: $e',
       );
     }
   }
@@ -1058,10 +1351,26 @@ class ScadaController extends ChangeNotifier {
 
   String lightingResultLabel(int code) {
     switch (code & 0xFFFF) {
-      case 0:
+      case _scheduleResultIdle:
         return 'idle';
-      case 2:
+      case _scheduleResultQueued:
+        return 'queued';
+      case _scheduleResultApplied:
         return 'applied';
+      case 10:
+        return 'reject bounds';
+      case 11:
+        return 'reject topology';
+      case 12:
+        return 'reject fc';
+      case 13:
+        return 'reject busy';
+      case 14:
+        return 'reject partial';
+      case 15:
+        return 'transport fail';
+      case 16:
+        return 'ack fail';
       case 1301:
         return 'ack status fail';
       case 1302:
@@ -1158,6 +1467,15 @@ class ScadaController extends ChangeNotifier {
     }
     unawaited(_logger.logClientEvent(message));
   }
+}
+
+class _PollingTransportAbort implements Exception {
+  const _PollingTransportAbort(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }
 
 class _WeatherSemantic {
