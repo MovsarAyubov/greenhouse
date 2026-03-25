@@ -157,15 +157,21 @@ void main() {
         moduleId: 101,
         zoneId: 1,
         slaveId: 3,
-        slots: const <LightingScheduleSlot>[
-          LightingScheduleSlot(enabled: true, onHhmm: 630, offHhmm: 815),
-          LightingScheduleSlot(enabled: false, onHhmm: 0, offHhmm: 0),
-          LightingScheduleSlot(enabled: true, onHhmm: 1200, offHhmm: 1330),
-          LightingScheduleSlot(enabled: false, onHhmm: 0, offHhmm: 0),
-        ],
-        applyValue: 2,
-        expectedActiveCtrlVersion: 77,
-        strictVersion: true,
+        relay1: const LightingRelayDraft(
+          enabled: true,
+          onHhmm: 630,
+          offHhmm: 815,
+          thresholdWm2: 120,
+          dliLimit: 360,
+        ),
+        relay2: const LightingRelayDraft(
+          enabled: true,
+          onHhmm: 900,
+          offHhmm: 1130,
+          thresholdWm2: 480,
+          dliLimit: 720,
+        ),
+        hysteresisSec: 4,
       ),
     };
 
@@ -177,12 +183,16 @@ void main() {
     expect(draft.moduleId, 101);
     expect(draft.zoneId, 1);
     expect(draft.slaveId, 3);
-    expect(draft.slots.length, 4);
-    expect(draft.slots[0].enabled, isTrue);
-    expect(draft.slots[0].onHhmm, 630);
-    expect(draft.slots[2].offHhmm, 1330);
-    expect(draft.applyValue, 2);
-    expect(draft.expectedActiveCtrlVersion, 77);
-    expect(draft.strictVersion, isTrue);
+    expect(draft.relay1.enabled, isTrue);
+    expect(draft.relay1.onHhmm, 630);
+    expect(draft.relay1.offHhmm, 815);
+    expect(draft.relay1.thresholdWm2, 120);
+    expect(draft.relay1.dliLimit, 360);
+    expect(draft.relay2.enabled, isTrue);
+    expect(draft.relay2.onHhmm, 900);
+    expect(draft.relay2.offHhmm, 1130);
+    expect(draft.relay2.thresholdWm2, 480);
+    expect(draft.relay2.dliLimit, 720);
+    expect(draft.hysteresisSec, 4);
   });
 }

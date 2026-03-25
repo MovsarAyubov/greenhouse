@@ -6,26 +6,43 @@ enum LightingSchedulePhase {
   timeout,
 }
 
-class LightingScheduleSlot {
-  const LightingScheduleSlot({
+class LightingRelayDraft {
+  const LightingRelayDraft({
     required this.enabled,
     required this.onHhmm,
     required this.offHhmm,
+    required this.thresholdWm2,
+    required this.dliLimit,
   });
 
   final bool enabled;
   final int onHhmm;
   final int offHhmm;
+  final int thresholdWm2;
+  final int dliLimit;
 
-  LightingScheduleSlot copyWith({
+  List<int> get payloadWords => <int>[
+    enabled ? 1 : 0,
+    onHhmm & 0xFFFF,
+    offHhmm & 0xFFFF,
+    thresholdWm2 & 0xFFFF,
+    0,
+    dliLimit & 0xFFFF,
+  ];
+
+  LightingRelayDraft copyWith({
     bool? enabled,
     int? onHhmm,
     int? offHhmm,
+    int? thresholdWm2,
+    int? dliLimit,
   }) {
-    return LightingScheduleSlot(
+    return LightingRelayDraft(
       enabled: enabled ?? this.enabled,
       onHhmm: onHhmm ?? this.onHhmm,
       offHhmm: offHhmm ?? this.offHhmm,
+      thresholdWm2: thresholdWm2 ?? this.thresholdWm2,
+      dliLimit: dliLimit ?? this.dliLimit,
     );
   }
 
@@ -34,64 +51,76 @@ class LightingScheduleSlot {
       'enabled': enabled,
       'on_hhmm': onHhmm,
       'off_hhmm': offHhmm,
+      'threshold_wm2': thresholdWm2,
+      'dli_limit': dliLimit,
     };
   }
 
-  static LightingScheduleSlot fromJson(Object? value) {
+  static LightingRelayDraft? fromJson(Object? value) {
     final map = _mapValue(value);
-    return LightingScheduleSlot(
+    if (map.isEmpty) {
+      return null;
+    }
+    return LightingRelayDraft(
       enabled: _readBoolValue(map['enabled']) ?? false,
       onHhmm: _readIntValue(map['on_hhmm']) ?? 0,
       offHhmm: _readIntValue(map['off_hhmm']) ?? 0,
+      thresholdWm2:
+          _readIntValue(map['threshold_wm2']) ??
+          _readIntValue(map['stage_1']) ??
+          _readIntValue(map['threshold_1']) ??
+          0,
+      dliLimit: _readIntValue(map['dli_limit']) ?? 0,
     );
   }
 
-  static LightingScheduleSlot disabled() => const LightingScheduleSlot(
+  static const LightingRelayDraft disabled = LightingRelayDraft(
     enabled: false,
     onHhmm: 0,
     offHhmm: 0,
+    thresholdWm2: 0,
+    dliLimit: 0,
   );
 }
 
 class LightingScheduleDraft {
-  static const int slotCount = 4;
-
   const LightingScheduleDraft({
     required this.moduleId,
     required this.zoneId,
     required this.slaveId,
-    required this.slots,
-    this.applyValue = 1,
-    this.expectedActiveCtrlVersion = 0,
-    this.strictVersion = false,
+    required this.relay1,
+    required this.relay2,
+    required this.hysteresisSec,
   });
 
   final int moduleId;
   final int zoneId;
   final int slaveId;
-  final List<LightingScheduleSlot> slots;
-  final int applyValue;
-  final int expectedActiveCtrlVersion;
-  final bool strictVersion;
+  final LightingRelayDraft relay1;
+  final LightingRelayDraft relay2;
+  final int hysteresisSec;
+
+  List<int> get payloadWords => <int>[
+    ...relay1.payloadWords,
+    ...relay2.payloadWords,
+    hysteresisSec & 0xFFFF,
+  ];
 
   LightingScheduleDraft copyWith({
     int? moduleId,
     int? zoneId,
     int? slaveId,
-    List<LightingScheduleSlot>? slots,
-    int? applyValue,
-    int? expectedActiveCtrlVersion,
-    bool? strictVersion,
+    LightingRelayDraft? relay1,
+    LightingRelayDraft? relay2,
+    int? hysteresisSec,
   }) {
     return LightingScheduleDraft(
       moduleId: moduleId ?? this.moduleId,
       zoneId: zoneId ?? this.zoneId,
       slaveId: slaveId ?? this.slaveId,
-      slots: slots ?? this.slots,
-      applyValue: applyValue ?? this.applyValue,
-      expectedActiveCtrlVersion:
-          expectedActiveCtrlVersion ?? this.expectedActiveCtrlVersion,
-      strictVersion: strictVersion ?? this.strictVersion,
+      relay1: relay1 ?? this.relay1,
+      relay2: relay2 ?? this.relay2,
+      hysteresisSec: hysteresisSec ?? this.hysteresisSec,
     );
   }
 
@@ -104,7 +133,6 @@ class LightingScheduleDraft {
       moduleId: moduleId,
       zoneId: zoneId,
       slaveId: slaveId,
-      slots: _normalizeSlots(slots),
     );
   }
 
@@ -113,10 +141,9 @@ class LightingScheduleDraft {
       'module_id': moduleId,
       'zone_id': zoneId,
       'slave_id': slaveId,
-      'slots': slots.map((slot) => slot.toJson()).toList(growable: false),
-      'apply_value': applyValue,
-      'expected_active_ctrl_version': expectedActiveCtrlVersion,
-      'strict_version': strictVersion,
+      'relay_1': relay1.toJson(),
+      'relay_2': relay2.toJson(),
+      'light_hyst_sec': hysteresisSec,
     };
   }
 
@@ -128,19 +155,26 @@ class LightingScheduleDraft {
     if (moduleId == null || zoneId == null || slaveId == null) {
       return null;
     }
-    final rawSlots = map['slots'];
-    final slots = rawSlots is List
-        ? rawSlots.map(LightingScheduleSlot.fromJson)
-        : const <LightingScheduleSlot>[];
+    final legacyTiming = _legacyTimingFromJson(map['slots']);
+    final legacyRelay1 = LightingRelayDraft(
+      enabled: _readBoolValue(map['schedule_enabled']) ?? legacyTiming.enabled,
+      onHhmm: _readIntValue(map['on_hhmm']) ?? legacyTiming.onHhmm,
+      offHhmm: _readIntValue(map['off_hhmm']) ?? legacyTiming.offHhmm,
+      thresholdWm2: _readIntValue(map['threshold_1']) ?? 0,
+      dliLimit: _readIntValue(map['dli_limit']) ?? 0,
+    );
     return LightingScheduleDraft(
       moduleId: moduleId,
       zoneId: zoneId,
       slaveId: slaveId,
-      slots: _normalizeSlots(slots),
-      applyValue: _readIntValue(map['apply_value']) ?? 1,
-      expectedActiveCtrlVersion:
-          _readIntValue(map['expected_active_ctrl_version']) ?? 0,
-      strictVersion: _readBoolValue(map['strict_version']) ?? false,
+      relay1: LightingRelayDraft.fromJson(map['relay_1']) ?? legacyRelay1,
+      relay2:
+          LightingRelayDraft.fromJson(map['relay_2']) ??
+          LightingRelayDraft.disabled,
+      hysteresisSec:
+          _readIntValue(map['light_hyst_sec']) ??
+          _readIntValue(map['hysteresis']) ??
+          0,
     );
   }
 
@@ -153,21 +187,10 @@ class LightingScheduleDraft {
       moduleId: moduleId,
       zoneId: zoneId,
       slaveId: slaveId,
-      slots: List<LightingScheduleSlot>.generate(
-        slotCount,
-        (_) => LightingScheduleSlot.disabled(),
-      ),
+      relay1: LightingRelayDraft.disabled,
+      relay2: LightingRelayDraft.disabled,
+      hysteresisSec: 0,
     );
-  }
-
-  static List<LightingScheduleSlot> _normalizeSlots(
-    Iterable<LightingScheduleSlot> slots,
-  ) {
-    final normalized = slots.take(slotCount).toList(growable: true);
-    while (normalized.length < slotCount) {
-      normalized.add(LightingScheduleSlot.disabled());
-    }
-    return List<LightingScheduleSlot>.unmodifiable(normalized);
   }
 }
 
@@ -287,4 +310,35 @@ bool? _readBoolValue(Object? value) {
     }
   }
   return null;
+}
+
+_LegacyLightingTiming _legacyTimingFromJson(Object? value) {
+  if (value is! List) {
+    return const _LegacyLightingTiming(enabled: false, onHhmm: 0, offHhmm: 0);
+  }
+  for (final item in value) {
+    final map = _mapValue(item);
+    final enabled = _readBoolValue(map['enabled']) ?? false;
+    if (!enabled) {
+      continue;
+    }
+    return _LegacyLightingTiming(
+      enabled: true,
+      onHhmm: _readIntValue(map['on_hhmm']) ?? 0,
+      offHhmm: _readIntValue(map['off_hhmm']) ?? 0,
+    );
+  }
+  return const _LegacyLightingTiming(enabled: false, onHhmm: 0, offHhmm: 0);
+}
+
+class _LegacyLightingTiming {
+  const _LegacyLightingTiming({
+    required this.enabled,
+    required this.onHhmm,
+    required this.offHhmm,
+  });
+
+  final bool enabled;
+  final int onHhmm;
+  final int offHhmm;
 }

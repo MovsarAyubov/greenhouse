@@ -193,6 +193,9 @@ class _ZoneModuleTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = controller.slaveStatusForModule(module.moduleId);
     final points = controller.resolvedPointsForModule(module.moduleId);
+    final lightingFeedback = controller.lightingFeedbackFieldsForModule(
+      module.moduleId,
+    );
     final scheduleStatus = controller.lightingStatusForModule(module.moduleId);
     final disabledReason = controller.scheduleDisabledReasonForModule(
       module.moduleId,
@@ -219,6 +222,7 @@ class _ZoneModuleTab extends StatelessWidget {
             ],
           ),
         ),
+        _LightingFeedbackCard(fields: lightingFeedback),
         _InfoCard(
           title: 'Telemetry',
           child: Column(
@@ -296,6 +300,40 @@ class _WeatherTab extends StatelessWidget {
   }
 }
 
+class _LightingFeedbackCard extends StatelessWidget {
+  const _LightingFeedbackCard({required this.fields});
+
+  final List<SemanticFieldView> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoCard(
+      title: 'Lighting feedback',
+      child: Column(
+        children: fields
+            .map(
+              (field) => ListTile(
+                dense: true,
+                title: Text(field.label),
+                subtitle: Text(_lightingFeedbackSubtitle(field)),
+                trailing: Text(
+                  _formatLightingFeedbackField(field),
+                  style: TextStyle(
+                    color:
+                        field.point == null ||
+                            field.telemetry?.hasValidFlag != true
+                        ? Colors.grey
+                        : null,
+                  ),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
+    );
+  }
+}
+
 class _ScheduleCard extends StatelessWidget {
   const _ScheduleCard({
     required this.controller,
@@ -313,133 +351,48 @@ class _ScheduleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final draft = status.draft;
     return _InfoCard(
-      title: 'Lighting schedule',
+      title: 'Lighting setpoints',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ...List<Widget>.generate(draft.slots.length, (index) {
-            final slot = draft.slots[index];
-            return Row(
-              children: [
-                Switch(
-                  value: slot.enabled,
-                  onChanged: disabledReason == null
-                      ? (value) {
-                          controller.updateLightingDraft(module.moduleId, (
-                            current,
-                          ) {
-                            final slots = List<LightingScheduleSlot>.from(
-                              current.slots,
-                            );
-                            slots[index] = slots[index].copyWith(
-                              enabled: value,
-                            );
-                            return current.copyWith(slots: slots);
-                          });
-                        }
-                      : null,
-                ),
-                Text('S$index'),
-                const SizedBox(width: 8),
-                TextButton(
-                  onPressed: disabledReason == null
-                      ? () => _pickTime(
-                          context,
-                          slot.onHhmm,
-                          (value) => controller.updateLightingDraft(
-                            module.moduleId,
-                            (current) {
-                              final slots = List<LightingScheduleSlot>.from(
-                                current.slots,
-                              );
-                              slots[index] = slots[index].copyWith(
-                                onHhmm: value,
-                              );
-                              return current.copyWith(slots: slots);
-                            },
-                          ),
-                        )
-                      : null,
-                  child: Text('ON ${_formatHhmm(slot.onHhmm)}'),
-                ),
-                TextButton(
-                  onPressed: disabledReason == null
-                      ? () => _pickTime(
-                          context,
-                          slot.offHhmm,
-                          (value) => controller.updateLightingDraft(
-                            module.moduleId,
-                            (current) {
-                              final slots = List<LightingScheduleSlot>.from(
-                                current.slots,
-                              );
-                              slots[index] = slots[index].copyWith(
-                                offHhmm: value,
-                              );
-                              return current.copyWith(slots: slots);
-                            },
-                          ),
-                        )
-                      : null,
-                  child: Text('OFF ${_formatHhmm(slot.offHhmm)}'),
-                ),
-              ],
-            );
-          }),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  initialValue: '${draft.applyValue}',
-                  decoration: const InputDecoration(labelText: 'Apply value'),
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    final parsed = int.tryParse(value.trim());
-                    if (parsed == null) {
-                      return;
-                    }
-                    controller.updateLightingDraft(
-                      module.moduleId,
-                      (current) => current.copyWith(applyValue: parsed),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  initialValue: '${draft.expectedActiveCtrlVersion}',
-                  decoration: const InputDecoration(
-                    labelText: 'Expected version',
-                  ),
-                  keyboardType: TextInputType.number,
-                  onChanged: (value) {
-                    final parsed = int.tryParse(value.trim());
-                    if (parsed == null) {
-                      return;
-                    }
-                    controller.updateLightingDraft(
-                      module.moduleId,
-                      (current) =>
-                          current.copyWith(expectedActiveCtrlVersion: parsed),
-                    );
-                  },
-                ),
-              ),
-            ],
+          _buildRelaySection(
+            context,
+            title: 'Relay 1',
+            relay: draft.relay1,
+            onChanged: (relay) => controller.updateLightingDraft(
+              module.moduleId,
+              (current) => current.copyWith(relay1: relay),
+            ),
           ),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Strict version'),
-            value: draft.strictVersion,
-            onChanged: disabledReason == null
-                ? (value) => controller.updateLightingDraft(
-                    module.moduleId,
-                    (current) =>
-                        current.copyWith(strictVersion: value ?? false),
-                  )
-                : null,
+          const SizedBox(height: 8),
+          _buildRelaySection(
+            context,
+            title: 'Relay 2',
+            relay: draft.relay2,
+            onChanged: (relay) => controller.updateLightingDraft(
+              module.moduleId,
+              (current) => current.copyWith(relay2: relay),
+            ),
           ),
+          const SizedBox(height: 8),
+          TextFormField(
+            initialValue: '${draft.hysteresisSec}',
+            decoration: const InputDecoration(
+              labelText: 'Hysteresis',
+              suffixText: 's',
+            ),
+            enabled: disabledReason == null,
+            keyboardType: TextInputType.number,
+            onChanged: (value) => _updateIntField(
+              value,
+              (parsed) => controller.updateLightingDraft(
+                module.moduleId,
+                (current) => current.copyWith(hysteresisSec: parsed),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text('Recommended mode: full 13-word payload write'),
           if (disabledReason != null)
             Text(disabledReason!, style: const TextStyle(color: Colors.orange)),
           ElevatedButton(
@@ -448,7 +401,7 @@ class _ScheduleCard extends StatelessWidget {
                     controller.sendScheduleForModule(module.moduleId),
                   )
                 : null,
-            child: const Text('Send schedule'),
+            child: const Text('Send setpoints'),
           ),
           const SizedBox(height: 6),
           Text(
@@ -471,6 +424,89 @@ class _ScheduleCard extends StatelessWidget {
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
       onPicked(picked.hour * 100 + picked.minute);
+    }
+  }
+
+  Widget _buildRelaySection(
+    BuildContext context, {
+    required String title,
+    required LightingRelayDraft relay,
+    required ValueChanged<LightingRelayDraft> onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Enabled'),
+          value: relay.enabled,
+          onChanged: disabledReason == null
+              ? (value) => onChanged(relay.copyWith(enabled: value))
+              : null,
+        ),
+        Row(
+          children: [
+            TextButton(
+              onPressed: disabledReason == null
+                  ? () => _pickTime(
+                      context,
+                      relay.onHhmm,
+                      (value) => onChanged(relay.copyWith(onHhmm: value)),
+                    )
+                  : null,
+              child: Text('ON ${_formatHhmm(relay.onHhmm)}'),
+            ),
+            const SizedBox(width: 12),
+            TextButton(
+              onPressed: disabledReason == null
+                  ? () => _pickTime(
+                      context,
+                      relay.offHhmm,
+                      (value) => onChanged(relay.copyWith(offHhmm: value)),
+                    )
+                  : null,
+              child: Text('OFF ${_formatHhmm(relay.offHhmm)}'),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                initialValue: '${relay.thresholdWm2}',
+                decoration: const InputDecoration(
+                  labelText: 'Threshold',
+                  suffixText: 'W/m²',
+                ),
+                enabled: disabledReason == null,
+                keyboardType: TextInputType.number,
+                onChanged: (value) => _updateIntField(
+                  value,
+                  (parsed) => onChanged(relay.copyWith(thresholdWm2: parsed)),
+                ),
+              ),
+            ),
+          ],
+        ),
+        TextFormField(
+          initialValue: '${relay.dliLimit}',
+          decoration: const InputDecoration(labelText: 'DLI limit'),
+          enabled: disabledReason == null,
+          keyboardType: TextInputType.number,
+          onChanged: (value) => _updateIntField(
+            value,
+            (parsed) => onChanged(relay.copyWith(dliLimit: parsed)),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _updateIntField(String value, ValueChanged<int> onParsed) {
+    final parsed = int.tryParse(value.trim());
+    if (parsed != null) {
+      onParsed(parsed);
     }
   }
 }
@@ -832,6 +868,15 @@ String _formatPointValue(TopologyPoint point, PointTelemetryValue? telemetry) {
   if (telemetry == null || !telemetry.isUsable) {
     return 'N/A';
   }
+  if (point.semanticName == 'light_status_bits') {
+    return '${telemetry.value.round()}';
+  }
+  if (point.semanticName == 'light_output') {
+    return '${telemetry.value.round()}';
+  }
+  if (point.semanticName == 'current_dli') {
+    return telemetry.value.toStringAsFixed(2);
+  }
   switch (point.pointType) {
     case 6:
       return '${telemetry.value.round()}';
@@ -855,6 +900,38 @@ String _formatSemanticField(SemanticFieldView field) {
   }
   final suffix = field.unit.isEmpty ? '' : ' ${field.unit}';
   return '${telemetry.value.toStringAsFixed(field.decimals)}$suffix';
+}
+
+String _formatLightingFeedbackField(SemanticFieldView field) {
+  final telemetry = field.telemetry;
+  if (field.point == null) {
+    return 'unsupported';
+  }
+  if (telemetry == null || !telemetry.hasValidFlag) {
+    return 'N/A';
+  }
+  switch (field.semanticName) {
+    case 'light_status_bits':
+      return '${telemetry.value.round()}';
+    case 'light_output':
+      return '${telemetry.value.round()} %';
+    default:
+      final suffix = field.unit.isEmpty ? '' : ' ${field.unit}';
+      return '${telemetry.value.toStringAsFixed(field.decimals)}$suffix';
+  }
+}
+
+String _lightingFeedbackSubtitle(SemanticFieldView field) {
+  final point = field.point;
+  if (point == null) {
+    return 'Point contract missing';
+  }
+  final telemetry = field.telemetry;
+  if (telemetry == null) {
+    return 'publish_index=${point.publishIndex} quality=- age=- flags=-';
+  }
+  return 'publish_index=${point.publishIndex} quality=${telemetry.quality} '
+      'age=${telemetry.ageSec}s flags=0x${telemetry.flags.toRadixString(16).toUpperCase()}';
 }
 
 String _formatHhmm(int hhmm) {

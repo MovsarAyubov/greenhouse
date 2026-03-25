@@ -26,34 +26,15 @@ class CommandBuilder {
     required ScheduleCommandContract contract,
     required LightingScheduleDraft draft,
   }) {
-    if (draft.slots.length != 4) {
-      throw StateError('schedule must contain 4 slots');
-    }
-    final payload = <int>[];
-    for (var i = 0; i < draft.slots.length; i++) {
-      final slot = draft.slots[i];
-      _validateHhmm(slot.onHhmm, 'SCH$i ON_HHMM');
-      _validateHhmm(slot.offHhmm, 'SCH$i OFF_HHMM');
-      if (slot.enabled && slot.onHhmm == slot.offHhmm) {
-        throw StateError('SCH$i invalid: EN=1 and ON_HHMM == OFF_HHMM');
-      }
-      payload.add(slot.enabled ? 1 : 0);
-      payload.add(slot.enabled ? slot.onHhmm & 0xFFFF : 0);
-      payload.add(slot.enabled ? slot.offHhmm & 0xFFFF : 0);
-    }
-    final expectedVersion = draft.strictVersion
-        ? draft.expectedActiveCtrlVersion
-        : 0;
-    payload.add(draft.applyValue & 0xFFFF);
-    payload.add((expectedVersion >> 16) & 0xFFFF);
-    payload.add(expectedVersion & 0xFFFF);
-    payload.add(1);
+    _validateRelay(draft.relay1, relayNumber: 1);
+    _validateRelay(draft.relay2, relayNumber: 2);
+    _validateUint16(draft.hysteresisSec, 'LIGHT_HYST_SEC');
     return GenericCommandRequest(
       targetSlaveId: module.slaveId,
       targetModuleId: module.moduleId,
-      cmdProfileId: contract.primaryStep.cmdId,
-      payload: payload,
-      timeoutMs: contract.primaryStep.timeoutMs,
+      cmdProfileId: contract.cmdProfileId,
+      payload: draft.payloadWords,
+      timeoutMs: contract.timeoutMs,
     );
   }
 
@@ -66,5 +47,21 @@ class CommandBuilder {
     if (hh > 23 || mm > 59) {
       throw StateError('$field=$value is out of range');
     }
+  }
+
+  void _validateUint16(int value, String field) {
+    if (value < 0 || value > 0xFFFF) {
+      throw StateError('$field=$value is out of range');
+    }
+  }
+
+  void _validateRelay(LightingRelayDraft relay, {required int relayNumber}) {
+    _validateHhmm(relay.onHhmm, 'LIGHT_RELAY_${relayNumber}_ON_HHMM');
+    _validateHhmm(relay.offHhmm, 'LIGHT_RELAY_${relayNumber}_OFF_HHMM');
+    _validateUint16(
+      relay.thresholdWm2,
+      'LIGHT_RELAY_${relayNumber}_THRESHOLD_WM2',
+    );
+    _validateUint16(relay.dliLimit, 'LIGHT_RELAY_${relayNumber}_DLI_LIMIT');
   }
 }

@@ -98,6 +98,9 @@ class ScadaController extends ChangeNotifier {
   static const int _maxSlaveStatusRegsPerRead = 125;
   static const Duration _sessionRefreshInterval = Duration(seconds: 30);
   static const int _minScheduleApplyWaitMs = 2000;
+  static const int _maxScheduleApplyWaitMs = 3000;
+  static const int _minSchedulePollIntervalMs = 100;
+  static const int _maxSchedulePollIntervalMs = 200;
   static const int _scheduleResultIdle = 0;
   static const int _scheduleResultQueued = 1;
   static const int _scheduleResultApplied = 2;
@@ -340,6 +343,39 @@ class ScadaController extends ChangeNotifier {
         .toList(growable: false);
   }
 
+  List<SemanticFieldView> lightingFeedbackFieldsForModule(int moduleId) {
+    return _lightingFeedbackSemantics
+        .map((semantic) {
+          final point = topologyResolver?.pointBySemantic(
+            moduleId: moduleId,
+            semanticName: semantic.semanticName,
+          );
+          if (point == null) {
+            return SemanticFieldView(
+              semanticName: semantic.semanticName,
+              label: semantic.label,
+              unit: semantic.unit,
+              decimals: semantic.decimals,
+              point: null,
+              telemetry: null,
+              state: ScadaCompatibilityState.pointContractMissing,
+              message: 'Point contract missing',
+            );
+          }
+          return SemanticFieldView(
+            semanticName: semantic.semanticName,
+            label: semantic.label,
+            unit: semantic.unit,
+            decimals: semantic.decimals,
+            point: point,
+            telemetry: _telemetryByPublishIndex[point.publishIndex],
+            state: ScadaCompatibilityState.ready,
+            message: 'publish_index=${point.publishIndex}',
+          );
+        })
+        .toList(growable: false);
+  }
+
   LightingScheduleStatus lightingStatusForModule(int moduleId) {
     final existing = _scheduleStatusByModuleId[moduleId];
     if (existing != null) {
@@ -373,7 +409,7 @@ class ScadaController extends ChangeNotifier {
       return 'Selected module is missing in topology.';
     }
     if (resolver.scheduleContractForModule(moduleId) == null) {
-      return 'Schedule command profile is absent for this module.';
+      return 'Lighting setpoints profile is absent for this module.';
     }
     return null;
   }
@@ -436,11 +472,12 @@ class ScadaController extends ChangeNotifier {
           request.payload.length & 0xFFFF,
           ...request.payload,
         ];
+        final payloadLastOffset = payloadRegs.length - 1;
         await _logger.logScheduleTransaction(
           moduleId: module.moduleId,
           slaveId: module.slaveId,
           event: 'payload_write_req',
-          operation: 'FC16_CMD+0..+19',
+          operation: 'FC16_CMD+0..+$payloadLastOffset',
           address: directorySnapshot!.cmdBase,
           count: payloadRegs.length,
           requestRegs: payloadRegs,
@@ -860,7 +897,10 @@ class ScadaController extends ChangeNotifier {
   }) async {
     final effectiveTimeoutMs = timeoutMs < _minScheduleApplyWaitMs
         ? _minScheduleApplyWaitMs
-        : timeoutMs;
+        : (timeoutMs > _maxScheduleApplyWaitMs
+              ? _maxScheduleApplyWaitMs
+              : timeoutMs);
+    final pollIntervalMs = _effectiveSchedulePollIntervalMs;
     final deadline = DateTime.now().add(Duration(milliseconds: effectiveTimeoutMs));
     var lastApplied = 0;
     var lastResult = 0;
@@ -921,7 +961,7 @@ class ScadaController extends ChangeNotifier {
         );
       }
       await Future<void>.delayed(
-        Duration(milliseconds: config.pollIntervals.commandPollMs),
+        Duration(milliseconds: pollIntervalMs),
       );
     }
     if (deferredFailure != null) {
@@ -934,7 +974,7 @@ class ScadaController extends ChangeNotifier {
       lastResult: lastResult,
       lastIoErr: lastIoErr,
       lastAttemptAt: DateTime.now(),
-      message: 'Pending/timeout after ${effectiveTimeoutMs}ms',
+      message: 'Timeout after ${effectiveTimeoutMs}ms',
     );
   }
 
@@ -1082,6 +1122,17 @@ class ScadaController extends ChangeNotifier {
   int get _transportAttemptCount {
     final retryCount = config.transport.retryCount;
     return retryCount < 0 ? 1 : retryCount + 1;
+  }
+
+  int get _effectiveSchedulePollIntervalMs {
+    final configured = config.pollIntervals.commandPollMs;
+    if (configured < _minSchedulePollIntervalMs) {
+      return _minSchedulePollIntervalMs;
+    }
+    if (configured > _maxSchedulePollIntervalMs) {
+      return _maxSchedulePollIntervalMs;
+    }
+    return configured;
   }
 
   Future<T> _runWithPollingPause<T>(
@@ -1534,6 +1585,27 @@ const List<_WeatherSemantic> _weatherSemantics = <_WeatherSemantic>[
     label: 'Barometric pressure',
     unit: 'hPa',
     decimals: 1,
+  ),
+];
+
+const List<_WeatherSemantic> _lightingFeedbackSemantics = <_WeatherSemantic>[
+  _WeatherSemantic(
+    semanticName: 'current_dli',
+    label: 'Current DLI',
+    unit: '',
+    decimals: 2,
+  ),
+  _WeatherSemantic(
+    semanticName: 'light_output',
+    label: 'Light output',
+    unit: '%',
+    decimals: 0,
+  ),
+  _WeatherSemantic(
+    semanticName: 'light_status_bits',
+    label: 'Status bits',
+    unit: '',
+    decimals: 0,
   ),
 ];
 

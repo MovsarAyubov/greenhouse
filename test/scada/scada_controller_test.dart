@@ -58,29 +58,26 @@ void main() {
       },
     );
 
-    test(
-      'missing schedule contract is exposed as command contract missing',
-      () async {
-        final controller = ScadaController(
-          client: _FakeModbusTcpClient(generation: 77),
-          configStore: _FakeConfigStore(),
-          logger: _FakeLogger(),
-          topologyStore: _FakeTopologyStore(
-            snapshot: _snapshot(
-              manifest: _manifest(generation: 77, includeSchedule: false),
-            ),
+    test('unknown lighting profile is exposed as unsupported module', () async {
+      final controller = ScadaController(
+        client: _FakeModbusTcpClient(generation: 77),
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifestUnknownLightingProfile(generation: 77),
           ),
-        );
+        ),
+      );
 
-        await controller.refreshSession();
+      await controller.refreshSession();
 
-        expect(controller.compatibility.state, ScadaCompatibilityState.ready);
-        expect(
-          controller.scheduleDisabledReasonForModule(101),
-          'Schedule command profile is absent for this module.',
-        );
-      },
-    );
+      expect(controller.compatibility.state, ScadaCompatibilityState.ready);
+      expect(
+        controller.scheduleDisabledReasonForModule(150),
+        'Lighting setpoints profile is absent for this module.',
+      );
+    });
 
     test(
       'bootstrap timeout does not overwrite local topology state as map incompatible',
@@ -335,6 +332,25 @@ void main() {
       );
 
       await controller.init();
+      controller.updateLightingDraft(101, (current) {
+        return current.copyWith(
+          relay1: const LightingRelayDraft(
+            enabled: true,
+            onHhmm: 615,
+            offHhmm: 2230,
+            thresholdWm2: 120,
+            dliLimit: 360,
+          ),
+          relay2: const LightingRelayDraft(
+            enabled: true,
+            onHhmm: 700,
+            offHhmm: 2100,
+            thresholdWm2: 400,
+            dliLimit: 600,
+          ),
+          hysteresisSec: 4,
+        );
+      });
       await controller.sendScheduleForModule(101);
 
       final status = controller.lightingStatusForModule(101);
@@ -342,6 +358,32 @@ void main() {
       expect(status.lastAppliedTrigger, status.trigger);
       expect(status.lastResult, 2);
       expect(status.message, 'Applied');
+      expect(client.writeOrder, orderedEquals(const <String>['payload', 'trigger']));
+      expect(client.lastPayloadStartAddress, 1240);
+      expect(
+        client.lastPayloadWrite,
+        orderedEquals(const <int>[
+          1,
+          101,
+          5001,
+          13,
+          1,
+          615,
+          2230,
+          120,
+          0,
+          360,
+          1,
+          700,
+          2100,
+          400,
+          0,
+          600,
+          4,
+        ]),
+      );
+      expect(client.lastTriggerAddress, 1260);
+      expect(client.currentTrigger, isNonZero);
 
       controller.dispose();
     });
@@ -380,8 +422,8 @@ void main() {
       final status = controller.lightingStatusForModule(101);
       expect(status.phase, LightingSchedulePhase.failed);
       expect(status.lastAppliedTrigger, status.trigger);
-      expect(status.lastResult, 1304);
-      expect(status.message, contains('invalid schedule'));
+      expect(status.lastResult, 13);
+      expect(status.message, contains('reject busy'));
       expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(1800));
 
       controller.dispose();
@@ -412,31 +454,21 @@ void main() {
       await firstController.init();
       firstController.updateLightingDraft(101, (current) {
         return current.copyWith(
-          slots: <LightingScheduleSlot>[
-            const LightingScheduleSlot(
-              enabled: true,
-              onHhmm: 615,
-              offHhmm: 745,
-            ),
-            const LightingScheduleSlot(
-              enabled: false,
-              onHhmm: 0,
-              offHhmm: 0,
-            ),
-            const LightingScheduleSlot(
-              enabled: true,
-              onHhmm: 1800,
-              offHhmm: 2230,
-            ),
-            const LightingScheduleSlot(
-              enabled: false,
-              onHhmm: 0,
-              offHhmm: 0,
-            ),
-          ],
-          applyValue: 2,
-          expectedActiveCtrlVersion: 77,
-          strictVersion: true,
+          relay1: const LightingRelayDraft(
+            enabled: true,
+            onHhmm: 615,
+            offHhmm: 2230,
+            thresholdWm2: 125,
+            dliLimit: 375,
+          ),
+          relay2: const LightingRelayDraft(
+            enabled: false,
+            onHhmm: 0,
+            offHhmm: 0,
+            thresholdWm2: 0,
+            dliLimit: 0,
+          ),
+          hysteresisSec: 5,
         );
       });
       await firstController.sendScheduleForModule(101);
@@ -461,17 +493,46 @@ void main() {
       expect(restored.draft.moduleId, 101);
       expect(restored.draft.zoneId, 1);
       expect(restored.draft.slaveId, 1);
-      expect(restored.draft.slots[0].enabled, isTrue);
-      expect(restored.draft.slots[0].onHhmm, 615);
-      expect(restored.draft.slots[0].offHhmm, 745);
-      expect(restored.draft.slots[2].enabled, isTrue);
-      expect(restored.draft.slots[2].onHhmm, 1800);
-      expect(restored.draft.slots[2].offHhmm, 2230);
-      expect(restored.draft.applyValue, 2);
-      expect(restored.draft.expectedActiveCtrlVersion, 77);
-      expect(restored.draft.strictVersion, isTrue);
+      expect(restored.draft.relay1.enabled, isTrue);
+      expect(restored.draft.relay1.onHhmm, 615);
+      expect(restored.draft.relay1.offHhmm, 2230);
+      expect(restored.draft.relay1.thresholdWm2, 125);
+      expect(restored.draft.relay1.dliLimit, 375);
+      expect(restored.draft.relay2.enabled, isFalse);
+      expect(restored.draft.hysteresisSec, 5);
 
       secondController.dispose();
+    });
+
+    test('lighting feedback fields resolve semantic points from points window', () async {
+      final controller = ScadaController(
+        client: _LightingFeedbackModbusTcpClient(),
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifestWithLightingFeedback(generation: 77),
+          ),
+        ),
+      );
+
+      await controller.init();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final fields = controller.lightingFeedbackFieldsForModule(101);
+      expect(
+        fields.map((item) => item.semanticName),
+        orderedEquals(const <String>[
+          'current_dli',
+          'light_output',
+          'light_status_bits',
+        ]),
+      );
+      expect(fields[0].telemetry?.value, closeTo(18.75, 0.001));
+      expect(fields[1].telemetry?.value.round(), 50);
+      expect(fields[2].telemetry?.value.round(), 3);
+
+      controller.dispose();
     });
   });
 }
@@ -540,29 +601,108 @@ TopologyManifest _manifest({
     'commands': includeSchedule
         ? <Map<String, dynamic>>[
             <String, dynamic>{
-              'cmd_id': 501,
+              'cmd_id': 5001,
               'module_id': 101,
               'fc': 16,
               'start_reg': 110,
-              'max_reg_count': 12,
+              'max_reg_count': 13,
               'payload_offset': 0,
               'timeout_ms': scheduleTimeoutMs,
               'ack_point_id': 0,
-              'cmd_kind': 'schedule',
-            },
-            <String, dynamic>{
-              'cmd_id': 502,
-              'module_id': 101,
-              'fc': 6,
-              'start_reg': 122,
-              'max_reg_count': 1,
-              'payload_offset': 12,
-              'timeout_ms': scheduleTimeoutMs,
-              'ack_point_id': 0,
-              'cmd_kind': 'schedule',
+              'cmd_kind': 'generic',
             },
           ]
         : const <Map<String, dynamic>>[],
+    'policies': const <Map<String, dynamic>>[],
+  });
+}
+
+TopologyManifest _manifestUnknownLightingProfile({required int generation}) {
+  return TopologyManifest.fromJson(<String, dynamic>{
+    'schema_version': '2.0',
+    'generation': generation,
+    'topology_id': 1,
+    'modules': <Map<String, dynamic>>[
+      <String, dynamic>{
+        'module_id': 150,
+        'module_type': 1,
+        'bus_type': 1,
+        'bus_index': 0,
+        'slave_id': 7,
+        'zone_id': 7,
+        'capability_mask': 0,
+        'user_param0': 0,
+        'user_param1': 0,
+      },
+    ],
+    'requests': const <Map<String, dynamic>>[],
+    'points': const <Map<String, dynamic>>[],
+    'commands': const <Map<String, dynamic>>[],
+    'policies': const <Map<String, dynamic>>[],
+  });
+}
+
+TopologyManifest _manifestWithLightingFeedback({required int generation}) {
+  return TopologyManifest.fromJson(<String, dynamic>{
+    'schema_version': '2.0',
+    'generation': generation,
+    'topology_id': 1,
+    'modules': <Map<String, dynamic>>[
+      <String, dynamic>{
+        'module_id': 101,
+        'module_type': 1,
+        'bus_type': 1,
+        'bus_index': 0,
+        'slave_id': 1,
+        'zone_id': 1,
+        'capability_mask': 0,
+        'user_param0': 0,
+        'user_param1': 0,
+      },
+    ],
+    'requests': const <Map<String, dynamic>>[],
+    'points': const <Map<String, dynamic>>[
+      <String, dynamic>{
+        'point_id': 10134,
+        'module_id': 101,
+        'req_id': 1,
+        'point_type': 5,
+        'scale_pow10': 0,
+        'publish_index': 18,
+        'quality_policy': 1,
+        'stale_timeout_s': 10,
+        'alarm_low': 0,
+        'alarm_high': 0,
+        'semantic_name': 'current_dli',
+      },
+      <String, dynamic>{
+        'point_id': 10135,
+        'module_id': 101,
+        'req_id': 1,
+        'point_type': 5,
+        'scale_pow10': 0,
+        'publish_index': 19,
+        'quality_policy': 1,
+        'stale_timeout_s': 10,
+        'alarm_low': 0,
+        'alarm_high': 0,
+        'semantic_name': 'light_output',
+      },
+      <String, dynamic>{
+        'point_id': 10136,
+        'module_id': 101,
+        'req_id': 1,
+        'point_type': 6,
+        'scale_pow10': 0,
+        'publish_index': 20,
+        'quality_policy': 1,
+        'stale_timeout_s': 10,
+        'alarm_low': 0,
+        'alarm_high': 0,
+        'semantic_name': 'light_status_bits',
+      },
+    ],
+    'commands': const <Map<String, dynamic>>[],
     'policies': const <Map<String, dynamic>>[],
   });
 }
@@ -807,6 +947,86 @@ class _RuntimeTelemetryModbusTcpClient extends ModbusTcpClient {
         _pointRow(value: 4.6, quality: 0, ageSec: 1, moduleId: 201, flags: 1),
       ];
       return rows.expand((row) => row).take(count).toList(growable: false);
+    }
+    return List<int>.filled(count, 0);
+  }
+
+  @override
+  Future<void> writeSingleRegister({
+    required int unitId,
+    required int address,
+    required int value,
+  }) async {}
+
+  @override
+  Future<void> writeMultipleRegisters({
+    required int unitId,
+    required int startAddress,
+    required List<int> values,
+  }) async {}
+
+  @override
+  Future<void> dispose() async {
+    await _stream.close();
+  }
+}
+
+class _LightingFeedbackModbusTcpClient extends ModbusTcpClient {
+  final StreamController<bool> _stream = StreamController<bool>.broadcast();
+
+  @override
+  bool get isConnected => true;
+
+  @override
+  Stream<bool> get connection => _stream.stream;
+
+  @override
+  Future<void> connect(String host, int port) async {}
+
+  @override
+  Future<void> disconnect() async {}
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1264) {
+      final regs = List<int>.filled(32, 0);
+      regs[0] = 4;
+      regs[1] = 0x0003;
+      regs[4] = 21;
+      regs[5] = 6;
+      regs[6] = 0;
+      regs[7] = 1080;
+      regs[8] = 1240;
+      regs[11] = 180;
+      regs[12] = 24;
+      regs[13] = 8;
+      return regs.sublist(0, count);
+    }
+    if (startAddress == 1408) {
+      return <int>[0, 0, 0, 0x0001, 2, 0, 0, 77, 0, 540].sublist(0, count);
+    }
+    if (startAddress >= 0 && startAddress < 126) {
+      final rows = List<List<int>>.generate(
+        21,
+        (index) => _pointRow(
+          value: index == 18
+              ? 18.75
+              : (index == 19 ? 50.0 : (index == 20 ? 3.0 : 0.0)),
+          quality: 0,
+          ageSec: index >= 18 ? 5 : 0,
+          moduleId: 101,
+          flags: index >= 18 ? 1 : 0,
+        ),
+      );
+      final regs = rows.expand((row) => row).toList(growable: false);
+      return regs.sublist(startAddress, startAddress + count);
+    }
+    if (startAddress == 1080) {
+      return List<int>.filled(count, 0);
     }
     return List<int>.filled(count, 0);
   }
@@ -1168,7 +1388,7 @@ class _QueuedScheduleClient extends _ScheduleApplyClientBase {
 
 class _RejectedScheduleClient extends _ScheduleApplyClientBase {
   @override
-  List<int> commandStateForTrigger(int trigger) => <int>[trigger, 1304, 0];
+  List<int> commandStateForTrigger(int trigger) => <int>[trigger, 13, 0];
 }
 
 abstract class _ScheduleApplyClientBase extends _FakeModbusTcpClient {
@@ -1176,6 +1396,10 @@ abstract class _ScheduleApplyClientBase extends _FakeModbusTcpClient {
 
   int currentTrigger = 0;
   DateTime? triggerWrittenAt;
+  int? lastPayloadStartAddress;
+  List<int>? lastPayloadWrite;
+  int? lastTriggerAddress;
+  final List<String> writeOrder = <String>[];
 
   List<int> commandStateForTrigger(int trigger);
 
@@ -1209,8 +1433,10 @@ abstract class _ScheduleApplyClientBase extends _FakeModbusTcpClient {
     required int value,
   }) async {
     if (address == 1260) {
+      lastTriggerAddress = address;
       currentTrigger = value & 0xFFFF;
       triggerWrittenAt = DateTime.now();
+      writeOrder.add('trigger');
     }
   }
 
@@ -1219,7 +1445,11 @@ abstract class _ScheduleApplyClientBase extends _FakeModbusTcpClient {
     required int unitId,
     required int startAddress,
     required List<int> values,
-  }) async {}
+  }) async {
+    lastPayloadStartAddress = startAddress;
+    lastPayloadWrite = List<int>.from(values);
+    writeOrder.add('payload');
+  }
 }
 
 List<int> _pointRow({

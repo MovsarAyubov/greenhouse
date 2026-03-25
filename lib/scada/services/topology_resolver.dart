@@ -2,12 +2,12 @@ import '../models/topology_models.dart';
 
 class ScheduleCommandContract {
   const ScheduleCommandContract({
-    required this.primaryStep,
-    required this.applyStep,
+    required this.cmdProfileId,
+    required this.timeoutMs,
   });
 
-  final TopologyCommand primaryStep;
-  final TopologyCommand applyStep;
+  final int cmdProfileId;
+  final int timeoutMs;
 }
 
 class TopologyResolver {
@@ -54,33 +54,45 @@ class TopologyResolver {
   }
 
   ScheduleCommandContract? scheduleContractForModule(int moduleId) {
-    final commands = _commandsByModuleId[moduleId] ?? const <TopologyCommand>[];
-    TopologyCommand? primary;
-    TopologyCommand? apply;
-    for (final command in commands) {
-      if (command.cmdKind != 'schedule') {
-        continue;
-      }
-      if (command.fc == 16 &&
-          command.startReg == 110 &&
-          command.maxRegCount == 12 &&
-          command.payloadOffset == 0) {
-        primary = command;
-      } else if (command.fc == 6 &&
-          command.startReg == 122 &&
-          command.maxRegCount == 1 &&
-          command.payloadOffset == 12) {
-        apply = command;
-      }
-    }
-    if (primary == null || apply == null) {
+    final module = moduleById(moduleId);
+    if (module == null || !module.isZone || module.slaveId <= 0) {
       return null;
     }
-    return ScheduleCommandContract(primaryStep: primary, applyStep: apply);
+    final commands = _commandsByModuleId[moduleId] ?? const <TopologyCommand>[];
+    for (final command in commands) {
+      final isLightSetpointsContract =
+          command.cmdId >= 5000 &&
+          command.fc == 16 &&
+          command.startReg == 110 &&
+          command.maxRegCount <= 13 &&
+          command.payloadOffset == 0 &&
+          (command.cmdKind == 'generic' || command.cmdKind == 'schedule');
+      if (isLightSetpointsContract) {
+        return ScheduleCommandContract(
+          cmdProfileId: command.cmdId,
+          timeoutMs: command.timeoutMs,
+        );
+      }
+    }
+    final cmdProfileId = _knownCmdProfileIdForModule(module);
+    if (cmdProfileId == null) {
+      return null;
+    }
+    return ScheduleCommandContract(cmdProfileId: cmdProfileId, timeoutMs: 3000);
   }
 
   bool hasScheduleContract(int moduleId) =>
       scheduleContractForModule(moduleId) != null;
+
+  int? _knownCmdProfileIdForModule(TopologyModule module) {
+    if (module.moduleId == 101 && module.slaveId == 1) {
+      return 5001;
+    }
+    if (module.moduleId == 102 && module.slaveId == 2) {
+      return 5003;
+    }
+    return null;
+  }
 
   static Map<int, List<TopologyPoint>> _groupPoints(List<TopologyPoint> points) {
     final grouped = <int, List<TopologyPoint>>{};

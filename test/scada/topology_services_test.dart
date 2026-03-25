@@ -13,55 +13,41 @@ import 'package:greenhouse/scada/services/topology_store.dart';
 import 'package:greenhouse/scada/services/topology_uploader.dart';
 
 void main() {
-  test('schedule command builder uses topology contract and payload shape', () {
+  test('schedule command builder uses lighting setpoints payload shape', () {
     final module = TopologyModule.fromJson(<String, dynamic>{
       'module_id': 101,
       'module_type': 1,
       'bus_type': 1,
       'bus_index': 0,
-      'slave_id': 3,
+      'slave_id': 1,
       'zone_id': 1,
       'capability_mask': 0,
       'user_param0': 0,
       'user_param1': 0,
     });
     final contract = ScheduleCommandContract(
-      primaryStep: TopologyCommand.fromJson(<String, dynamic>{
-        'cmd_id': 501,
-        'module_id': 101,
-        'fc': 16,
-        'start_reg': 110,
-        'max_reg_count': 12,
-        'payload_offset': 0,
-        'timeout_ms': 3000,
-        'ack_point_id': 0,
-        'cmd_kind': 'schedule',
-      }),
-      applyStep: TopologyCommand.fromJson(<String, dynamic>{
-        'cmd_id': 502,
-        'module_id': 101,
-        'fc': 6,
-        'start_reg': 122,
-        'max_reg_count': 1,
-        'payload_offset': 12,
-        'timeout_ms': 3000,
-        'ack_point_id': 0,
-        'cmd_kind': 'schedule',
-      }),
+      cmdProfileId: 5001,
+      timeoutMs: 3000,
     );
     final draft = LightingScheduleDraft(
       moduleId: 101,
       zoneId: 1,
-      slaveId: 3,
-      slots: const <LightingScheduleSlot>[
-        LightingScheduleSlot(enabled: true, onHhmm: 600, offHhmm: 900),
-        LightingScheduleSlot(enabled: false, onHhmm: 0, offHhmm: 0),
-        LightingScheduleSlot(enabled: true, onHhmm: 1200, offHhmm: 1500),
-        LightingScheduleSlot(enabled: false, onHhmm: 0, offHhmm: 0),
-      ],
-      applyValue: 1,
-      expectedActiveCtrlVersion: 0x12345678,
-      strictVersion: true,
+      slaveId: 1,
+      relay1: const LightingRelayDraft(
+        enabled: true,
+        onHhmm: 600,
+        offHhmm: 900,
+        thresholdWm2: 120,
+        dliLimit: 360,
+      ),
+      relay2: const LightingRelayDraft(
+        enabled: false,
+        onHhmm: 0,
+        offHhmm: 0,
+        thresholdWm2: 0,
+        dliLimit: 0,
+      ),
+      hysteresisSec: 9,
     );
 
     final request = const CommandBuilder().buildScheduleCommand(
@@ -70,14 +56,27 @@ void main() {
       draft: draft,
     );
 
-    expect(request.targetSlaveId, 3);
+    expect(request.targetSlaveId, 1);
     expect(request.targetModuleId, 101);
-    expect(request.cmdProfileId, 501);
-    expect(request.payload.length, 16);
-    expect(request.payload[12], 1);
-    expect(request.payload[13], 0x1234);
-    expect(request.payload[14], 0x5678);
-    expect(request.payload[15], 1);
+    expect(request.cmdProfileId, 5001);
+    expect(
+      request.payload,
+      orderedEquals(const <int>[
+        1,
+        600,
+        900,
+        120,
+        0,
+        360,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        9,
+      ]),
+    );
   });
 
   test('topology uploader sets reset and commit on single chunk', () {
