@@ -21,7 +21,7 @@ class StorageService {
     _db = await databaseFactory.openDatabase(
       dbPath,
       options: OpenDatabaseOptions(
-        version: 1,
+        version: 2,
         onCreate: (db, _) async {
           await db.execute('''
             CREATE TABLE telemetry(
@@ -52,9 +52,28 @@ class StorageService {
               summary TEXT
             )
           ''');
+
+          await _createSetpointDraftTable(db);
+        },
+        onUpgrade: (db, oldVersion, newVersion) async {
+          if (oldVersion < 2) {
+            await _createSetpointDraftTable(db);
+          }
         },
       ),
     );
+  }
+
+  Future<void> _createSetpointDraftTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS setpoint_draft(
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        time_utc TEXT NOT NULL,
+        version_text TEXT NOT NULL,
+        user_text TEXT NOT NULL,
+        payload_text TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> logSnapshot(List<SensorPoint> sensors) async {
@@ -109,6 +128,47 @@ class StorageService {
     });
   }
 
+<<<<<<< HEAD:lib/data/services/operator_pc/storage_service.dart
+=======
+  Future<void> saveSetpointDraft(LocalSetpointDraft draft) async {
+    final db = _db;
+    if (db == null) {
+      return;
+    }
+    await db.insert('setpoint_draft', {
+      'id': 1,
+      'time_utc': (draft.savedAt ?? DateTime.now()).toUtc().toIso8601String(),
+      'version_text': draft.versionText,
+      'user_text': draft.userText,
+      'payload_text': draft.payloadText,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<LocalSetpointDraft?> loadSetpointDraft() async {
+    final db = _db;
+    if (db == null) {
+      return null;
+    }
+    final rows = await db.query(
+      'setpoint_draft',
+      where: 'id = ?',
+      whereArgs: const [1],
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    final row = rows.first;
+    final savedAtText = row['time_utc'] as String?;
+    return LocalSetpointDraft(
+      versionText: (row['version_text'] as String?) ?? '',
+      userText: (row['user_text'] as String?) ?? '',
+      payloadText: (row['payload_text'] as String?) ?? '',
+      savedAt: savedAtText == null ? null : DateTime.tryParse(savedAtText),
+    );
+  }
+
+>>>>>>> client_transport_topology:lib/operator_pc/services/storage_service.dart
   Future<List<Map<String, Object?>>> telemetryBetween(
     DateTime from,
     DateTime to,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:greenhouse/data/datasources/operator_pc/protocol.dart'
@@ -45,12 +46,14 @@ class AppController extends ChangeNotifier {
   int rawTxBytes = 0;
   int rawTxFrames = 0;
   List<double> currentConfig = List<double>.filled(32, 0);
+  LocalSetpointDraft setpointDraft = LocalSetpointDraft.defaults();
   int channelsPerBlock = kChannelsPerBlock;
   List<BlockLayoutItem> blockLayoutItems = const <BlockLayoutItem>[];
 
   StreamSubscription<bool>? _connSub;
   StreamSubscription<ProtocolFrame>? _frameSub;
   Timer? _statusPollTimer;
+  Timer? _setpointDraftSaveTimer;
   Completer<int>? _setpointValidateAck;
   Completer<({bool applied, int version})>? _setpointApplyAck;
 
@@ -59,6 +62,10 @@ class AppController extends ChangeNotifier {
 
   Future<void> init() async {
     await storage.init();
+    final savedDraft = await storage.loadSetpointDraft();
+    if (savedDraft != null) {
+      setpointDraft = savedDraft;
+    }
 
     _connSub = _client.connection.listen((connected) {
       status = status.copyWith(connected: connected);
@@ -76,6 +83,7 @@ class AppController extends ChangeNotifier {
 
     _frameSub = _client.frames.listen(_onFrame);
     await _client.start();
+    notifyListeners();
   }
 
   Future<void> _runResync() async {
@@ -332,6 +340,13 @@ class AppController extends ChangeNotifier {
 
     setpointBusy = true;
     setpointStatus = 'in_progress';
+    setpointDraft = setpointDraft.copyWith(
+      versionText: '$newVersion',
+      userText: user,
+      payloadText: _formatSetpointValues(values),
+      savedAt: DateTime.now(),
+    );
+    await storage.saveSetpointDraft(setpointDraft);
     notifyListeners();
 
     try {
@@ -387,6 +402,23 @@ class AppController extends ChangeNotifier {
       setpointBusy = false;
       notifyListeners();
     }
+  }
+
+  void updateSetpointDraft({
+    String? versionText,
+    String? userText,
+    String? payloadText,
+  }) {
+    setpointDraft = setpointDraft.copyWith(
+      versionText: versionText,
+      userText: userText,
+      payloadText: payloadText,
+      savedAt: DateTime.now(),
+    );
+    _setpointDraftSaveTimer?.cancel();
+    _setpointDraftSaveTimer = Timer(const Duration(milliseconds: 300), () {
+      unawaited(storage.saveSetpointDraft(setpointDraft));
+    });
   }
 
   void _parseSetpointValidate(Uint8List payload) {
@@ -513,8 +545,16 @@ class AppController extends ChangeNotifier {
     _connSub?.cancel();
     _frameSub?.cancel();
     _stopStatusPoll();
+    _setpointDraftSaveTimer?.cancel();
     unawaited(_client.dispose());
     unawaited(storage.dispose());
     super.dispose();
+  }
+
+  String _formatSetpointValues(List<double> values) {
+    return List<String>.generate(
+      32,
+      (index) => index < values.length ? values[index].toString() : '0',
+    ).join(',');
   }
 }

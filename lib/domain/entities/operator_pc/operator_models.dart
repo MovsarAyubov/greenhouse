@@ -167,6 +167,43 @@ class MasterStatus {
   );
 }
 
+class LocalSetpointDraft {
+  const LocalSetpointDraft({
+    required this.versionText,
+    required this.userText,
+    required this.payloadText,
+    required this.savedAt,
+  });
+
+  final String versionText;
+  final String userText;
+  final String payloadText;
+  final DateTime? savedAt;
+
+  LocalSetpointDraft copyWith({
+    String? versionText,
+    String? userText,
+    String? payloadText,
+    DateTime? savedAt,
+    bool clearSavedAt = false,
+  }) {
+    return LocalSetpointDraft(
+      versionText: versionText ?? this.versionText,
+      userText: userText ?? this.userText,
+      payloadText: payloadText ?? this.payloadText,
+      savedAt: clearSavedAt ? null : (savedAt ?? this.savedAt),
+    );
+  }
+
+  static LocalSetpointDraft defaults() => const LocalSetpointDraft(
+    versionText: '1',
+    userText: 'operator',
+    payloadText:
+        '24.5,70.0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0',
+    savedAt: null,
+  );
+}
+
 class SnapshotData {
   SnapshotData({
     required this.snapshotId,

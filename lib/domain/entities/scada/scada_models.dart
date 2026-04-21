@@ -1,332 +1,382 @@
-enum ZoneMode { auto, manual, service }
+import '../services/modbus_tcp_client.dart';
+import 'topology_models.dart';
 
-enum AlarmType { offline, stale, invalidSensor, commandMismatch }
+class DeviceConnectionConfig {
+  const DeviceConnectionConfig({
+    required this.host,
+    required this.port,
+    required this.unitId,
+  });
+
+  final String host;
+  final int port;
+  final int unitId;
+
+  DeviceConnectionConfig copyWith({String? host, int? port, int? unitId}) {
+    return DeviceConnectionConfig(
+      host: host ?? this.host,
+      port: port ?? this.port,
+      unitId: unitId ?? this.unitId,
+    );
+  }
+}
+
+class PollIntervalsConfig {
+  const PollIntervalsConfig({
+    required this.telemetryMs,
+    required this.diagMs,
+    required this.commandPollMs,
+    required this.uploadPollMs,
+  });
+
+  final int telemetryMs;
+  final int diagMs;
+  final int commandPollMs;
+  final int uploadPollMs;
+
+  PollIntervalsConfig copyWith({
+    int? telemetryMs,
+    int? diagMs,
+    int? commandPollMs,
+    int? uploadPollMs,
+  }) {
+    return PollIntervalsConfig(
+      telemetryMs: telemetryMs ?? this.telemetryMs,
+      diagMs: diagMs ?? this.diagMs,
+      commandPollMs: commandPollMs ?? this.commandPollMs,
+      uploadPollMs: uploadPollMs ?? this.uploadPollMs,
+    );
+  }
+}
+
+class TimeoutConfig {
+  const TimeoutConfig({
+    required this.connectMs,
+    required this.responseMs,
+    required this.retryBackoffMs,
+    required this.commandMs,
+    required this.uploadChunkMs,
+    required this.uploadCommitMs,
+  });
+
+  final int connectMs;
+  final int responseMs;
+  final int retryBackoffMs;
+  final int commandMs;
+  final int uploadChunkMs;
+  final int uploadCommitMs;
+
+  TimeoutConfig copyWith({
+    int? connectMs,
+    int? responseMs,
+    int? retryBackoffMs,
+    int? commandMs,
+    int? uploadChunkMs,
+    int? uploadCommitMs,
+  }) {
+    return TimeoutConfig(
+      connectMs: connectMs ?? this.connectMs,
+      responseMs: responseMs ?? this.responseMs,
+      retryBackoffMs: retryBackoffMs ?? this.retryBackoffMs,
+      commandMs: commandMs ?? this.commandMs,
+      uploadChunkMs: uploadChunkMs ?? this.uploadChunkMs,
+      uploadCommitMs: uploadCommitMs ?? this.uploadCommitMs,
+    );
+  }
+}
+
+class TransportConfig {
+  const TransportConfig({required this.retryCount});
+
+  final int retryCount;
+
+  TransportConfig copyWith({int? retryCount}) {
+    return TransportConfig(retryCount: retryCount ?? this.retryCount);
+  }
+}
+
+class FeatureFlagsConfig {
+  const FeatureFlagsConfig({
+    required this.allowTelemetryOnGenerationMismatch,
+    required this.showUnsupportedPoints,
+    required this.pausePollingDuringWriteWorkflows,
+  });
+
+  final bool allowTelemetryOnGenerationMismatch;
+  final bool showUnsupportedPoints;
+  final bool pausePollingDuringWriteWorkflows;
+
+  FeatureFlagsConfig copyWith({
+    bool? allowTelemetryOnGenerationMismatch,
+    bool? showUnsupportedPoints,
+    bool? pausePollingDuringWriteWorkflows,
+  }) {
+    return FeatureFlagsConfig(
+      allowTelemetryOnGenerationMismatch:
+          allowTelemetryOnGenerationMismatch ??
+          this.allowTelemetryOnGenerationMismatch,
+      showUnsupportedPoints:
+          showUnsupportedPoints ?? this.showUnsupportedPoints,
+      pausePollingDuringWriteWorkflows:
+          pausePollingDuringWriteWorkflows ??
+          this.pausePollingDuringWriteWorkflows,
+    );
+  }
+}
 
 class ScadaConfig {
   const ScadaConfig({
-    required this.masterIp,
-    required this.masterPort,
-    required this.pollPeriodMs,
-    required this.staleThresholdSec,
-    required this.logPeriodSec,
-    required this.sensorNames,
-    required this.outputNames,
+    required this.deviceConnection,
+    required this.addressMode,
+    required this.localTopologyManifestPath,
+    required this.localTopologyBlobPath,
+    required this.semanticCatalogPath,
+    required this.pollIntervals,
+    required this.timeouts,
+    required this.transport,
+    required this.featureFlags,
   });
 
-  final String masterIp;
-  final int masterPort;
-  final int pollPeriodMs;
-  final int staleThresholdSec;
-  final int logPeriodSec;
-  final List<String> sensorNames;
-  final List<String> outputNames;
+  final DeviceConnectionConfig deviceConnection;
+  final ModbusAddressMode addressMode;
+  final String localTopologyManifestPath;
+  final String localTopologyBlobPath;
+  final String semanticCatalogPath;
+  final PollIntervalsConfig pollIntervals;
+  final TimeoutConfig timeouts;
+  final TransportConfig transport;
+  final FeatureFlagsConfig featureFlags;
 
   ScadaConfig copyWith({
-    String? masterIp,
-    int? masterPort,
-    int? pollPeriodMs,
-    int? staleThresholdSec,
-    int? logPeriodSec,
-    List<String>? sensorNames,
-    List<String>? outputNames,
+    DeviceConnectionConfig? deviceConnection,
+    ModbusAddressMode? addressMode,
+    String? localTopologyManifestPath,
+    String? localTopologyBlobPath,
+    String? semanticCatalogPath,
+    PollIntervalsConfig? pollIntervals,
+    TimeoutConfig? timeouts,
+    TransportConfig? transport,
+    FeatureFlagsConfig? featureFlags,
   }) {
     return ScadaConfig(
-      masterIp: masterIp ?? this.masterIp,
-      masterPort: masterPort ?? this.masterPort,
-      pollPeriodMs: pollPeriodMs ?? this.pollPeriodMs,
-      staleThresholdSec: staleThresholdSec ?? this.staleThresholdSec,
-      logPeriodSec: logPeriodSec ?? this.logPeriodSec,
-      sensorNames: sensorNames ?? this.sensorNames,
-      outputNames: outputNames ?? this.outputNames,
+      deviceConnection: deviceConnection ?? this.deviceConnection,
+      addressMode: addressMode ?? this.addressMode,
+      localTopologyManifestPath:
+          localTopologyManifestPath ?? this.localTopologyManifestPath,
+      localTopologyBlobPath:
+          localTopologyBlobPath ?? this.localTopologyBlobPath,
+      semanticCatalogPath: semanticCatalogPath ?? this.semanticCatalogPath,
+      pollIntervals: pollIntervals ?? this.pollIntervals,
+      timeouts: timeouts ?? this.timeouts,
+      transport: transport ?? this.transport,
+      featureFlags: featureFlags ?? this.featureFlags,
     );
   }
 
   static ScadaConfig defaults() => ScadaConfig(
-    masterIp: '192.168.50.20',
-    masterPort: 502,
-    pollPeriodMs: 5000,
-    staleThresholdSec: 5,
-    logPeriodSec: 10,
-    sensorNames: List<String>.generate(9, (i) => 'Sensor ${i + 1}'),
-    outputNames: List<String>.generate(16, (i) => 'Output ${i + 1}'),
+    deviceConnection: const DeviceConnectionConfig(
+      host: '192.168.50.20',
+      port: 502,
+      unitId: 1,
+    ),
+    addressMode: ModbusAddressMode.zeroBased,
+    localTopologyManifestPath: '',
+    localTopologyBlobPath: '',
+    semanticCatalogPath: '',
+    pollIntervals: const PollIntervalsConfig(
+      telemetryMs: 5000,
+      diagMs: 30000,
+      commandPollMs: 500,
+      uploadPollMs: 100,
+    ),
+    timeouts: const TimeoutConfig(
+      connectMs: 4000,
+      responseMs: 1000,
+      retryBackoffMs: 100,
+      commandMs: 25000,
+      uploadChunkMs: 3000,
+      uploadCommitMs: 15000,
+    ),
+    transport: const TransportConfig(retryCount: 0),
+    featureFlags: const FeatureFlagsConfig(
+      allowTelemetryOnGenerationMismatch: true,
+      showUnsupportedPoints: true,
+      pausePollingDuringWriteWorkflows: true,
+    ),
   );
 }
 
-class WeatherStationState {
-  const WeatherStationState({
-    required this.values,
-    required this.qualityCodes,
+class PointTelemetryValue {
+  const PointTelemetryValue({
+    required this.value,
+    required this.quality,
     required this.ageSec,
+    required this.moduleId,
     required this.flags,
-    required this.online,
-    required this.lastUpdate,
-    required this.lastError,
   });
 
-  final List<double?> values; // 0..8 weather profile fields
-  final List<int> qualityCodes;
-  final List<int> ageSec;
-  final List<int> flags;
-  final bool online;
-  final DateTime? lastUpdate;
-  final String? lastError;
+  final double value;
+  final int quality;
+  final int ageSec;
+  final int moduleId;
+  final int flags;
 
-  WeatherStationState copyWith({
-    List<double?>? values,
-    List<int>? qualityCodes,
-    List<int>? ageSec,
-    List<int>? flags,
-    bool? online,
-    DateTime? lastUpdate,
-    String? lastError,
-    bool clearLastError = false,
-  }) {
-    return WeatherStationState(
-      values: values ?? this.values,
-      qualityCodes: qualityCodes ?? this.qualityCodes,
-      ageSec: ageSec ?? this.ageSec,
-      flags: flags ?? this.flags,
-      online: online ?? this.online,
-      lastUpdate: lastUpdate ?? this.lastUpdate,
-      lastError: clearLastError ? null : (lastError ?? this.lastError),
-    );
-  }
-
-  static WeatherStationState initial() => WeatherStationState(
-    values: List<double?>.filled(9, null),
-    qualityCodes: List<int>.filled(9, 3),
-    ageSec: List<int>.filled(9, 0),
-    flags: List<int>.filled(9, 0),
-    online: false,
-    lastUpdate: null,
-    lastError: null,
-  );
+  bool get hasValidFlag => (flags & 0x0001) != 0;
+  bool get isUsable => hasValidFlag && quality != 3;
 }
 
-class ZoneState {
-  const ZoneState({
-    required this.zoneId,
-    required this.sensors,
-    required this.sensorValidMask,
-    required this.sensorQualityCodes,
-    required this.sensorAgeSec,
-    required this.sensorFlags,
-    required this.outputs,
-    required this.outputCommandMask,
-    required this.mode,
-    required this.setpoints,
-    required this.online,
-    required this.stale,
-    required this.lastUpdate,
+class ResolvedPointValue {
+  const ResolvedPointValue({
+    required this.point,
+    required this.telemetry,
+    required this.pointContractState,
+    required this.statusMessage,
+  });
+
+  final TopologyPoint point;
+  final PointTelemetryValue? telemetry;
+  final ScadaCompatibilityState pointContractState;
+  final String statusMessage;
+
+  bool get isSupported =>
+      pointContractState != ScadaCompatibilityState.pointContractMissing;
+}
+
+class SlaveStatusSnapshot {
+  const SlaveStatusSnapshot({
+    required this.statusFlags,
     required this.lastOkAgeSec,
     required this.errTimeout,
     required this.errCrc,
     required this.errException,
     required this.dataVersion,
-    required this.lastAppliedTrigger,
-    required this.lastPollMs,
+    required this.validMask,
+    required this.outStateMask,
   });
 
-  final int zoneId;
-  final List<double> sensors;
-  final int sensorValidMask;
-  final List<int> sensorQualityCodes;
-  final List<int> sensorAgeSec;
-  final List<int> sensorFlags;
-  final List<bool> outputs;
-  final int outputCommandMask;
-  final ZoneMode mode;
-  final ZoneSetpoints setpoints;
-  final bool online;
-  final bool stale;
-  final DateTime? lastUpdate;
+  final int statusFlags;
   final int lastOkAgeSec;
   final int errTimeout;
   final int errCrc;
   final int errException;
   final int dataVersion;
-  final int lastAppliedTrigger;
-  final int lastPollMs;
+  final int validMask;
+  final int outStateMask;
 
-  double get temperature => sensors.isNotEmpty ? sensors[0] : 0;
-  double get humidity => sensors.length > 1 ? sensors[1] : 0;
+  bool get online => (statusFlags & 0x0001) != 0;
+  bool get stale => (statusFlags & 0x0002) != 0;
+}
 
-  ZoneState copyWith({
-    List<double>? sensors,
-    int? sensorValidMask,
-    List<int>? sensorQualityCodes,
-    List<int>? sensorAgeSec,
-    List<int>? sensorFlags,
-    List<bool>? outputs,
-    int? outputCommandMask,
-    ZoneMode? mode,
-    ZoneSetpoints? setpoints,
-    bool? online,
-    bool? stale,
-    DateTime? lastUpdate,
-    int? lastOkAgeSec,
-    int? errTimeout,
-    int? errCrc,
-    int? errException,
-    int? dataVersion,
-    int? lastAppliedTrigger,
-    int? lastPollMs,
-  }) {
-    return ZoneState(
-      zoneId: zoneId,
-      sensors: sensors ?? this.sensors,
-      sensorValidMask: sensorValidMask ?? this.sensorValidMask,
-      sensorQualityCodes: sensorQualityCodes ?? this.sensorQualityCodes,
-      sensorAgeSec: sensorAgeSec ?? this.sensorAgeSec,
-      sensorFlags: sensorFlags ?? this.sensorFlags,
-      outputs: outputs ?? this.outputs,
-      outputCommandMask: outputCommandMask ?? this.outputCommandMask,
-      mode: mode ?? this.mode,
-      setpoints: setpoints ?? this.setpoints,
-      online: online ?? this.online,
-      stale: stale ?? this.stale,
-      lastUpdate: lastUpdate ?? this.lastUpdate,
-      lastOkAgeSec: lastOkAgeSec ?? this.lastOkAgeSec,
-      errTimeout: errTimeout ?? this.errTimeout,
-      errCrc: errCrc ?? this.errCrc,
-      errException: errException ?? this.errException,
-      dataVersion: dataVersion ?? this.dataVersion,
-      lastAppliedTrigger: lastAppliedTrigger ?? this.lastAppliedTrigger,
-      lastPollMs: lastPollMs ?? this.lastPollMs,
-    );
-  }
+class DiagnosticsSnapshot {
+  const DiagnosticsSnapshot({
+    required this.bootCount,
+    required this.powerOnCount,
+    required this.errorHandlerCount,
+    required this.watchdogMissCount,
+    required this.faultResetCount,
+    required this.lastEventCode,
+    required this.lastResetReason,
+    required this.lastErrorCode,
+    required this.modbusTimeout0,
+    required this.modbusTimeout1,
+    required this.tcpAcceptErrCount,
+    required this.tcpRecvTimeoutCount,
+    required this.tcpStaleCloseCount,
+    required this.tcpMalformedMbapCount,
+    required this.tcpSendErrCount,
+    required this.tcpLastErr,
+  });
 
-  static ZoneState initial(int zoneId) => ZoneState(
-    zoneId: zoneId,
-    sensors: List<double>.filled(9, 0),
-    sensorValidMask: 0,
-    sensorQualityCodes: List<int>.filled(9, 3),
-    sensorAgeSec: List<int>.filled(9, 0),
-    sensorFlags: List<int>.filled(9, 0),
-    outputs: List<bool>.filled(16, false),
-    outputCommandMask: 0,
-    mode: ZoneMode.auto,
-    setpoints: ZoneSetpoints.defaults(),
-    online: false,
-    stale: true,
-    lastUpdate: null,
-    lastOkAgeSec: 0,
-    errTimeout: 0,
-    errCrc: 0,
-    errException: 0,
-    dataVersion: 0,
-    lastAppliedTrigger: 0,
-    lastPollMs: 0,
-  );
+  final int bootCount;
+  final int powerOnCount;
+  final int errorHandlerCount;
+  final int watchdogMissCount;
+  final int faultResetCount;
+  final int lastEventCode;
+  final int lastResetReason;
+  final int lastErrorCode;
+  final int modbusTimeout0;
+  final int modbusTimeout1;
+  final int tcpAcceptErrCount;
+  final int tcpRecvTimeoutCount;
+  final int tcpStaleCloseCount;
+  final int tcpMalformedMbapCount;
+  final int tcpSendErrCount;
+  final int tcpLastErr;
+}
+
+class ModuleSummary {
+  const ModuleSummary({
+    required this.module,
+    required this.pointCount,
+    required this.scheduleAvailable,
+  });
+
+  final TopologyModule module;
+  final int pointCount;
+  final bool scheduleAvailable;
+}
+
+class SemanticFieldView {
+  const SemanticFieldView({
+    required this.semanticName,
+    required this.label,
+    required this.unit,
+    required this.decimals,
+    required this.point,
+    required this.telemetry,
+    required this.state,
+    required this.message,
+  });
+
+  final String semanticName;
+  final String label;
+  final String unit;
+  final int decimals;
+  final TopologyPoint? point;
+  final PointTelemetryValue? telemetry;
+  final ScadaCompatibilityState state;
+  final String message;
+}
+
+enum RuntimeModuleKind { zone, weather, other }
+
+class RuntimeTelemetryPointView {
+  const RuntimeTelemetryPointView({
+    required this.publishIndex,
+    required this.telemetry,
+  });
+
+  final int publishIndex;
+  final PointTelemetryValue telemetry;
+}
+
+class RuntimeModuleTelemetryView {
+  const RuntimeModuleTelemetryView({
+    required this.moduleId,
+    required this.kind,
+    required this.title,
+    required this.subtitle,
+    required this.points,
+  });
+
+  final int moduleId;
+  final RuntimeModuleKind kind;
+  final String title;
+  final String subtitle;
+  final List<RuntimeTelemetryPointView> points;
 }
 
 class AlarmEntry {
   const AlarmEntry({
     required this.id,
     required this.zoneId,
-    required this.type,
     required this.message,
     required this.raisedAt,
-    required this.acknowledged,
-    this.clearedAt,
   });
 
   final String id;
   final int zoneId;
-  final AlarmType type;
   final String message;
   final DateTime raisedAt;
-  final DateTime? clearedAt;
-  final bool acknowledged;
-
-  bool get isActive => clearedAt == null;
-
-  AlarmEntry copyWith({DateTime? clearedAt, bool? acknowledged}) {
-    return AlarmEntry(
-      id: id,
-      zoneId: zoneId,
-      type: type,
-      message: message,
-      raisedAt: raisedAt,
-      clearedAt: clearedAt ?? this.clearedAt,
-      acknowledged: acknowledged ?? this.acknowledged,
-    );
-  }
-}
-
-class TrendPoint {
-  const TrendPoint({
-    required this.time,
-    required this.zoneId,
-    required this.sensorIndex,
-    required this.value,
-  });
-
-  final DateTime time;
-  final int zoneId;
-  final int sensorIndex;
-  final double value;
-}
-
-class ZoneCommandDraft {
-  const ZoneCommandDraft({
-    required this.mode,
-    required this.setpoints,
-    required this.outputsManual,
-  });
-
-  final ZoneMode mode;
-  final ZoneSetpoints setpoints;
-  final List<bool> outputsManual;
-
-  static ZoneCommandDraft fromZone(ZoneState zone) => ZoneCommandDraft(
-    mode: zone.mode,
-    setpoints: zone.setpoints,
-    outputsManual: List<bool>.from(zone.outputs),
-  );
-}
-
-class ZoneSetpoints {
-  const ZoneSetpoints({
-    required this.setTemp,
-    required this.setHum,
-    required this.hystTemp,
-    required this.hystHum,
-    required this.minOnSec,
-    required this.minOffSec,
-  });
-
-  final double setTemp;
-  final double setHum;
-  final double hystTemp;
-  final double hystHum;
-  final int minOnSec;
-  final int minOffSec;
-
-  ZoneSetpoints copyWith({
-    double? setTemp,
-    double? setHum,
-    double? hystTemp,
-    double? hystHum,
-    int? minOnSec,
-    int? minOffSec,
-  }) {
-    return ZoneSetpoints(
-      setTemp: setTemp ?? this.setTemp,
-      setHum: setHum ?? this.setHum,
-      hystTemp: hystTemp ?? this.hystTemp,
-      hystHum: hystHum ?? this.hystHum,
-      minOnSec: minOnSec ?? this.minOnSec,
-      minOffSec: minOffSec ?? this.minOffSec,
-    );
-  }
-
-  static ZoneSetpoints defaults() => const ZoneSetpoints(
-    setTemp: 22.0,
-    setHum: 65.0,
-    hystTemp: 1.0,
-    hystHum: 3.0,
-    minOnSec: 10,
-    minOffSec: 10,
-  );
 }
