@@ -9342,3 +9342,101 @@ tion_ms=1436
  duration_ms=932
 2026-03-02T14:25:44.214388,poll ok #71 duration_ms=6520 degraded=0 timeout_streak=0
 2026-03-02T14:25:47.701217,send op=rtc_hhmm@1454 start=1454 count=2 attempt=1/2
+2026-04-21T20:55:19.286110,connect attempt host=192.168.50.20 port=502
+0 port=502 profile(timeout_ms=1800 retries_total=2 backoff=250 degraded_after=2 degraded_reconnect_ms=20000 offline_after_failed=3 stale_after_no_success_ms=12000 offline_after_no_success_ms=30000)
+2026-04-21T20:55:23.353977,connect attempt host=192.168.50.20 port=502
+imed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:27.356283,poll #1: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:28.355097,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:55:32.359445,connectivity policy state=1 elapsed_ms=13079 failed_polls=2
+192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:33.354974,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:55:37.356219,connectivity policy state=2 elapsed_ms=18076 failed_polls=3
+192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:38.355502,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:55:42.359077,poll #4: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:43.356146,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:55:46.690650,connect attempt host=192.168.50.20 port=502
+0 port=502 profile(timeout_ms=1800 retries_total=2 backoff=250 degraded_after=2 degraded_reconnect_ms=20000 offline_after_failed=3 stale_after_no_success_ms=12000 offline_after_no_success_ms=30000)
+2026-04-21T20:55:50.702529,connect attempt host=192.168.50.20 port=502
+imed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:54.705559,poll #1: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:55:55.704236,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:55:59.708282,connectivity policy state=1 elapsed_ms=13020 failed_polls=2
+192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:00.704543,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:23.830595,connect attempt host=192.168.50.20 port=502
+ failed_polls=3
+192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:26.544602,poll skipped: previous cycle in progress
+2026-04-21T20:56:27.833112,poll #4: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:30.704223,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:34.706040,poll #5: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:35.704513,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:39.709587,poll #6: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:40.704190,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:44.708786,poll #7: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:45.704924,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:49.707131,poll #8: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:50.704259,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:56:54.706964,poll #9: still disconnected
+on: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:56:55.705422,poll start #10
+ host=192.168.50.20 port=502
+2026-04-21T20:56:59.709381,poll #10: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:00.704960,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:04.706852,poll #11: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:05.704596,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:09.707119,poll #12: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:10.704034,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:14.705288,poll #13: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:15.704728,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:19.707671,poll #14: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:20.705613,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:24.714649,poll #15: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:25.706281,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:29.708347,poll #16: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:30.705298,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:34.708891,poll #17: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:35.704316,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:39.706783,poll #18: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:40.707862,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:44.714607,poll #19: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:45.718750,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:49.731604,poll #20: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:50.712492,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:54.716017,poll #21: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:57:55.708943,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:57:59.716023,poll #22: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:58:00.709199,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:58:04.723381,poll #23: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:58:05.712228,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:58:09.727679,connect error: SocketException: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:58:19.727588,poll #26: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:58:20.717169,connect attempt host=192.168.50.20 port=502
+2026-04-21T20:58:24.730043,poll #27: still disconnected
+n: Connection timed out  host: 192.168.50.20  port: 502 (OS Error: Connection timed out  errno = 10060)
+2026-04-21T20:58:25.713532,connect attempt host=192.168.50.20 port=502

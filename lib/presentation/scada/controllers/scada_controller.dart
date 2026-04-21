@@ -25,7 +25,8 @@ class ScadaController extends ChangeNotifier {
   final RegisterMap _registerMap;
 
   ScadaConfig config = ScadaConfig.defaults();
-  bool connected = false;
+  bool _connected = false;
+  bool get connected => _connected;
   bool connecting = false;
   bool polling = false;
   String? lastError;
@@ -112,7 +113,7 @@ class ScadaController extends ChangeNotifier {
       'offline_after_no_success_ms=${_offlineAfterNoSuccess.inMilliseconds})',
     );
     _connectionSub = _client.connection.listen((value) {
-      connected = value;
+      _connected = value;
       _addClientTrace(value ? 'connected' : 'disconnected');
       notifyListeners();
     });
