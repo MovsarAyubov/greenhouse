@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'scada/ui/scada_app.dart';
+import 'package:greenhouse/presentation/scada/ui/scada_app.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
