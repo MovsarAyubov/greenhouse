@@ -1,6 +1,7 @@
 enum ScadaCompatibilityState {
   ready,
   mapIncompatible,
+  deviceUnreachable,
   deviceTopologyInactive,
   localTopologyMissing,
   topologyGenerationMismatch,

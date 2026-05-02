@@ -177,6 +177,13 @@ class ScadaController extends ChangeNotifier {
       connected = value;
       if (!value) {
         _lastSessionRefreshAttemptAt = null;
+        compatibility = CompatibilityStatus(
+          state: ScadaCompatibilityState.deviceUnreachable,
+          message:
+              'Device is unreachable at '
+              '${config.deviceConnection.host}:${config.deviceConnection.port}. '
+              'Check Ethernet IP/subnet and cable link.',
+        );
       }
       _addClientTrace(value ? 'connected' : 'disconnected');
       notifyListeners();
@@ -217,6 +224,13 @@ class ScadaController extends ChangeNotifier {
       );
     }
     if (!_client.isConnected) {
+      compatibility = CompatibilityStatus(
+        state: ScadaCompatibilityState.deviceUnreachable,
+        message:
+            'Device is unreachable at '
+            '${config.deviceConnection.host}:${config.deviceConnection.port}. '
+            'Check Ethernet IP/subnet and cable link.',
+      );
       if (!_disposed) {
         notifyListeners();
       }
@@ -239,7 +253,17 @@ class ScadaController extends ChangeNotifier {
     if (bootstrap.bootstrapError != null) {
       lastError = bootstrap.bootstrapError;
       _addClientTrace('bootstrap read error: ${bootstrap.bootstrapError}');
-      _recomputeCompatibility();
+      if (_isRetryableTransportError(bootstrap.bootstrapError!)) {
+        compatibility = CompatibilityStatus(
+          state: ScadaCompatibilityState.deviceUnreachable,
+          message:
+              'Cannot reach device at '
+              '${config.deviceConnection.host}:${config.deviceConnection.port}: '
+              '${bootstrap.bootstrapError}',
+        );
+      } else {
+        _recomputeCompatibility();
+      }
       if (abortOnTransportError &&
           _isRetryableTransportError(bootstrap.bootstrapError!)) {
         throw _PollingTransportAbort(bootstrap.bootstrapError!);
@@ -1352,6 +1376,16 @@ class ScadaController extends ChangeNotifier {
     final directory = directorySnapshot;
     final device = deviceTopologyMetadata;
     final manifest = topologySnapshot.manifest;
+    if (!_client.isConnected) {
+      compatibility = CompatibilityStatus(
+        state: ScadaCompatibilityState.deviceUnreachable,
+        message:
+            'Device is unreachable at '
+            '${config.deviceConnection.host}:${config.deviceConnection.port}. '
+            'Check Ethernet IP/subnet and cable link.',
+      );
+      return;
+    }
     if (directory == null || device == null) {
       if (topologySnapshot.manifestError != null) {
         compatibility = CompatibilityStatus(
