@@ -1,3 +1,5 @@
+import 'dart:developer' show log;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_libserialport/flutter_libserialport.dart';
 import '../theme/app_theme.dart';
@@ -27,7 +29,7 @@ class _ConnectionSettingsDialogState extends State<ConnectionSettingsDialog> {
       // Get available ports
       _availablePorts = SerialPort.availablePorts;
     } catch (e) {
-      print('Error loading ports: $e');
+      log('Error loading ports: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -74,7 +76,7 @@ class _ConnectionSettingsDialogState extends State<ConnectionSettingsDialog> {
               )
             else
               DropdownButtonFormField<String>(
-                value: _selectedPort,
+                initialValue: _selectedPort,
                 decoration: InputDecoration(
                   labelText: 'Выберите COM-порт',
                   border: OutlineInputBorder(
@@ -101,7 +103,6 @@ class _ConnectionSettingsDialogState extends State<ConnectionSettingsDialog> {
                   onPressed: _selectedPort == null
                       ? null
                       : () {
-                          // TODO: Save port and connect
                           Navigator.pop(context, _selectedPort);
                         },
                   style: FilledButton.styleFrom(backgroundColor: Colors.orange),

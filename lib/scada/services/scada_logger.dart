@@ -98,7 +98,7 @@ class ScadaLogger {
 
   Future<void> _append(File file, String line) {
     _writeChain = _writeChain.catchError((_) {}).then((_) {
-      return file.writeAsString(line, mode: FileMode.append);
+      file.writeAsString(line, mode: FileMode.append);
     });
     return _writeChain;
   }

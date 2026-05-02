@@ -103,8 +103,8 @@ class IrrigationScheduleManager extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: schedule.isEnabled
-              ? AppTheme.primaryGreen.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
+              ? AppTheme.primaryGreen.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -115,8 +115,8 @@ class IrrigationScheduleManager extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: schedule.isEnabled
-                    ? AppTheme.primaryGreen.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
+                    ? AppTheme.primaryGreen.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -151,7 +151,7 @@ class IrrigationScheduleManager extends StatelessWidget {
             ),
             Switch.adaptive(
               value: schedule.isEnabled,
-              activeColor: AppTheme.primaryGreen,
+              activeTrackColor: AppTheme.primaryGreen,
               onChanged: (value) {
                 context.read<IrrigationBloc>().add(
                   UpdateSchedule(

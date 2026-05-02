@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 
 import '../models/lighting_schedule_models.dart';
@@ -389,9 +388,7 @@ class ScadaController extends ChangeNotifier {
       moduleId: module.moduleId,
       zoneId: module.zoneId,
       slaveId: module.slaveId,
-    ).copyWith(
-      draft: _draftForModule(module: module),
-    );
+    ).copyWith(draft: _draftForModule(module: module));
     _scheduleStatusByModuleId[moduleId] = created;
     return created;
   }
@@ -805,12 +802,13 @@ class ScadaController extends ChangeNotifier {
     if (resolver == null || resolver.manifest.modules.isEmpty) {
       return const <int, SlaveStatusSnapshot>{};
     }
-    final slaveIds = resolver.manifest.modules
-        .map((module) => module.slaveId)
-        .where((slaveId) => slaveId > 0)
-        .toSet()
-        .toList(growable: false)
-      ..sort();
+    final slaveIds =
+        resolver.manifest.modules
+            .map((module) => module.slaveId)
+            .where((slaveId) => slaveId > 0)
+            .toSet()
+            .toList(growable: false)
+          ..sort();
     if (slaveIds.isEmpty) {
       return const <int, SlaveStatusSnapshot>{};
     }
@@ -901,7 +899,9 @@ class ScadaController extends ChangeNotifier {
               ? _maxScheduleApplyWaitMs
               : timeoutMs);
     final pollIntervalMs = _effectiveSchedulePollIntervalMs;
-    final deadline = DateTime.now().add(Duration(milliseconds: effectiveTimeoutMs));
+    final deadline = DateTime.now().add(
+      Duration(milliseconds: effectiveTimeoutMs),
+    );
     var lastApplied = 0;
     var lastResult = 0;
     var lastIoErr = 0;
@@ -960,9 +960,7 @@ class ScadaController extends ChangeNotifier {
               '(io=${lightingIoErrLabel(lastIoErr)})',
         );
       }
-      await Future<void>.delayed(
-        Duration(milliseconds: pollIntervalMs),
-      );
+      await Future<void>.delayed(Duration(milliseconds: pollIntervalMs));
     }
     if (deferredFailure != null) {
       return deferredFailure;

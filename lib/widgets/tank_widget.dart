@@ -41,7 +41,7 @@ class TankWidget extends StatelessWidget {
               height: 100 * tank.fillPercentage,
               width: 40,
               decoration: BoxDecoration(
-                color: _tankColor.withOpacity(0.8),
+                color: _tankColor.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.vertical(
                   bottom: const Radius.circular(8),
                   top: Radius.circular(tank.fillPercentage == 1 ? 8 : 0),
@@ -58,7 +58,7 @@ class TankWidget extends StatelessWidget {
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.2),
+                    color: Colors.orange.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: const Text(

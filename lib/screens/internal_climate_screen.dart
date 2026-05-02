@@ -61,7 +61,7 @@ class InternalClimateScreen extends StatelessWidget {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                           ),
                         ),
                         child: const Center(

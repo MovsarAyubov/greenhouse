@@ -24,7 +24,7 @@ class LightingControlCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 20,
                 offset: const Offset(0, 4),
               ),
@@ -41,7 +41,7 @@ class LightingControlCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.1),
+                          color: Colors.orange.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -69,7 +69,7 @@ class LightingControlCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isOn
                           ? Colors.orange
-                          : Colors.grey.withOpacity(0.2),
+                          : Colors.grey.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -206,7 +206,9 @@ class LightingControlCard extends StatelessWidget {
                   label: const Text('Настроить расписание'),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    side: BorderSide(color: Colors.orange.withOpacity(0.5)),
+                    side: BorderSide(
+                      color: Colors.orange.withValues(alpha: 0.5),
+                    ),
                     foregroundColor: Colors.orange,
                   ),
                 ),

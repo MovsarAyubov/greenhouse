@@ -92,8 +92,8 @@ class LightingScheduleManager extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
           color: schedule.isEnabled
-              ? Colors.orange.withOpacity(0.3)
-              : Colors.grey.withOpacity(0.2),
+              ? Colors.orange.withValues(alpha: 0.3)
+              : Colors.grey.withValues(alpha: 0.2),
         ),
       ),
       child: Padding(
@@ -104,8 +104,8 @@ class LightingScheduleManager extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: schedule.isEnabled
-                    ? Colors.orange.withOpacity(0.1)
-                    : Colors.grey.withOpacity(0.1),
+                    ? Colors.orange.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -127,7 +127,7 @@ class LightingScheduleManager extends StatelessWidget {
             ),
             Switch.adaptive(
               value: schedule.isEnabled,
-              activeColor: Colors.orange,
+              activeTrackColor: Colors.orange,
               onChanged: (value) {
                 context.read<LightingBloc>().add(
                   UpdateLightingSchedule(schedule.copyWith(isEnabled: value)),

@@ -20,7 +20,6 @@ class AppTheme {
         primary: primaryGreen,
         secondary: secondaryGreen,
         surface: cardColor,
-        background: backgroundWhite,
       ),
       textTheme: GoogleFonts.interTextTheme().apply(
         bodyColor: textDark,

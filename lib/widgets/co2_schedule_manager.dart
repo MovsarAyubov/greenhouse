@@ -67,7 +67,7 @@ class Co2ScheduleManager extends StatelessWidget {
                           : null,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.03),
+                          color: Colors.black.withValues(alpha: 0.03),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -105,7 +105,7 @@ class Co2ScheduleManager extends StatelessWidget {
                         children: [
                           Switch.adaptive(
                             value: schedule.isEnabled,
-                            activeColor: AppTheme.primaryGreen,
+                            activeTrackColor: AppTheme.primaryGreen,
                             onChanged: (val) {
                               context.read<Co2Bloc>().add(
                                 UpdateCo2Schedule(

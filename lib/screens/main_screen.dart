@@ -57,7 +57,7 @@ class _MainScreenState extends State<MainScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(2, 0),
                 ),
@@ -77,7 +77,7 @@ class _MainScreenState extends State<MainScreen> {
                 size: 28,
               ),
               unselectedIconTheme: IconThemeData(
-                color: AppTheme.textGrey.withOpacity(0.6),
+                color: AppTheme.textGrey.withValues(alpha: 0.6),
                 size: 24,
               ),
               selectedLabelTextStyle: const TextStyle(
@@ -86,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
                 fontSize: 12,
               ),
               unselectedLabelTextStyle: TextStyle(
-                color: AppTheme.textGrey.withOpacity(0.6),
+                color: AppTheme.textGrey.withValues(alpha: 0.6),
                 fontSize: 12,
               ),
               leading: Padding(
@@ -191,7 +191,7 @@ class _PlaceholderScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 20,
                             ),
                           ],
