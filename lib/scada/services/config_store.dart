@@ -24,10 +24,13 @@ class ConfigStore {
     final defaults = ScadaConfig.defaults();
     final raw = prefs.getString(_key);
     if (raw != null && raw.isNotEmpty) {
-      final config = _decodeConfig(
-        raw: raw,
-        defaults: defaults,
-        migrateLegacyDefaults: false,
+      final config = _applyEnvironmentOverrides(
+        _decodeConfig(
+          raw: raw,
+          defaults: defaults,
+          migrateLegacyDefaults: false,
+        ),
+        defaults,
       );
       if (_usesPreviousFastTelemetryProfile(config)) {
         final migrated = config.copyWith(
@@ -45,14 +48,36 @@ class ConfigStore {
     if (legacyRaw == null || legacyRaw.isEmpty) {
       return defaults;
     }
-    final migrated = _decodeConfig(
-      raw: legacyRaw,
-      defaults: defaults,
-      migrateLegacyDefaults: true,
+    final migrated = _applyEnvironmentOverrides(
+      _decodeConfig(
+        raw: legacyRaw,
+        defaults: defaults,
+        migrateLegacyDefaults: true,
+      ),
+      defaults,
     );
     await save(migrated);
     await prefs.remove(_legacyKey);
     return migrated;
+  }
+
+  ScadaConfig _applyEnvironmentOverrides(
+    ScadaConfig config,
+    ScadaConfig defaults,
+  ) {
+    return config.copyWith(
+      deviceConnection: defaults.deviceConnection,
+      addressMode: defaults.addressMode,
+      localTopologyManifestPath: defaults.localTopologyManifestPath.isNotEmpty
+          ? defaults.localTopologyManifestPath
+          : config.localTopologyManifestPath,
+      localTopologyBlobPath: defaults.localTopologyBlobPath.isNotEmpty
+          ? defaults.localTopologyBlobPath
+          : config.localTopologyBlobPath,
+      semanticCatalogPath: defaults.semanticCatalogPath.isNotEmpty
+          ? defaults.semanticCatalogPath
+          : config.semanticCatalogPath,
+    );
   }
 
   ScadaConfig _decodeConfig({

@@ -5,21 +5,44 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "greenhouse",
-      "request": "launch",
-      "type": "dart"
-    },
-    {
-      "name": "greenhouse (profile mode)",
+      "name": "greenhouse (physical)",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "profile"
+      "toolArgs": ["--dart-define=SCADA_ENV=physical"]
     },
     {
-      "name": "greenhouse (release mode)",
+      "name": "greenhouse (emulated)",
       "request": "launch",
       "type": "dart",
-      "flutterMode": "release"
+      "toolArgs": ["--dart-define=SCADA_ENV=emulated"]
+    },
+    {
+      "name": "greenhouse (profile mode, physical)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "toolArgs": ["--dart-define=SCADA_ENV=physical"]
+    },
+    {
+      "name": "greenhouse (profile mode, emulated)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "toolArgs": ["--dart-define=SCADA_ENV=emulated"]
+    },
+    {
+      "name": "greenhouse (release mode, physical)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "toolArgs": ["--dart-define=SCADA_ENV=physical"]
+    },
+    {
+      "name": "greenhouse (release mode, emulated)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "toolArgs": ["--dart-define=SCADA_ENV=emulated"]
     }
   ]
 }

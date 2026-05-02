@@ -1,4 +1,5 @@
 import '../services/modbus_tcp_client.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'topology_models.dart';
 
 class DeviceConnectionConfig {
@@ -174,36 +175,85 @@ class ScadaConfig {
   }
 
   static ScadaConfig defaults() => ScadaConfig(
-    deviceConnection: const DeviceConnectionConfig(
-      host: '192.168.50.20',
-      port: 502,
-      unitId: 1,
+    deviceConnection: DeviceConnectionConfig(
+      host: _envString('SCADA_HOST', '192.168.50.20'),
+      port: _envInt('SCADA_PORT', 502),
+      unitId: _envInt('SCADA_UNIT_ID', 1),
     ),
-    addressMode: ModbusAddressMode.zeroBased,
-    localTopologyManifestPath: '',
-    localTopologyBlobPath: '',
-    semanticCatalogPath: '',
-    pollIntervals: const PollIntervalsConfig(
-      telemetryMs: 5000,
-      diagMs: 30000,
-      commandPollMs: 500,
-      uploadPollMs: 100,
+    addressMode: _envAddressMode('SCADA_ADDRESS_MODE'),
+    localTopologyManifestPath: _envString('SCADA_TOPOLOGY_MANIFEST_PATH', ''),
+    localTopologyBlobPath: _envString('SCADA_TOPOLOGY_BLOB_PATH', ''),
+    semanticCatalogPath: _envString('SCADA_SEMANTIC_CATALOG_PATH', ''),
+    pollIntervals: PollIntervalsConfig(
+      telemetryMs: _envInt('SCADA_POLL_TELEMETRY_MS', 5000),
+      diagMs: _envInt('SCADA_POLL_DIAG_MS', 30000),
+      commandPollMs: _envInt('SCADA_POLL_COMMAND_MS', 500),
+      uploadPollMs: _envInt('SCADA_POLL_UPLOAD_MS', 100),
     ),
-    timeouts: const TimeoutConfig(
-      connectMs: 4000,
-      responseMs: 1000,
-      retryBackoffMs: 100,
-      commandMs: 25000,
-      uploadChunkMs: 3000,
-      uploadCommitMs: 15000,
+    timeouts: TimeoutConfig(
+      connectMs: _envInt('SCADA_TIMEOUT_CONNECT_MS', 4000),
+      responseMs: _envInt('SCADA_TIMEOUT_RESPONSE_MS', 1000),
+      retryBackoffMs: _envInt('SCADA_TIMEOUT_RETRY_BACKOFF_MS', 100),
+      commandMs: _envInt('SCADA_TIMEOUT_COMMAND_MS', 25000),
+      uploadChunkMs: _envInt('SCADA_TIMEOUT_UPLOAD_CHUNK_MS', 3000),
+      uploadCommitMs: _envInt('SCADA_TIMEOUT_UPLOAD_COMMIT_MS', 15000),
     ),
-    transport: const TransportConfig(retryCount: 0),
-    featureFlags: const FeatureFlagsConfig(
-      allowTelemetryOnGenerationMismatch: true,
-      showUnsupportedPoints: true,
-      pausePollingDuringWriteWorkflows: true,
+    transport: TransportConfig(retryCount: _envInt('SCADA_RETRY_COUNT', 0)),
+    featureFlags: FeatureFlagsConfig(
+      allowTelemetryOnGenerationMismatch: _envBool(
+        'SCADA_ALLOW_TELEMETRY_ON_GENERATION_MISMATCH',
+        true,
+      ),
+      showUnsupportedPoints: _envBool('SCADA_SHOW_UNSUPPORTED_POINTS', true),
+      pausePollingDuringWriteWorkflows: _envBool(
+        'SCADA_PAUSE_POLLING_DURING_WRITES',
+        true,
+      ),
     ),
   );
+}
+
+String _envString(String key, String fallback) {
+  final value = dotenv.maybeGet(key);
+  if (value == null || value.trim().isEmpty) {
+    return fallback;
+  }
+  return value.trim();
+}
+
+int _envInt(String key, int fallback) {
+  final value = dotenv.maybeGet(key);
+  if (value == null) {
+    return fallback;
+  }
+  return int.tryParse(value.trim()) ?? fallback;
+}
+
+bool _envBool(String key, bool fallback) {
+  final value = dotenv.maybeGet(key);
+  if (value == null) {
+    return fallback;
+  }
+  final norm = value.trim().toLowerCase();
+  if (norm == '1' || norm == 'true' || norm == 'yes' || norm == 'on') {
+    return true;
+  }
+  if (norm == '0' || norm == 'false' || norm == 'no' || norm == 'off') {
+    return false;
+  }
+  return fallback;
+}
+
+ModbusAddressMode _envAddressMode(String key) {
+  final value = dotenv.maybeGet(key)?.trim().toLowerCase();
+  switch (value) {
+    case 'scada_4xxxx':
+    case 'style4xxxx':
+    case '4xxxx':
+      return ModbusAddressMode.style4xxxx;
+    default:
+      return ModbusAddressMode.zeroBased;
+  }
 }
 
 class PointTelemetryValue {
