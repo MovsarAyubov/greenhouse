@@ -84,27 +84,28 @@ class _ScadaAppState extends State<ScadaApp> {
                 actions: [
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<Locale>(
-                        value: _locale,
-                        items: [
-                          DropdownMenuItem(
-                            value: const Locale('ru'),
-                            child: Text(l10n.russian),
-                          ),
-                          DropdownMenuItem(
-                            value: const Locale('en'),
-                            child: Text(l10n.english),
-                          ),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => _locale = value);
-                          }
-                        },
-                      ),
+                    child: DropdownButton<Locale>(
+                      value: _locale,
+                      items: [
+                        DropdownMenuItem(
+                          value: const Locale('ru'),
+                          child: Text(l10n.russian),
+                        ),
+                        DropdownMenuItem(
+                          value: const Locale('en'),
+                          child: Text(l10n.english),
+                        ),
+                      ],
+                      onChanged: (value) async {
+                        if (value != null) {
+                          setState(() => _locale = value);
+                        }
+                        await Future.delayed(Duration(milliseconds: 300));
+                        FocusManager.instance.primaryFocus?.unfocus();
+                      },
                     ),
                   ),
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Center(
