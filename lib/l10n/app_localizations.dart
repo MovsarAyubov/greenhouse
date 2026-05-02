@@ -20,7 +20,7 @@ class AppLocalizations {
 
   bool get isRu => locale.languageCode.toLowerCase() == 'ru';
 
-  String get appTitle => isRu ? 'Теплица SCADA' : 'Greenhouse SCADA';
+  String get appTitle => isRu ? 'Greenhouse SCADA' : 'Greenhouse SCADA';
   String get dashboard => isRu ? 'Панель' : 'Dashboard';
   String zone(int zoneId) => isRu ? 'Зона $zoneId' : 'Zone $zoneId';
   String get weather => isRu ? 'Погода' : 'Weather';
