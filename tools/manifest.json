@@ -1,6 +1,6 @@
 {
   "ver_minor": 0,
-  "generation": 1,
+  "generation": 107,
   "topology_id": 1001,
   "created_unix_s": 1773903574,
   "flags": 0,
@@ -350,6 +350,8 @@
       "bit_index": 0,
       "quality_policy": 1,
       "publish_index": 18,
+      "semantic_name": "current_dli",
+      "label": "Current DLI",
       "stale_timeout_s": 20,
       "alarm_low": 0,
       "alarm_high": 20000
@@ -364,6 +366,8 @@
       "bit_index": 0,
       "quality_policy": 1,
       "publish_index": 19,
+      "semantic_name": "light_output",
+      "label": "Light output",
       "stale_timeout_s": 20,
       "alarm_low": 0,
       "alarm_high": 100
@@ -378,6 +382,8 @@
       "bit_index": 0,
       "quality_policy": 1,
       "publish_index": 20,
+      "semantic_name": "light_status_bits",
+      "label": "Light status bits",
       "stale_timeout_s": 20,
       "alarm_low": 0,
       "alarm_high": 0
@@ -394,7 +400,7 @@
       "payload_offset": 0,
       "timeout_ms": 300,
       "ack_point_id": 0,
-      "cmd_kind": 0,
+      "cmd_kind": "schedule",
       "flags": 0
     }
   ],

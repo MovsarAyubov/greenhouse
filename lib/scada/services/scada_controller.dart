@@ -520,13 +520,17 @@ class ScadaController extends ChangeNotifier {
           draft: current.draft,
         );
 
-        return _pollForScheduleResult(
+        final scheduleResult = await _pollForScheduleResult(
           module: module,
           trigger: trigger,
           timeoutMs: request.timeoutMs > 0
               ? request.timeoutMs
               : config.timeouts.commandMs,
         );
+        if (scheduleResult.phase == LightingSchedulePhase.success) {
+          await _pollTelemetry();
+        }
+        return scheduleResult;
       });
       _scheduleStatusByModuleId[moduleId] = status;
     } catch (e) {

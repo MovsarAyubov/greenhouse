@@ -252,6 +252,7 @@ class _ZoneModuleTab extends StatelessWidget {
           module: module,
           status: scheduleStatus,
           disabledReason: disabledReason,
+          lightingFeedback: lightingFeedback,
         ),
       ],
     );
@@ -340,21 +341,26 @@ class _ScheduleCard extends StatelessWidget {
     required this.module,
     required this.status,
     required this.disabledReason,
+    required this.lightingFeedback,
   });
 
   final ScadaController controller;
   final TopologyModule module;
   final LightingScheduleStatus status;
   final String? disabledReason;
+  final List<SemanticFieldView> lightingFeedback;
 
   @override
   Widget build(BuildContext context) {
     final draft = status.draft;
+    final runtime = _LightingRuntimeView.fromFields(lightingFeedback);
     return _InfoCard(
       title: 'Lighting setpoints',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _LightingRuntimeSummary(runtime: runtime),
+          const SizedBox(height: 12),
           _buildRelaySection(
             context,
             title: 'Relay 1',
@@ -508,6 +514,38 @@ class _ScheduleCard extends StatelessWidget {
     if (parsed != null) {
       onParsed(parsed);
     }
+  }
+}
+
+class _LightingRuntimeSummary extends StatelessWidget {
+  const _LightingRuntimeSummary({required this.runtime});
+
+  final _LightingRuntimeView runtime;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = runtime.hasValidOutput
+        ? (runtime.lightOutputPct > 0 ? Colors.green : Colors.grey)
+        : Colors.orange;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        Chip(
+          avatar: Icon(
+            runtime.lightOutputPct > 0
+                ? Icons.lightbulb
+                : Icons.lightbulb_outline,
+            color: color,
+            size: 18,
+          ),
+          label: Text(runtime.outputLabel),
+        ),
+        Chip(label: Text('Relay 1 ${runtime.relay1On ? 'ON' : 'OFF'}')),
+        Chip(label: Text('Relay 2 ${runtime.relay2On ? 'ON' : 'OFF'}')),
+        Chip(label: Text('DLI ${runtime.dliLabel}')),
+      ],
+    );
   }
 }
 
@@ -862,6 +900,49 @@ class _TabEntry {
 
   final String label;
   final Widget child;
+}
+
+class _LightingRuntimeView {
+  const _LightingRuntimeView({
+    required this.lightOutputPct,
+    required this.statusBits,
+    required this.currentDli,
+    required this.hasValidOutput,
+  });
+
+  final int lightOutputPct;
+  final int statusBits;
+  final double? currentDli;
+  final bool hasValidOutput;
+
+  bool get relay1On => (statusBits & 0x0001) != 0;
+  bool get relay2On => (statusBits & 0x0002) != 0;
+  String get outputLabel =>
+      hasValidOutput ? 'Output $lightOutputPct%' : 'Output N/A';
+  String get dliLabel =>
+      currentDli == null ? 'N/A' : currentDli!.toStringAsFixed(2);
+
+  static _LightingRuntimeView fromFields(List<SemanticFieldView> fields) {
+    PointTelemetryValue? output;
+    PointTelemetryValue? bits;
+    PointTelemetryValue? dli;
+    for (final field in fields) {
+      switch (field.semanticName) {
+        case 'light_output':
+          output = field.telemetry;
+        case 'light_status_bits':
+          bits = field.telemetry;
+        case 'current_dli':
+          dli = field.telemetry;
+      }
+    }
+    return _LightingRuntimeView(
+      lightOutputPct: output?.value.round() ?? 0,
+      statusBits: bits?.value.round() ?? 0,
+      currentDli: dli?.isUsable == true ? dli!.value : null,
+      hasValidOutput: output?.isUsable == true,
+    );
+  }
 }
 
 String _formatPointValue(TopologyPoint point, PointTelemetryValue? telemetry) {
