@@ -159,8 +159,6 @@ class ModbusService {
       timer.cancel();
       await subscription.cancel();
 
-      // TODO: Validate CRC (check last 2 bytes vs calculated CRC of the rest)
-
       if (response.length < expectedLength) {
         throw Exception(
           'Invalid response length: ${response.length}, expected: $expectedLength',

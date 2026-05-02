@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../../l10n/app_localizations.dart';
 import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
 import '../models/topology_models.dart';
@@ -17,6 +19,7 @@ class ScadaApp extends StatefulWidget {
 
 class _ScadaAppState extends State<ScadaApp> {
   late final ScadaController controller;
+  Locale _locale = const Locale('ru');
 
   @override
   void initState() {
@@ -36,27 +39,36 @@ class _ScadaAppState extends State<ScadaApp> {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Greenhouse SCADA',
+      locale: _locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: AnimatedBuilder(
         animation: controller,
         builder: (context, _) {
+          final l10n = context.l10n;
           final tabs = <_TabEntry>[
             _TabEntry(
-              label: 'Dashboard',
+              label: l10n.dashboard,
               child: _DashboardTab(controller: controller),
             ),
             ...controller.zoneModules.map(
               (module) => _TabEntry(
-                label: 'Zone ${module.zoneId}',
+                label: l10n.zone(module.zoneId),
                 child: _ZoneModuleTab(controller: controller, module: module),
               ),
             ),
             if (controller.weatherModules.isNotEmpty)
               _TabEntry(
-                label: 'Weather',
+                label: l10n.weather,
                 child: _WeatherTab(controller: controller),
               ),
             _TabEntry(
-              label: 'Settings',
+              label: l10n.settings,
               child: _SettingsTab(controller: controller),
             ),
           ];
@@ -64,17 +76,42 @@ class _ScadaAppState extends State<ScadaApp> {
             length: tabs.length,
             child: Scaffold(
               appBar: AppBar(
-                title: const Text('Greenhouse SCADA'),
+                title: Text(l10n.appTitle),
                 bottom: TabBar(
                   isScrollable: true,
                   tabs: tabs.map((tab) => Tab(text: tab.label)).toList(),
                 ),
                 actions: [
                   Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<Locale>(
+                        value: _locale,
+                        items: [
+                          DropdownMenuItem(
+                            value: const Locale('ru'),
+                            child: Text(l10n.russian),
+                          ),
+                          DropdownMenuItem(
+                            value: const Locale('en'),
+                            child: Text(l10n.english),
+                          ),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() => _locale = value);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                  Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Center(
                       child: Text(
-                        controller.connected ? 'CONNECTED' : 'DISCONNECTED',
+                        controller.connected
+                            ? l10n.connected
+                            : l10n.disconnected,
                       ),
                     ),
                   ),
@@ -98,70 +135,73 @@ class _DashboardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final metadata = controller.deviceTopologyMetadata;
     final store = controller.topologySnapshot;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         _InfoCard(
-          title: 'Session',
+          title: l10n.session,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('State: ${controller.compatibility.state.name}'),
+              Text(l10n.state(controller.compatibility.state.name)),
               Text(controller.compatibility.message),
               if (controller.lastError != null)
-                Text('Last error: ${controller.lastError}'),
-              Text('RTC: ${controller.serverRtcText}'),
+                Text(l10n.lastError(controller.lastError!)),
+              Text(l10n.rtc(controller.serverRtcText)),
             ],
           ),
         ),
         _InfoCard(
-          title: 'Device topology',
+          title: l10n.deviceTopology,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Active: ${metadata?.isActive == true ? 'yes' : 'no'}'),
+              Text(l10n.active(metadata?.isActive == true)),
               Text(
-                'Version: ${metadata == null ? '-' : '${metadata.versionMajor}.${metadata.versionMinor}'}',
+                l10n.version(
+                  metadata == null
+                      ? '-'
+                      : '${metadata.versionMajor}.${metadata.versionMinor}',
+                ),
               ),
-              Text('Generation: ${metadata?.activeGeneration ?? '-'}'),
-              Text('Size: ${metadata?.activeSizeBytes ?? '-'} bytes'),
+              Text(l10n.generation('${metadata?.activeGeneration ?? '-'}')),
+              Text(l10n.sizeBytes('${metadata?.activeSizeBytes ?? '-'}')),
             ],
           ),
         ),
         _InfoCard(
-          title: 'Local topology',
+          title: l10n.localTopology,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Manifest: ${store.hasManifest ? 'loaded' : 'missing'}'),
+              Text(l10n.manifest(store.hasManifest)),
               if (store.manifest != null)
                 Text(
                   'schema=${store.manifest!.schemaVersion} generation=${store.manifest!.generation}',
                 ),
               if (store.manifestError != null)
-                Text('Manifest error: ${store.manifestError}'),
-              Text(
-                'Semantic catalog: ${store.hasSemanticCatalog ? 'loaded' : 'missing'}',
-              ),
+                Text(l10n.manifestError(store.manifestError!)),
+              Text(l10n.semanticCatalog(store.hasSemanticCatalog)),
               if (store.semanticCatalogPath != null)
-                Text('Semantic path: ${store.semanticCatalogPath}'),
+                Text(l10n.semanticPath(store.semanticCatalogPath!)),
               if (store.semanticCatalogError != null)
-                Text('Semantic error: ${store.semanticCatalogError}'),
-              Text('Blob: ${store.hasBlob ? 'loaded' : 'missing'}'),
+                Text(l10n.semanticError(store.semanticCatalogError!)),
+              Text(l10n.blob(store.hasBlob)),
               if (store.blobCrc32 != null)
                 Text(
                   'Blob CRC32: 0x${store.blobCrc32!.toRadixString(16).toUpperCase()}',
                 ),
               if (store.blobError != null)
-                Text('Blob error: ${store.blobError}'),
+                Text(l10n.blobError(store.blobError!)),
             ],
           ),
         ),
         const SizedBox(height: 8),
         _InfoCard(
-          title: 'Topology inventory',
+          title: l10n.topologyInventory,
           child: Column(
             children: controller.moduleSummaries
                 .map(
@@ -170,8 +210,12 @@ class _DashboardTab extends StatelessWidget {
                     contentPadding: EdgeInsets.zero,
                     title: Text(summary.module.title),
                     subtitle: Text(
-                      'module_id=${summary.module.moduleId}, slave=${summary.module.slaveId}, '
-                      'points=${summary.pointCount}, schedule=${summary.scheduleAvailable ? 'yes' : 'no'}',
+                      l10n.moduleSummary(
+                        moduleId: summary.module.moduleId,
+                        slaveId: summary.module.slaveId,
+                        points: summary.pointCount,
+                        schedule: summary.scheduleAvailable,
+                      ),
                     ),
                   ),
                 )
@@ -191,6 +235,7 @@ class _ZoneModuleTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final status = controller.slaveStatusForModule(module.moduleId);
     final points = controller.resolvedPointsForModule(module.moduleId);
     final lightingFeedback = controller.lightingFeedbackFieldsForModule(
@@ -208,23 +253,34 @@ class _ZoneModuleTab extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('module_id=${module.moduleId}, slave_id=${module.slaveId}'),
+              Text(l10n.moduleIdSlave(module.moduleId, module.slaveId)),
               Text(
-                'zone_id=${module.zoneId}, capability=0x${module.capabilityMask.toRadixString(16)}',
+                l10n.zoneCapability(
+                  module.zoneId,
+                  module.capabilityMask.toRadixString(16),
+                ),
               ),
               Text(
-                'online=${status?.online == true ? 'yes' : 'no'} stale=${status?.stale == true ? 'yes' : 'no'}',
+                l10n.onlineStale(
+                  online: status?.online == true,
+                  stale: status?.stale == true,
+                ),
               ),
               if (status != null)
                 Text(
-                  'age=${status.lastOkAgeSec}s timeout/crc/exc=${status.errTimeout}/${status.errCrc}/${status.errException}',
+                  l10n.slaveAgeErrors(
+                    age: status.lastOkAgeSec,
+                    timeout: status.errTimeout,
+                    crc: status.errCrc,
+                    exception: status.errException,
+                  ),
                 ),
             ],
           ),
         ),
         _LightingFeedbackCard(fields: lightingFeedback),
         _InfoCard(
-          title: 'Telemetry',
+          title: l10n.telemetry,
           child: Column(
             children: points
                 .map(
@@ -232,10 +288,14 @@ class _ZoneModuleTab extends StatelessWidget {
                     dense: true,
                     title: Text(item.point.displayName),
                     subtitle: Text(
-                      'publish_index=${item.point.publishIndex} quality=${item.telemetry?.quality ?? '-'} age=${item.telemetry?.ageSec ?? '-'}s',
+                      l10n.pointRow(
+                        publishIndex: item.point.publishIndex,
+                        quality: item.telemetry?.quality ?? '-',
+                        age: item.telemetry?.ageSec ?? '-',
+                      ),
                     ),
                     trailing: Text(
-                      _formatPointValue(item.point, item.telemetry),
+                      _formatPointValue(context, item.point, item.telemetry),
                       style: TextStyle(
                         color: item.telemetry?.isUsable == true
                             ? null
@@ -281,7 +341,7 @@ class _WeatherTab extends StatelessWidget {
                         title: Text(field.label),
                         subtitle: Text(field.message),
                         trailing: Text(
-                          _formatSemanticField(field),
+                          _formatSemanticField(context, field),
                           style: TextStyle(
                             color:
                                 field.state ==
@@ -308,17 +368,18 @@ class _LightingFeedbackCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return _InfoCard(
-      title: 'Lighting feedback',
+      title: l10n.lightingFeedback,
       child: Column(
         children: fields
             .map(
               (field) => ListTile(
                 dense: true,
                 title: Text(field.label),
-                subtitle: Text(_lightingFeedbackSubtitle(field)),
+                subtitle: Text(_lightingFeedbackSubtitle(context, field)),
                 trailing: Text(
-                  _formatLightingFeedbackField(field),
+                  _formatLightingFeedbackField(context, field),
                   style: TextStyle(
                     color:
                         field.point == null ||
@@ -352,10 +413,11 @@ class _ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final draft = status.draft;
     final runtime = _LightingRuntimeView.fromFields(lightingFeedback);
     return _InfoCard(
-      title: 'Lighting setpoints',
+      title: l10n.lightingSetpoints,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -363,7 +425,7 @@ class _ScheduleCard extends StatelessWidget {
           const SizedBox(height: 12),
           _buildRelaySection(
             context,
-            title: 'Relay 1',
+            title: l10n.relay1,
             relay: draft.relay1,
             onChanged: (relay) => controller.updateLightingDraft(
               module.moduleId,
@@ -373,7 +435,7 @@ class _ScheduleCard extends StatelessWidget {
           const SizedBox(height: 8),
           _buildRelaySection(
             context,
-            title: 'Relay 2',
+            title: l10n.relay2,
             relay: draft.relay2,
             onChanged: (relay) => controller.updateLightingDraft(
               module.moduleId,
@@ -383,8 +445,8 @@ class _ScheduleCard extends StatelessWidget {
           const SizedBox(height: 8),
           TextFormField(
             initialValue: '${draft.hysteresisSec}',
-            decoration: const InputDecoration(
-              labelText: 'Hysteresis',
+            decoration: InputDecoration(
+              labelText: l10n.hysteresis,
               suffixText: 's',
             ),
             enabled: disabledReason == null,
@@ -398,7 +460,7 @@ class _ScheduleCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          const Text('Recommended mode: full 13-word payload write'),
+          Text(l10n.recommendedWrite),
           if (disabledReason != null)
             Text(disabledReason!, style: const TextStyle(color: Colors.orange)),
           ElevatedButton(
@@ -407,13 +469,17 @@ class _ScheduleCard extends StatelessWidget {
                     controller.sendScheduleForModule(module.moduleId),
                   )
                 : null,
-            child: const Text('Send setpoints'),
+            child: Text(l10n.sendSetpoints),
           ),
           const SizedBox(height: 6),
           Text(
-            'phase=${status.phase.name} trigger=${status.trigger} '
-            'applied=${status.lastAppliedTrigger} '
-            'result=${status.lastResult}/${status.lastIoErr}',
+            l10n.scheduleStatus(
+              phase: status.phase.name,
+              trigger: status.trigger,
+              applied: status.lastAppliedTrigger,
+              result: status.lastResult,
+              io: status.lastIoErr,
+            ),
           ),
           if (status.message != null) Text(status.message!),
         ],
@@ -445,7 +511,7 @@ class _ScheduleCard extends StatelessWidget {
         Text(title, style: Theme.of(context).textTheme.titleMedium),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Enabled'),
+          title: Text(context.l10n.enabled),
           value: relay.enabled,
           onChanged: disabledReason == null
               ? (value) => onChanged(relay.copyWith(enabled: value))
@@ -461,7 +527,7 @@ class _ScheduleCard extends StatelessWidget {
                       (value) => onChanged(relay.copyWith(onHhmm: value)),
                     )
                   : null,
-              child: Text('ON ${_formatHhmm(relay.onHhmm)}'),
+              child: Text(context.l10n.onAt(_formatHhmm(relay.onHhmm))),
             ),
             const SizedBox(width: 12),
             TextButton(
@@ -472,7 +538,7 @@ class _ScheduleCard extends StatelessWidget {
                       (value) => onChanged(relay.copyWith(offHhmm: value)),
                     )
                   : null,
-              child: Text('OFF ${_formatHhmm(relay.offHhmm)}'),
+              child: Text(context.l10n.offAt(_formatHhmm(relay.offHhmm))),
             ),
           ],
         ),
@@ -481,8 +547,8 @@ class _ScheduleCard extends StatelessWidget {
             Expanded(
               child: TextFormField(
                 initialValue: '${relay.thresholdWm2}',
-                decoration: const InputDecoration(
-                  labelText: 'Threshold',
+                decoration: InputDecoration(
+                  labelText: context.l10n.threshold,
                   suffixText: 'W/m²',
                 ),
                 enabled: disabledReason == null,
@@ -497,7 +563,7 @@ class _ScheduleCard extends StatelessWidget {
         ),
         TextFormField(
           initialValue: '${relay.dliLimit}',
-          decoration: const InputDecoration(labelText: 'DLI limit'),
+          decoration: InputDecoration(labelText: context.l10n.dliLimit),
           enabled: disabledReason == null,
           keyboardType: TextInputType.number,
           onChanged: (value) => _updateIntField(
@@ -524,6 +590,7 @@ class _LightingRuntimeSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final color = runtime.hasValidOutput
         ? (runtime.lightOutputPct > 0 ? Colors.green : Colors.grey)
         : Colors.orange;
@@ -539,11 +606,11 @@ class _LightingRuntimeSummary extends StatelessWidget {
             color: color,
             size: 18,
           ),
-          label: Text(runtime.outputLabel),
+          label: Text(runtime.outputLabel(l10n)),
         ),
-        Chip(label: Text('Relay 1 ${runtime.relay1On ? 'ON' : 'OFF'}')),
-        Chip(label: Text('Relay 2 ${runtime.relay2On ? 'ON' : 'OFF'}')),
-        Chip(label: Text('DLI ${runtime.dliLabel}')),
+        Chip(label: Text(l10n.relayState(1, runtime.relay1On))),
+        Chip(label: Text(l10n.relayState(2, runtime.relay2On))),
+        Chip(label: Text(l10n.dli(runtime.dliLabel(l10n)))),
       ],
     );
   }
@@ -636,27 +703,28 @@ class _SettingsTabState extends State<_SettingsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final controller = widget.controller;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
         TextField(
           controller: _hostCtrl,
-          decoration: const InputDecoration(labelText: 'Host'),
+          decoration: InputDecoration(labelText: l10n.host),
         ),
         TextField(
           controller: _portCtrl,
-          decoration: const InputDecoration(labelText: 'Port'),
+          decoration: InputDecoration(labelText: l10n.port),
           keyboardType: TextInputType.number,
         ),
         TextField(
           controller: _unitIdCtrl,
-          decoration: const InputDecoration(labelText: 'Unit ID'),
+          decoration: InputDecoration(labelText: l10n.unitId),
           keyboardType: TextInputType.number,
         ),
         DropdownButtonFormField<ModbusAddressMode>(
           initialValue: _addressMode,
-          decoration: const InputDecoration(labelText: 'Address mode'),
+          decoration: InputDecoration(labelText: l10n.addressMode),
           items: const [
             DropdownMenuItem(
               value: ModbusAddressMode.zeroBased,
@@ -673,46 +741,44 @@ class _SettingsTabState extends State<_SettingsTab> {
         ),
         TextField(
           controller: _manifestCtrl,
-          decoration: const InputDecoration(
-            labelText: 'Topology manifest path',
-          ),
+          decoration: InputDecoration(labelText: l10n.topologyManifestPath),
         ),
         TextField(
           controller: _blobCtrl,
-          decoration: const InputDecoration(labelText: 'Topology blob path'),
+          decoration: InputDecoration(labelText: l10n.topologyBlobPath),
         ),
         TextField(
           controller: _semanticCtrl,
-          decoration: const InputDecoration(labelText: 'Semantic catalog path'),
+          decoration: InputDecoration(labelText: l10n.semanticCatalogPath),
         ),
         TextField(
           controller: _pollCtrl,
-          decoration: const InputDecoration(labelText: 'Telemetry poll ms'),
+          decoration: InputDecoration(labelText: l10n.telemetryPollMs),
           keyboardType: TextInputType.number,
         ),
         TextField(
           controller: _diagPollCtrl,
-          decoration: const InputDecoration(labelText: 'Diag poll ms'),
+          decoration: InputDecoration(labelText: l10n.diagPollMs),
           keyboardType: TextInputType.number,
         ),
         TextField(
           controller: _responseTimeoutCtrl,
-          decoration: const InputDecoration(labelText: 'Response timeout ms'),
+          decoration: InputDecoration(labelText: l10n.responseTimeoutMs),
           keyboardType: TextInputType.number,
         ),
         TextField(
           controller: _retryCountCtrl,
-          decoration: const InputDecoration(labelText: 'Retry count'),
+          decoration: InputDecoration(labelText: l10n.retryCount),
           keyboardType: TextInputType.number,
         ),
         TextField(
           controller: _retryBackoffCtrl,
-          decoration: const InputDecoration(labelText: 'Retry backoff ms'),
+          decoration: InputDecoration(labelText: l10n.retryBackoffMs),
           keyboardType: TextInputType.number,
         ),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
-          title: const Text('Pause polling during write workflows'),
+          title: Text(l10n.pausePollingDuringWrites),
           value: _pausePollingDuringWrites,
           onChanged: (value) {
             setState(() => _pausePollingDuringWrites = value);
@@ -766,37 +832,37 @@ class _SettingsTabState extends State<_SettingsTab> {
                 );
                 await controller.saveConfig(next);
                 if (mounted) {
-                  setState(() => _status = 'Settings saved');
+                  setState(() => _status = l10n.settingsSaved);
                 }
               },
-              child: const Text('Save'),
+              child: Text(l10n.save),
             ),
             ElevatedButton(
               onPressed: () => unawaited(controller.reloadLocalTopology()),
-              child: const Text('Reload topology'),
+              child: Text(l10n.reloadTopology),
             ),
             ElevatedButton(
               onPressed: () => unawaited(controller.reconnect()),
-              child: const Text('Reconnect'),
+              child: Text(l10n.reconnect),
             ),
             ElevatedButton(
               onPressed: controller.canUploadTopology
                   ? () => unawaited(controller.uploadTopology())
                   : null,
-              child: const Text('Upload topology'),
+              child: Text(l10n.uploadTopology),
             ),
           ],
         ),
         if (_status.isNotEmpty) Text(_status),
         if (controller.uploadStatus != null) Text(controller.uploadStatus!),
         const Divider(height: 24),
-        const Text('RTC'),
+        Text(l10n.rtcSection),
         Row(
           children: [
             Expanded(
               child: TextField(
                 controller: _rtcHourCtrl,
-                decoration: const InputDecoration(labelText: 'Hour'),
+                decoration: InputDecoration(labelText: l10n.hour),
                 keyboardType: TextInputType.number,
               ),
             ),
@@ -804,7 +870,7 @@ class _SettingsTabState extends State<_SettingsTab> {
             Expanded(
               child: TextField(
                 controller: _rtcMinuteCtrl,
-                decoration: const InputDecoration(labelText: 'Minute'),
+                decoration: InputDecoration(labelText: l10n.minute),
                 keyboardType: TextInputType.number,
               ),
             ),
@@ -820,47 +886,49 @@ class _SettingsTabState extends State<_SettingsTab> {
                       minute: int.tryParse(_rtcMinuteCtrl.text.trim()) ?? 0,
                     );
                     if (mounted) {
-                      setState(() => _status = 'RTC updated');
+                      setState(() => _status = l10n.rtcUpdated);
                     }
                   } catch (e) {
                     if (mounted) {
-                      setState(() => _status = 'RTC failed: $e');
+                      setState(() => _status = l10n.rtcFailed('$e'));
                     }
                   }
                 }
               : null,
-          child: const Text('Set RTC'),
+          child: Text(l10n.setRtc),
         ),
         if (controller.serverRtcLastError != null)
-          Text('RTC error: ${controller.serverRtcLastError}'),
+          Text(l10n.rtcError(controller.serverRtcLastError!)),
         const Divider(height: 24),
-        const Text('Diagnostics'),
-        Text('Polling paused: ${controller.pollingPaused ? 'yes' : 'no'}'),
+        Text(l10n.diagnostics),
+        Text(l10n.pollingPaused(controller.pollingPaused)),
         if (controller.diagnosticsLastUpdate != null)
-          Text('Updated: ${controller.diagnosticsLastUpdate}'),
+          Text(l10n.updated('${controller.diagnosticsLastUpdate}')),
         if (controller.diagnosticsSnapshot != null) ...[
           Text(
-            'TCP accept/recvTimeout/stale/malformed/send='
-            '${controller.diagnosticsSnapshot!.tcpAcceptErrCount}/'
-            '${controller.diagnosticsSnapshot!.tcpRecvTimeoutCount}/'
-            '${controller.diagnosticsSnapshot!.tcpStaleCloseCount}/'
-            '${controller.diagnosticsSnapshot!.tcpMalformedMbapCount}/'
-            '${controller.diagnosticsSnapshot!.tcpSendErrCount}',
+            l10n.tcpCounters(
+              accept: controller.diagnosticsSnapshot!.tcpAcceptErrCount,
+              recvTimeout: controller.diagnosticsSnapshot!.tcpRecvTimeoutCount,
+              stale: controller.diagnosticsSnapshot!.tcpStaleCloseCount,
+              malformed: controller.diagnosticsSnapshot!.tcpMalformedMbapCount,
+              send: controller.diagnosticsSnapshot!.tcpSendErrCount,
+            ),
           ),
-          Text('TCP last err: ${controller.diagnosticsSnapshot!.tcpLastErr}'),
+          Text(l10n.tcpLastErr(controller.diagnosticsSnapshot!.tcpLastErr)),
           Text(
-            'Boot/power/error/wdg/fault='
-            '${controller.diagnosticsSnapshot!.bootCount}/'
-            '${controller.diagnosticsSnapshot!.powerOnCount}/'
-            '${controller.diagnosticsSnapshot!.errorHandlerCount}/'
-            '${controller.diagnosticsSnapshot!.watchdogMissCount}/'
-            '${controller.diagnosticsSnapshot!.faultResetCount}',
+            l10n.bootCounters(
+              boot: controller.diagnosticsSnapshot!.bootCount,
+              power: controller.diagnosticsSnapshot!.powerOnCount,
+              error: controller.diagnosticsSnapshot!.errorHandlerCount,
+              watchdog: controller.diagnosticsSnapshot!.watchdogMissCount,
+              fault: controller.diagnosticsSnapshot!.faultResetCount,
+            ),
           ),
         ],
         if (controller.diagnosticsLastError != null)
-          Text('Diagnostics error: ${controller.diagnosticsLastError}'),
+          Text(l10n.diagnosticsError(controller.diagnosticsLastError!)),
         const Divider(height: 24),
-        const Text('Trace'),
+        Text(l10n.trace),
         SelectableText(
           controller.clientTrace.take(60).join('\n'),
           style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
@@ -917,10 +985,10 @@ class _LightingRuntimeView {
 
   bool get relay1On => (statusBits & 0x0001) != 0;
   bool get relay2On => (statusBits & 0x0002) != 0;
-  String get outputLabel =>
-      hasValidOutput ? 'Output $lightOutputPct%' : 'Output N/A';
-  String get dliLabel =>
-      currentDli == null ? 'N/A' : currentDli!.toStringAsFixed(2);
+  String outputLabel(AppLocalizations l10n) =>
+      hasValidOutput ? l10n.outputPct(lightOutputPct) : l10n.outputNa;
+  String dliLabel(AppLocalizations l10n) =>
+      currentDli == null ? l10n.notAvailable : currentDli!.toStringAsFixed(2);
 
   static _LightingRuntimeView fromFields(List<SemanticFieldView> fields) {
     PointTelemetryValue? output;
@@ -945,9 +1013,13 @@ class _LightingRuntimeView {
   }
 }
 
-String _formatPointValue(TopologyPoint point, PointTelemetryValue? telemetry) {
+String _formatPointValue(
+  BuildContext context,
+  TopologyPoint point,
+  PointTelemetryValue? telemetry,
+) {
   if (telemetry == null || !telemetry.isUsable) {
-    return 'N/A';
+    return context.l10n.notAvailable;
   }
   if (point.semanticName == 'light_status_bits') {
     return '${telemetry.value.round()}';
@@ -971,25 +1043,30 @@ String _formatPointValue(TopologyPoint point, PointTelemetryValue? telemetry) {
   }
 }
 
-String _formatSemanticField(SemanticFieldView field) {
+String _formatSemanticField(BuildContext context, SemanticFieldView field) {
+  final l10n = context.l10n;
   final telemetry = field.telemetry;
   if (field.point == null) {
-    return 'unsupported';
+    return l10n.unsupported;
   }
   if (telemetry == null || !telemetry.isUsable) {
-    return 'N/A';
+    return l10n.notAvailable;
   }
   final suffix = field.unit.isEmpty ? '' : ' ${field.unit}';
   return '${telemetry.value.toStringAsFixed(field.decimals)}$suffix';
 }
 
-String _formatLightingFeedbackField(SemanticFieldView field) {
+String _formatLightingFeedbackField(
+  BuildContext context,
+  SemanticFieldView field,
+) {
+  final l10n = context.l10n;
   final telemetry = field.telemetry;
   if (field.point == null) {
-    return 'unsupported';
+    return l10n.unsupported;
   }
   if (telemetry == null || !telemetry.hasValidFlag) {
-    return 'N/A';
+    return l10n.notAvailable;
   }
   switch (field.semanticName) {
     case 'light_status_bits':
@@ -1002,17 +1079,30 @@ String _formatLightingFeedbackField(SemanticFieldView field) {
   }
 }
 
-String _lightingFeedbackSubtitle(SemanticFieldView field) {
+String _lightingFeedbackSubtitle(
+  BuildContext context,
+  SemanticFieldView field,
+) {
+  final l10n = context.l10n;
   final point = field.point;
   if (point == null) {
-    return 'Point contract missing';
+    return l10n.pointContractMissing;
   }
   final telemetry = field.telemetry;
   if (telemetry == null) {
-    return 'publish_index=${point.publishIndex} quality=- age=- flags=-';
+    return l10n.fieldRow(
+      publishIndex: point.publishIndex,
+      quality: '-',
+      age: '-',
+      flags: '-',
+    );
   }
-  return 'publish_index=${point.publishIndex} quality=${telemetry.quality} '
-      'age=${telemetry.ageSec}s flags=0x${telemetry.flags.toRadixString(16).toUpperCase()}';
+  return l10n.fieldRow(
+    publishIndex: point.publishIndex,
+    quality: telemetry.quality,
+    age: telemetry.ageSec,
+    flags: '0x${telemetry.flags.toRadixString(16).toUpperCase()}',
+  );
 }
 
 String _formatHhmm(int hhmm) {
