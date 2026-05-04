@@ -493,6 +493,12 @@ class ScadaController extends ChangeNotifier {
           request.payload.length & 0xFFFF,
           ...request.payload,
         ];
+        _addClientTrace(
+          'schedule payload words=${request.payload.length} '
+          'r1=${request.payload.sublist(0, 6)} '
+          'r2=${request.payload.sublist(6, 12)} '
+          'hyst=${request.payload[12]}',
+        );
         final payloadLastOffset = payloadRegs.length - 1;
         await _logger.logScheduleTransaction(
           moduleId: module.moduleId,

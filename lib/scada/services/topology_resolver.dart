@@ -23,15 +23,15 @@ class TopologyResolver {
   final Map<int, List<TopologyPoint>> _pointsByModuleId;
   final Map<int, List<TopologyCommand>> _commandsByModuleId;
 
-  List<TopologyModule> get zoneModules => manifest.modules
-      .where((module) => module.isZone)
-      .toList(growable: false)
-    ..sort((a, b) => a.zoneId.compareTo(b.zoneId));
+  List<TopologyModule> get zoneModules =>
+      manifest.modules.where((module) => module.isZone).toList(growable: false)
+        ..sort((a, b) => a.zoneId.compareTo(b.zoneId));
 
-  List<TopologyModule> get weatherModules => manifest.modules
-      .where((module) => module.isWeather)
-      .toList(growable: false)
-    ..sort((a, b) => a.moduleId.compareTo(b.moduleId));
+  List<TopologyModule> get weatherModules =>
+      manifest.modules
+          .where((module) => module.isWeather)
+          .toList(growable: false)
+        ..sort((a, b) => a.moduleId.compareTo(b.moduleId));
 
   TopologyModule? moduleById(int moduleId) => _modulesById[moduleId];
 
@@ -64,7 +64,7 @@ class TopologyResolver {
           command.cmdId >= 5000 &&
           command.fc == 16 &&
           command.startReg == 110 &&
-          command.maxRegCount <= 13 &&
+          command.maxRegCount >= 13 &&
           command.payloadOffset == 0 &&
           (command.cmdKind == 'generic' || command.cmdKind == 'schedule');
       if (isLightSetpointsContract) {
@@ -94,7 +94,9 @@ class TopologyResolver {
     return null;
   }
 
-  static Map<int, List<TopologyPoint>> _groupPoints(List<TopologyPoint> points) {
+  static Map<int, List<TopologyPoint>> _groupPoints(
+    List<TopologyPoint> points,
+  ) {
     final grouped = <int, List<TopologyPoint>>{};
     for (final point in points) {
       grouped.putIfAbsent(point.moduleId, () => <TopologyPoint>[]).add(point);
@@ -107,7 +109,9 @@ class TopologyResolver {
   ) {
     final grouped = <int, List<TopologyCommand>>{};
     for (final command in commands) {
-      grouped.putIfAbsent(command.moduleId, () => <TopologyCommand>[]).add(command);
+      grouped
+          .putIfAbsent(command.moduleId, () => <TopologyCommand>[])
+          .add(command);
     }
     return grouped;
   }

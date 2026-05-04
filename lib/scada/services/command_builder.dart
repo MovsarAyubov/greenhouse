@@ -29,11 +29,15 @@ class CommandBuilder {
     _validateRelay(draft.relay1, relayNumber: 1);
     _validateRelay(draft.relay2, relayNumber: 2);
     _validateUint16(draft.hysteresisSec, 'LIGHT_HYST_SEC');
+    final payload = draft.payloadWords;
+    if (payload.length != 13) {
+      throw StateError('LIGHT payload must be 13 words, got ${payload.length}');
+    }
     return GenericCommandRequest(
       targetSlaveId: module.slaveId,
       targetModuleId: module.moduleId,
       cmdProfileId: contract.cmdProfileId,
-      payload: draft.payloadWords,
+      payload: payload,
       timeoutMs: contract.timeoutMs,
     );
   }
