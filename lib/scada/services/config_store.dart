@@ -4,12 +4,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
+import '../models/window_setpoint_models.dart';
 import 'modbus_tcp_client.dart';
 
 class ConfigStore {
   static const String _key = 'scada_topology_config_v3';
   static const String _legacyKey = 'scada_topology_config_v2';
   static const String _lightingDraftsKey = 'scada_lighting_drafts_v1';
+  static const String _windowDraftsKey = 'scada_window_setpoint_drafts_v1';
   static const int _minResponseTimeoutMs = 1000;
   static const int _minDiagPollMs = 30000;
   static const int _legacyTelemetryMs = 5000;
@@ -157,9 +159,7 @@ class ConfigStore {
               _readInt(timeoutMap['upload_commit_ms']) ??
               defaults.timeouts.uploadCommitMs,
         ),
-        transport: defaults.transport.copyWith(
-          retryCount: retryCount,
-        ),
+        transport: defaults.transport.copyWith(retryCount: retryCount),
         featureFlags: defaults.featureFlags.copyWith(
           allowTelemetryOnGenerationMismatch:
               featureMap['allow_telemetry_on_generation_mismatch'] as bool? ??
@@ -257,6 +257,47 @@ class ConfigStore {
         entry.key.toString(): entry.value.toJson(),
     };
     await prefs.setString(_lightingDraftsKey, jsonEncode(payload));
+  }
+
+  Future<Map<int, WindowSetpointDraft>> loadWindowSetpointDrafts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_windowDraftsKey);
+    if (raw == null || raw.isEmpty) {
+      return <int, WindowSetpointDraft>{};
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! Map) {
+        return <int, WindowSetpointDraft>{};
+      }
+      final drafts = <int, WindowSetpointDraft>{};
+      for (final entry in decoded.entries) {
+        final moduleId = int.tryParse(entry.key.toString());
+        final draft = WindowSetpointDraft.fromJson(entry.value);
+        if (moduleId == null || draft == null) {
+          continue;
+        }
+        drafts[moduleId] = draft;
+      }
+      return drafts;
+    } catch (_) {
+      return <int, WindowSetpointDraft>{};
+    }
+  }
+
+  Future<void> saveWindowSetpointDrafts(
+    Map<int, WindowSetpointDraft> drafts,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (drafts.isEmpty) {
+      await prefs.remove(_windowDraftsKey);
+      return;
+    }
+    final payload = <String, dynamic>{
+      for (final entry in drafts.entries)
+        entry.key.toString(): entry.value.toJson(),
+    };
+    await prefs.setString(_windowDraftsKey, jsonEncode(payload));
   }
 
   Map<String, dynamic> _mapValue(Object? value) {

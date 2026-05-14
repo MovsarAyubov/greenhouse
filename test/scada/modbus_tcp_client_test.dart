@@ -136,6 +136,67 @@ void main() {
     await client.dispose();
     await server.close();
   });
+
+  test('reconnects after timeout-forced disconnect', () async {
+    final server = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
+    var acceptCount = 0;
+    final secondConnectionFrameSeen = Completer<void>();
+
+    unawaited(() async {
+      await for (final socket in server) {
+        acceptCount += 1;
+        final connectionNo = acceptCount;
+        final buffer = <int>[];
+        socket.listen((chunk) async {
+          buffer.addAll(chunk);
+          while (buffer.length >= 7) {
+            final header = Uint8List.fromList(buffer.sublist(0, 7));
+            final data = ByteData.sublistView(header);
+            final length = data.getUint16(4, Endian.big);
+            final fullLength = 6 + length;
+            if (buffer.length < fullLength) {
+              return;
+            }
+            final frame = Uint8List.fromList(buffer.sublist(0, fullLength));
+            buffer.removeRange(0, fullLength);
+            if (connectionNo == 1) {
+              continue;
+            }
+            if (!secondConnectionFrameSeen.isCompleted) {
+              secondConnectionFrameSeen.complete();
+            }
+            socket.add(_readResponse(frame, 0x3333));
+            await socket.flush();
+          }
+        });
+      }
+    }());
+
+    final client = ModbusTcpClient(
+      responseTimeout: const Duration(milliseconds: 50),
+      maxConsecutiveTimeoutsBeforeDisconnect: 1,
+    );
+    await client.connect('127.0.0.1', server.port);
+
+    await expectLater(
+      client.readHoldingRegisters(unitId: 1, startAddress: 10, count: 1),
+      throwsA(isA<ModbusTcpException>()),
+    );
+    await Future<void>.delayed(const Duration(milliseconds: 20));
+
+    final regs = await client.readHoldingRegisters(
+      unitId: 1,
+      startAddress: 11,
+      count: 1,
+    );
+    await secondConnectionFrameSeen.future.timeout(const Duration(seconds: 1));
+
+    expect(regs, const <int>[0x3333]);
+    expect(acceptCount, greaterThanOrEqualTo(2));
+
+    await client.dispose();
+    await server.close();
+  });
 }
 
 Uint8List _readResponse(Uint8List requestFrame, int value) {

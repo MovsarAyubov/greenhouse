@@ -317,6 +317,22 @@ class SlaveStatusSnapshot {
   bool get stale => (statusFlags & 0x0002) != 0;
 }
 
+class RawRegisterSnapshot {
+  const RawRegisterSnapshot({
+    required this.unitId,
+    required this.register,
+    this.value,
+    this.updatedAt,
+    this.error,
+  });
+
+  final int unitId;
+  final int register;
+  final int? value;
+  final DateTime? updatedAt;
+  final String? error;
+}
+
 class DiagnosticsSnapshot {
   const DiagnosticsSnapshot({
     required this.bootCount,

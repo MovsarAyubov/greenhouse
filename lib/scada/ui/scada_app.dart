@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
 import '../models/topology_models.dart';
+import '../models/window_setpoint_models.dart';
 import '../services/modbus_tcp_client.dart';
 import '../services/scada_controller.dart';
 
@@ -238,7 +239,14 @@ class _ZoneModuleTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final status = controller.slaveStatusForModule(module.moduleId);
+    final windowDebug = controller.windowDebugRegisterForModule(
+      module.moduleId,
+    );
     final points = controller.resolvedPointsForModule(module.moduleId);
+    final windowsStatusBits = _resolvedPointBySemantic(
+      points,
+      'windows_status_bits',
+    );
     final lightingFeedback = controller.lightingFeedbackFieldsForModule(
       module.moduleId,
     );
@@ -276,9 +284,25 @@ class _ZoneModuleTab extends StatelessWidget {
                     exception: status.errException,
                   ),
                 ),
+              _WindowDebugRegisterLine(snapshot: windowDebug),
+              _WindowReactionStatusLine(point: windowsStatusBits),
             ],
           ),
         ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => _WindowSetpointsScreen(
+                  controller: controller,
+                  module: module,
+                ),
+              ),
+            );
+          },
+          child: const Text('Window setpoints'),
+        ),
+        const SizedBox(height: 12),
         _LightingFeedbackCard(fields: lightingFeedback),
         _InfoCard(
           title: l10n.telemetry,
@@ -613,6 +637,310 @@ class _LightingRuntimeSummary extends StatelessWidget {
         Chip(label: Text(l10n.relayState(2, runtime.relay2On))),
         Chip(label: Text(l10n.dli(runtime.dliLabel(l10n)))),
       ],
+    );
+  }
+}
+
+class _WindowDebugRegisterLine extends StatelessWidget {
+  const _WindowDebugRegisterLine({required this.snapshot});
+
+  final RawRegisterSnapshot? snapshot;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = snapshot;
+    final style = item?.error == null
+        ? null
+        : const TextStyle(color: Colors.orange);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(_formatWindowDebugRegister(item), style: style),
+        if (item?.error != null)
+          Text('217 read error: ${item!.error}', style: style),
+      ],
+    );
+  }
+}
+
+class _WindowReactionStatusLine extends StatelessWidget {
+  const _WindowReactionStatusLine({required this.point});
+
+  final ResolvedPointValue? point;
+
+  @override
+  Widget build(BuildContext context) {
+    final telemetry = point?.telemetry;
+    if (point == null || telemetry == null || !telemetry.isUsable) {
+      return const Text('Reaction pending: --');
+    }
+    final bits = telemetry.value.round();
+    final pending = (bits & (1 << 13)) != 0;
+    return Text('Reaction pending: ${pending ? 'yes' : 'no'}');
+  }
+}
+
+ResolvedPointValue? _resolvedPointBySemantic(
+  List<ResolvedPointValue> points,
+  String semanticName,
+) {
+  for (final point in points) {
+    if (point.point.semanticName == semanticName) {
+      return point;
+    }
+  }
+  return null;
+}
+
+bool _isCurtainStatusPoint(ResolvedPointValue point) {
+  final suffix = point.point.pointId % 100;
+  return suffix >= 67 && suffix <= 73;
+}
+
+class _WindowSetpointsScreen extends StatefulWidget {
+  const _WindowSetpointsScreen({
+    required this.controller,
+    required this.module,
+  });
+
+  final ScadaController controller;
+  final TopologyModule module;
+
+  @override
+  State<_WindowSetpointsScreen> createState() => _WindowSetpointsScreenState();
+}
+
+class _WindowSetpointsScreenState extends State<_WindowSetpointsScreen> {
+  final Map<int, TextEditingController> _controllers =
+      <int, TextEditingController>{};
+  bool _showService = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = widget.controller
+        .windowSetpointStatusForModule(widget.module.moduleId)
+        .draft;
+    for (final spec in _windowSetpointSpecs.where(
+      (item) => !item.hasOptions && !item.isTime,
+    )) {
+      _controllers[spec.register] = TextEditingController(
+        text: _formatSetpointInput(spec, draft.valueFor(spec.register)),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = _windowTabs(showService: _showService);
+    return Scaffold(
+      appBar: AppBar(title: Text('${widget.module.title} windows')),
+      body: AnimatedBuilder(
+        animation: widget.controller,
+        builder: (context, _) {
+          final status = widget.controller.windowSetpointStatusForModule(
+            widget.module.moduleId,
+          );
+          final windowDebug = widget.controller.windowDebugRegisterForModule(
+            widget.module.moduleId,
+          );
+          final points = widget.controller.resolvedPointsForModule(
+            widget.module.moduleId,
+          );
+          final windowsStatusBits = _resolvedPointBySemantic(
+            points,
+            'windows_status_bits',
+          );
+          final curtainStatusPoints = points
+              .where(_isCurtainStatusPoint)
+              .toList(growable: false);
+          final canSend = widget.controller.canSendCommands;
+          return DefaultTabController(
+            length: tabs.length,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _InfoCard(
+                    title: 'Apply',
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'phase=${status.phase.name} slave=${status.slaveId}',
+                        ),
+                        _WindowDebugRegisterLine(snapshot: windowDebug),
+                        _WindowReactionStatusLine(point: windowsStatusBits),
+                        if (status.message != null) Text(status.message!),
+                        if (!canSend)
+                          Text(
+                            widget.controller.compatibility.message,
+                            style: const TextStyle(color: Colors.orange),
+                          ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('Show service setpoints'),
+                          value: _showService,
+                          onChanged: (value) {
+                            setState(() => _showService = value);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: canSend
+                              ? () => unawaited(
+                                  widget.controller
+                                      .sendWindowSetpointsForModule(
+                                        widget.module.moduleId,
+                                      ),
+                                )
+                              : null,
+                          child: const Text('Send window setpoints'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                TabBar(
+                  isScrollable: true,
+                  tabs: [for (final tab in tabs) Tab(text: tab)],
+                ),
+                Expanded(
+                  child: TabBarView(
+                    children: [
+                      for (final tab in tabs)
+                        ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            ..._windowSetpointSpecs
+                                .where((spec) => spec.section == tab)
+                                .map((spec) => _buildField(spec, status.draft)),
+                            if (tab == 'Curtain' &&
+                                curtainStatusPoints.isNotEmpty)
+                              _CurtainStatusList(points: curtainStatusPoints),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildField(_WindowSetpointSpec spec, WindowSetpointDraft draft) {
+    if (spec.isTime) {
+      final value = draft.valueFor(spec.register);
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        title: Text('${spec.register} ${spec.label}'),
+        trailing: TextButton(
+          onPressed: () => _pickWindowTime(spec, value),
+          child: Text(_formatHhmm(value)),
+        ),
+      );
+    }
+
+    if (spec.hasOptions) {
+      final options = spec.options!;
+      final current = options.containsKey(draft.valueFor(spec.register))
+          ? draft.valueFor(spec.register)
+          : options.keys.first;
+      return DropdownButtonFormField<int>(
+        initialValue: current,
+        decoration: InputDecoration(
+          labelText: '${spec.register} ${spec.label}',
+        ),
+        items: options.entries
+            .map(
+              (entry) => DropdownMenuItem<int>(
+                value: entry.key,
+                child: Text(entry.value),
+              ),
+            )
+            .toList(growable: false),
+        onChanged: (value) {
+          if (value == null) {
+            return;
+          }
+          widget.controller.updateWindowSetpointDraft(
+            widget.module.moduleId,
+            (current) => current.copyWithValue(spec.register, value),
+          );
+        },
+      );
+    }
+
+    final controller = _controllers[spec.register]!;
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: '${spec.register} ${spec.label}',
+        suffixText: spec.suffix,
+      ),
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      onChanged: (value) {
+        final raw = _parseSetpointInput(spec, value);
+        if (raw == null) {
+          return;
+        }
+        widget.controller.updateWindowSetpointDraft(
+          widget.module.moduleId,
+          (current) => current.copyWithValue(spec.register, raw),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickWindowTime(_WindowSetpointSpec spec, int hhmm) async {
+    final initial = _timeOfDayFromHhmm(hhmm);
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null) {
+      return;
+    }
+    final value = picked.hour * 100 + picked.minute;
+    widget.controller.updateWindowSetpointDraft(
+      widget.module.moduleId,
+      (current) => current.copyWithValue(spec.register, value),
+    );
+  }
+}
+
+class _CurtainStatusList extends StatelessWidget {
+  const _CurtainStatusList({required this.points});
+
+  final List<ResolvedPointValue> points;
+
+  @override
+  Widget build(BuildContext context) {
+    return _InfoCard(
+      title: 'Curtain status',
+      child: Column(
+        children: points
+            .map(
+              (item) => ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text(item.point.displayName),
+                subtitle: Text('point=${item.point.pointId}'),
+                trailing: Text(
+                  _formatPointValue(context, item.point, item.telemetry),
+                ),
+              ),
+            )
+            .toList(growable: false),
+      ),
     );
   }
 }
@@ -971,6 +1299,553 @@ class _TabEntry {
   final Widget child;
 }
 
+class _WindowSetpointSpec {
+  const _WindowSetpointSpec({
+    required this.section,
+    required this.register,
+    required this.label,
+    this.suffix = '',
+    this.scale = 1,
+    this.maxRaw = 0xFFFF,
+    this.options,
+  });
+
+  final String section;
+  final int register;
+  final String label;
+  final String suffix;
+  final int scale;
+  final int maxRaw;
+  final Map<int, String>? options;
+
+  bool get hasOptions => options != null && options!.isNotEmpty;
+  bool get isTime =>
+      register == WindowSetpointRegister.curtainScheduleStartHhmm ||
+      register == WindowSetpointRegister.curtainScheduleEndHhmm;
+}
+
+const List<String> _windowSections = <String>[
+  'Manual',
+  'Wind',
+  'Air target',
+  'Automation',
+  'Safety',
+  'Curtain',
+  'Rain',
+  'Actuator',
+  'Service',
+];
+
+List<String> _windowTabs({required bool showService}) {
+  return _windowSections
+      .where((section) => showService || section != 'Service')
+      .toList(growable: false);
+}
+
+const List<_WindowSetpointSpec> _windowSetpointSpecs = <_WindowSetpointSpec>[
+  _WindowSetpointSpec(
+    section: 'Manual',
+    register: WindowSetpointRegister.ctrlMode,
+    label: 'Control mode',
+    options: <int, String>{0: 'AUTO', 1: 'MANUAL'},
+  ),
+  _WindowSetpointSpec(
+    section: 'Manual',
+    register: WindowSetpointRegister.posATarget,
+    label: 'Window A target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Manual',
+    register: WindowSetpointRegister.posBTarget,
+    label: 'Window B target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Manual',
+    register: WindowSetpointRegister.forceSafeCmd,
+    label: 'Force safe command',
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.autoAlgoMode,
+    label: 'Auto algorithm',
+    options: <int, String>{0: 'TEMP', 1: 'HUMIDITY'},
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.tempSetpoint,
+    label: 'Window temp setpoint',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Air target',
+    register: WindowSetpointRegister.airTempTarget,
+    label: 'AIR_TEMP_TARGET',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Air target',
+    register: WindowSetpointRegister.airHumTarget,
+    label: 'AIR_HUM_TARGET',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.tempStepC,
+    label: 'Temperature step',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.tempStepHystC,
+    label: 'Step hysteresis',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.tempStepTargetPercent,
+    label: 'Open per step',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.humSetpoint,
+    label: 'Humidity setpoint',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.humStep,
+    label: 'Humidity step',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.humStepHyst,
+    label: 'Step hysteresis',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Automation',
+    register: WindowSetpointRegister.humStepTargetPercent,
+    label: 'Open per humidity step',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.coldCloseDelta,
+    label: 'Cold close delta',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.coldCloseHyst,
+    label: 'Cold close hysteresis',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.safeMinPercent,
+    label: 'Safe minimum position',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.weatherStalePolicy,
+    label: 'Weather stale policy',
+    options: <int, String>{0: 'CLOSE_SAFE', 1: 'IGNORE'},
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.weatherStaleTimeoutMs,
+    label: 'Weather stale timeout',
+    suffix: 'ms',
+  ),
+  _WindowSetpointSpec(
+    section: 'Safety',
+    register: WindowSetpointRegister.weatherSourceAgeS,
+    label: 'Weather source max age',
+    suffix: 's',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainCtrlMode,
+    label: 'Curtain mode',
+    options: <int, String>{0: 'auto', 1: 'manual'},
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainManualTarget,
+    label: 'Manual target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainScheduleStartHhmm,
+    label: 'Schedule start',
+    suffix: 'HHMM',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainScheduleEndHhmm,
+    label: 'Schedule end',
+    suffix: 'HHMM',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainOutsideTarget,
+    label: 'Outside target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainMinPosition,
+    label: 'Minimum position',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainMaxPosition,
+    label: 'Maximum position',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainPositionHyst,
+    label: 'Position hysteresis',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainRadiationThreshold,
+    label: 'Radiation threshold',
+    suffix: 'W/m2',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainRadiationStepWm2,
+    label: 'Radiation step',
+    suffix: 'W/m2',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainRadiationStepPercent,
+    label: 'Radiation step target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainRadiationHyst,
+    label: 'Radiation hysteresis',
+    suffix: 'W/m2',
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainColdDelta,
+    label: 'Cold delta',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainColdHyst,
+    label: 'Cold hysteresis',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainColdTarget,
+    label: 'Cold target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHeatDelta,
+    label: 'Heat delta',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHeatHyst,
+    label: 'Heat hysteresis',
+    suffix: 'C',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHeatTarget,
+    label: 'Heat target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumLowThreshold,
+    label: 'Low humidity threshold',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumLowHyst,
+    label: 'Low humidity hysteresis',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumLowTarget,
+    label: 'Low humidity target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumHighThreshold,
+    label: 'High humidity threshold',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumHighHyst,
+    label: 'High humidity hysteresis',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Curtain',
+    register: WindowSetpointRegister.curtainHumHighTarget,
+    label: 'High humidity target',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windStorm,
+    label: 'Storm threshold',
+    suffix: 'm/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windRecover,
+    label: 'Recover threshold',
+    suffix: 'm/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windowAAzimuthDeg,
+    label: 'Window A azimuth',
+    suffix: 'deg',
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windSectorHalfWidthDeg,
+    label: 'Wind sector half width',
+    suffix: 'deg',
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windwardMinPercent,
+    label: 'Windward minimum',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windwardMaxPercent,
+    label: 'Windward maximum',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windwardSpeedThreshold,
+    label: 'Windward speed threshold',
+    suffix: 'm/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windwardReductionPercentPerMs,
+    label: 'Windward reduction per m/s',
+    suffix: '%/m/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.leewardMinPercent,
+    label: 'Leeward minimum',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.leewardMaxPercent,
+    label: 'Leeward maximum',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.leewardSpeedThreshold,
+    label: 'Leeward speed threshold',
+    suffix: 'm/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.leewardReductionPercentPerMs,
+    label: 'Leeward reduction per m/s',
+    suffix: '%/m/s',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Wind',
+    register: WindowSetpointRegister.windwardLagPercent,
+    label: 'Windward lag',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Rain',
+    register: WindowSetpointRegister.rainMode,
+    label: 'Rain protection mode',
+    options: <int, String>{0: 'OFF', 1: 'WINDWARD'},
+  ),
+  _WindowSetpointSpec(
+    section: 'Rain',
+    register: WindowSetpointRegister.rainWindwardPercent,
+    label: 'Rain windward limit',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Actuator',
+    register: WindowSetpointRegister.targetHystPercent,
+    label: 'Target hysteresis',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Actuator',
+    register: WindowSetpointRegister.motionDeltaPercent,
+    label: 'Motion delta',
+    suffix: '%',
+    scale: 10,
+  ),
+  _WindowSetpointSpec(
+    section: 'Actuator',
+    register: WindowSetpointRegister.noMotionTimeoutMs,
+    label: 'No motion timeout',
+    suffix: 'ms',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.windLimit,
+    label: 'Wind limit service',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.windowAFaultResetToken,
+    label: 'Window A fault reset token',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.windowBFaultResetToken,
+    label: 'Window B fault reset token',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.tempStepMaxIndex,
+    label: 'Temperature max step index',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.humStepMaxIndex,
+    label: 'Humidity max step index',
+  ),
+  _WindowSetpointSpec(
+    section: 'Service',
+    register: WindowSetpointRegister.curtainFaultResetToken,
+    label: 'Curtain fault reset token',
+  ),
+];
+
+String _formatSetpointInput(_WindowSetpointSpec spec, int rawValue) {
+  if (spec.scale <= 1) {
+    return '$rawValue';
+  }
+  final value = rawValue / spec.scale;
+  return value == value.roundToDouble()
+      ? value.toStringAsFixed(0)
+      : value.toStringAsFixed(1);
+}
+
+int? _parseSetpointInput(_WindowSetpointSpec spec, String text) {
+  final normalized = text.trim().replaceAll(',', '.');
+  if (normalized.isEmpty) {
+    return null;
+  }
+  final value = double.tryParse(normalized);
+  if (value == null) {
+    return null;
+  }
+  final raw = (value * spec.scale).round();
+  if (raw < 0 || raw > spec.maxRaw) {
+    return null;
+  }
+  return raw;
+}
+
+String _formatWindowDebugRegister(RawRegisterSnapshot? snapshot) {
+  if (snapshot == null) {
+    return '217 register: --';
+  }
+  final value = snapshot.value;
+  final valueText = value == null
+      ? '--'
+      : '$value (0x${value.toRadixString(16).toUpperCase().padLeft(4, '0')})';
+  final updatedAt = snapshot.updatedAt;
+  final updatedText = updatedAt == null
+      ? ''
+      : ' updated=${_formatClock(updatedAt)}';
+  return '217 register: $valueText unit=${snapshot.unitId}$updatedText';
+}
+
+String _formatClock(DateTime value) {
+  return '${value.hour.toString().padLeft(2, '0')}:'
+      '${value.minute.toString().padLeft(2, '0')}:'
+      '${value.second.toString().padLeft(2, '0')}';
+}
+
 class _LightingRuntimeView {
   const _LightingRuntimeView({
     required this.lightOutputPct,
@@ -1023,6 +1898,9 @@ String _formatPointValue(
     return context.l10n.notAvailable;
   }
   if (point.semanticName == 'light_status_bits') {
+    return '${telemetry.value.round()}';
+  }
+  if (point.semanticName == 'windows_status_bits') {
     return '${telemetry.value.round()}';
   }
   if (point.semanticName == 'light_output') {
@@ -1110,4 +1988,11 @@ String _formatHhmm(int hhmm) {
   final hour = (hhmm ~/ 100).clamp(0, 23);
   final minute = (hhmm % 100).clamp(0, 59);
   return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+}
+
+TimeOfDay _timeOfDayFromHhmm(int hhmm) {
+  return TimeOfDay(
+    hour: (hhmm ~/ 100).clamp(0, 23).toInt(),
+    minute: (hhmm % 100).clamp(0, 59).toInt(),
+  );
 }

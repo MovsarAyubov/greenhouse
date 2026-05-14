@@ -17,7 +17,7 @@ class ModbusTcpClient {
   ModbusTcpClient({
     this.connectTimeout = const Duration(seconds: 4),
     this.responseTimeout = const Duration(milliseconds: 1800),
-    this.maxConsecutiveTimeoutsBeforeDisconnect = 3,
+    this.maxConsecutiveTimeoutsBeforeDisconnect = 12,
     this.addressMode = ModbusAddressMode.zeroBased,
   });
 
@@ -52,7 +52,7 @@ class ModbusTcpClient {
     _lastHost = host;
     _lastPort = port;
     if (_socket != null) {
-      if (previousHost == host && previousPort == port) {
+      if (_connected && previousHost == host && previousPort == port) {
         return;
       }
       await disconnect();
@@ -307,13 +307,16 @@ class ModbusTcpClient {
   }
 
   Future<void> _ensureConnected() async {
-    if (_socket != null) {
+    if (_socket != null && _connected) {
       return;
     }
     final host = _lastHost;
     final port = _lastPort;
     if (host == null || port == null) {
       throw ModbusTcpException('not connected');
+    }
+    if (_socket != null) {
+      await disconnect();
     }
     await connect(host, port);
   }

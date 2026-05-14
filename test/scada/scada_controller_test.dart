@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:greenhouse/scada/models/lighting_schedule_models.dart';
 import 'package:greenhouse/scada/models/topology_models.dart';
 import 'package:greenhouse/scada/models/scada_models.dart';
+import 'package:greenhouse/scada/models/window_setpoint_models.dart';
 import 'package:greenhouse/scada/services/config_store.dart';
 import 'package:greenhouse/scada/services/modbus_tcp_client.dart';
 import 'package:greenhouse/scada/services/scada_controller.dart';
@@ -12,6 +14,10 @@ import 'package:greenhouse/scada/services/scada_logger.dart';
 import 'package:greenhouse/scada/services/topology_store.dart';
 
 void main() {
+  setUpAll(() {
+    dotenv.testLoad(fileInput: '');
+  });
+
   group('ScadaController compatibility', () {
     test('ready when device metadata matches local topology', () async {
       final controller = ScadaController(
@@ -174,35 +180,55 @@ void main() {
       },
     );
 
-    test(
-      'polling reads only configured slave status ranges',
-      () async {
-        final client = _ChunkTrackingModbusTcpClient(generation: 77);
-        final controller = ScadaController(
-          client: client,
-          configStore: _FakeConfigStore(),
-          logger: _FakeLogger(),
-          topologyStore: _FakeTopologyStore(
-            snapshot: _snapshot(
-              manifest: _manifestManySlaves(
-                generation: 77,
-                slaveIds: const <int>[1, 20],
-              ),
+    test('polling reads only configured slave status ranges', () async {
+      final client = _ChunkTrackingModbusTcpClient(generation: 77);
+      final controller = ScadaController(
+        client: client,
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifestManySlaves(
+              generation: 77,
+              slaveIds: const <int>[1, 20],
             ),
           ),
-        );
+        ),
+      );
 
-        await controller.init();
-        await Future<void>.delayed(const Duration(milliseconds: 50));
+      await controller.init();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(controller.lastError, isNull);
-        expect(client.calls, contains('1080:8'));
-        expect(client.calls, contains('1232:8'));
-        expect(client.calls, isNot(contains('1088:120')));
+      expect(controller.lastError, isNull);
+      expect(client.calls, contains('1080:8'));
+      expect(client.calls, contains('1232:8'));
+      expect(client.calls, isNot(contains('1088:120')));
 
-        controller.dispose();
-      },
-    );
+      controller.dispose();
+    });
+
+    test('polling avoids direct RTU reads from zone slaves', () async {
+      final client = _WindowDebugRegisterClient(generation: 77);
+      final controller = ScadaController(
+        client: client,
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      final snapshot = controller.windowDebugRegisterForModule(101);
+      expect(snapshot, isNull);
+      expect(client.debugReads, 0);
+
+      controller.dispose();
+    });
 
     test(
       'polling does not refresh bootstrap on every telemetry tick',
@@ -358,7 +384,10 @@ void main() {
       expect(status.lastAppliedTrigger, status.trigger);
       expect(status.lastResult, 2);
       expect(status.message, 'Applied');
-      expect(client.writeOrder, orderedEquals(const <String>['payload', 'trigger']));
+      expect(
+        client.writeOrder,
+        orderedEquals(const <String>['payload', 'trigger']),
+      );
       expect(client.lastPayloadStartAddress, 1240);
       expect(
         client.lastPayloadWrite,
@@ -388,46 +417,49 @@ void main() {
       controller.dispose();
     });
 
-    test('schedule apply reports failure only after overall deadline', () async {
-      final client = _RejectedScheduleClient();
-      final controller = ScadaController(
-        client: client,
-        configStore: _FakeConfigStore(
-          config: ScadaConfig.defaults().copyWith(
-            pollIntervals: const PollIntervalsConfig(
-              telemetryMs: 60000,
-              diagMs: 60000,
-              commandPollMs: 50,
-              uploadPollMs: 100,
+    test(
+      'schedule apply reports failure only after overall deadline',
+      () async {
+        final client = _RejectedScheduleClient();
+        final controller = ScadaController(
+          client: client,
+          configStore: _FakeConfigStore(
+            config: ScadaConfig.defaults().copyWith(
+              pollIntervals: const PollIntervalsConfig(
+                telemetryMs: 60000,
+                diagMs: 60000,
+                commandPollMs: 50,
+                uploadPollMs: 100,
+              ),
             ),
           ),
-        ),
-        logger: _FakeLogger(),
-        topologyStore: _FakeTopologyStore(
-          snapshot: _snapshot(
-            manifest: _manifest(
-              generation: 77,
-              includeSchedule: true,
-              scheduleTimeoutMs: 300,
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: _snapshot(
+              manifest: _manifest(
+                generation: 77,
+                includeSchedule: true,
+                scheduleTimeoutMs: 300,
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      await controller.init();
-      final stopwatch = Stopwatch()..start();
-      await controller.sendScheduleForModule(101);
-      stopwatch.stop();
+        await controller.init();
+        final stopwatch = Stopwatch()..start();
+        await controller.sendScheduleForModule(101);
+        stopwatch.stop();
 
-      final status = controller.lightingStatusForModule(101);
-      expect(status.phase, LightingSchedulePhase.failed);
-      expect(status.lastAppliedTrigger, status.trigger);
-      expect(status.lastResult, 13);
-      expect(status.message, contains('reject busy'));
-      expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(1800));
+        final status = controller.lightingStatusForModule(101);
+        expect(status.phase, LightingSchedulePhase.failed);
+        expect(status.lastAppliedTrigger, status.trigger);
+        expect(status.lastResult, 13);
+        expect(status.message, contains('reject busy'));
+        expect(stopwatch.elapsedMilliseconds, greaterThanOrEqualTo(1800));
 
-      controller.dispose();
-    });
+        controller.dispose();
+      },
+    );
 
     test('restores last sent lighting draft after client restart', () async {
       final store = _FakeConfigStore(
@@ -504,37 +536,581 @@ void main() {
       secondController.dispose();
     });
 
-    test('lighting feedback fields resolve semantic points from points window', () async {
+    test('window setpoints are sent through master command ingress', () async {
+      final client = _WindowSetpointWriteClient(generation: 77);
+      final store = _FakeConfigStore();
       final controller = ScadaController(
-        client: _LightingFeedbackModbusTcpClient(),
-        configStore: _FakeConfigStore(),
+        client: client,
+        configStore: store,
         logger: _FakeLogger(),
         topologyStore: _FakeTopologyStore(
           snapshot: _snapshot(
-            manifest: _manifestWithLightingFeedback(generation: 77),
+            manifest: _manifest(generation: 77, includeSchedule: true),
           ),
         ),
       );
 
       await controller.init();
-      await Future<void>.delayed(const Duration(milliseconds: 50));
+      controller.updateWindowSetpointDraft(
+        101,
+        (draft) => draft
+            .copyWithValue(WindowSetpointRegister.posATarget, 250)
+            .copyWithValue(WindowSetpointRegister.posBTarget, 500)
+            .copyWithValue(WindowSetpointRegister.ctrlMode, 1)
+            .copyWithValue(WindowSetpointRegister.tempSetpoint, 245)
+            .copyWithValue(WindowSetpointRegister.humStep, 10)
+            .copyWithValue(WindowSetpointRegister.rainWindwardPercent, 20)
+            .copyWithValue(WindowSetpointRegister.tempStepMaxIndex, 3)
+            .copyWithValue(WindowSetpointRegister.curtainManualTarget, 300)
+            .copyWithValue(
+              WindowSetpointRegister.curtainRadiationThreshold,
+              450,
+            )
+            .copyWithValue(WindowSetpointRegister.curtainHumHighTarget, 700)
+            .copyWithValue(WindowSetpointRegister.curtainFaultResetToken, 77)
+            .copyWithValue(WindowSetpointRegister.airTempTarget, 230)
+            .copyWithValue(WindowSetpointRegister.airHumTarget, 650),
+      );
 
-      final fields = controller.lightingFeedbackFieldsForModule(101);
+      await controller.sendWindowSetpointsForModule(101);
+
+      expect(client.operations, hasLength(20));
       expect(
-        fields.map((item) => item.semanticName),
-        orderedEquals(const <String>[
-          'current_dli',
-          'light_output',
-          'light_status_bits',
+        client.operations.map((call) => call.startAddress),
+        orderedEquals(const <int>[
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
+          1240,
+          1260,
         ]),
       );
-      expect(fields[0].telemetry?.value, closeTo(18.75, 0.001));
-      expect(fields[1].telemetry?.value.round(), 50);
-      expect(fields[2].telemetry?.value.round(), 3);
+      expect(client.operations.first.values, const <int>[
+        1,
+        101,
+        5002,
+        2,
+        250,
+        500,
+      ]);
+      expect(client.operations[1].singleValue, 1);
+      expect(client.operations[2].values, const <int>[
+        1,
+        101,
+        5004,
+        16,
+        1,
+        0,
+        245,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+      ]);
+      expect(client.operations[4].values, const <int>[
+        1,
+        101,
+        5005,
+        16,
+        0,
+        700,
+        10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+      ]);
+      expect(client.operations[6].values, const <int>[1, 101, 5006, 2, 20, 0]);
+      expect(client.operations[8].values, const <int>[
+        1,
+        101,
+        5007,
+        6,
+        0,
+        3,
+        0,
+        0,
+        60000,
+        60,
+      ]);
+      expect(client.operations[10].values, const <int>[
+        1,
+        101,
+        5015,
+        8,
+        0,
+        300,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+      ]);
+      expect(client.operations[12].values, const <int>[
+        1,
+        101,
+        5016,
+        10,
+        450,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+      ]);
+      expect(client.operations[14].values, const <int>[
+        1,
+        101,
+        5017,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        700,
+      ]);
+      expect(client.operations[16].values, const <int>[1, 101, 5018, 1, 77]);
+      expect(client.operations[18].values, const <int>[
+        1,
+        101,
+        5019,
+        2,
+        230,
+        650,
+      ]);
+      expect(
+        client.operations
+            .where((call) => call.singleValue != null)
+            .map((call) => call.singleValue),
+        orderedEquals(const <int>[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
+      );
+      expect(store.windowDrafts[101]?.valueFor(103), 250);
+      expect(
+        store.windowDrafts[101]?.valueFor(
+          WindowSetpointRegister.windowAFaultResetToken,
+        ),
+        0,
+      );
+      expect(
+        store.windowDrafts[101]?.valueFor(
+          WindowSetpointRegister.curtainFaultResetToken,
+        ),
+        0,
+      );
+      expect(
+        controller.windowSetpointStatusForModule(101).phase,
+        WindowSetpointPhase.success,
+      );
 
       controller.dispose();
     });
+
+    test('window setpoints wait for each command trigger to apply', () async {
+      final client = _DelayedWindowSetpointWriteClient(generation: 77);
+      final controller = ScadaController(
+        client: client,
+        configStore: _FakeConfigStore(
+          config: ScadaConfig.defaults().copyWith(
+            timeouts: ScadaConfig.defaults().timeouts.copyWith(commandMs: 3000),
+          ),
+        ),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      controller.updateWindowSetpointDraft(101, _dirtyEveryWindowBlock);
+      await controller.sendWindowSetpointsForModule(101);
+
+      final payloadStarts = client.operations
+          .where((call) => call.startAddress == 1240)
+          .map((call) => call.values![2])
+          .toList(growable: false);
+      expect(payloadStarts, const <int>[
+        5002,
+        5004,
+        5005,
+        5006,
+        5007,
+        5015,
+        5016,
+        5017,
+        5018,
+        5019,
+      ]);
+      expect(client.pollReads, greaterThanOrEqualTo(20));
+
+      controller.dispose();
+    });
+
+    test('zone 2 window setpoints use zone 2 command profiles', () async {
+      final client = _WindowSetpointWriteClient(generation: 77);
+      final controller = ScadaController(
+        client: client,
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(
+              generation: 77,
+              includeSchedule: true,
+              includeZone2: true,
+            ),
+          ),
+        ),
+      );
+
+      await controller.init();
+      controller.updateWindowSetpointDraft(102, _dirtyEveryWindowBlock);
+      await controller.sendWindowSetpointsForModule(102);
+
+      final payloads = client.operations
+          .where((call) => call.values != null)
+          .map((call) => call.values!)
+          .toList(growable: false);
+      expect(
+        payloads.map((values) => values[2]),
+        orderedEquals(const <int>[
+          5008,
+          5009,
+          5010,
+          5011,
+          5012,
+          5020,
+          5021,
+          5022,
+          5023,
+          5024,
+        ]),
+      );
+      expect(payloads.every((values) => values[0] == 2), isTrue);
+      expect(payloads.every((values) => values[1] == 102), isTrue);
+
+      controller.dispose();
+    });
+
+    test('window setpoints reject nonzero command ingress IO error', () async {
+      final client = _IoErrWindowSetpointWriteClient(generation: 77);
+      final controller = ScadaController(
+        client: client,
+        configStore: _FakeConfigStore(),
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      controller.updateWindowSetpointDraft(
+        101,
+        (draft) => draft.copyWithValue(WindowSetpointRegister.posATarget, 1),
+      );
+      await controller.sendWindowSetpointsForModule(101);
+
+      final status = controller.windowSetpointStatusForModule(101);
+      expect(status.phase, WindowSetpointPhase.failed);
+      expect(status.message, contains('io=timeout'));
+
+      controller.dispose();
+    });
+
+    test('window setpoints are auto-resynced after slave recovers', () async {
+      final client = _RecoveringWindowSetpointClient(generation: 77);
+      final store = _FakeConfigStore(
+        config: ScadaConfig.defaults().copyWith(
+          pollIntervals: const PollIntervalsConfig(
+            telemetryMs: 10,
+            diagMs: 60000,
+            commandPollMs: 50,
+            uploadPollMs: 100,
+          ),
+        ),
+        windowDrafts: <int, WindowSetpointDraft>{
+          101: WindowSetpointDraft.initial(moduleId: 101, zoneId: 1, slaveId: 1)
+              .copyWithValue(WindowSetpointRegister.posATarget, 250)
+              .copyWithValue(WindowSetpointRegister.posBTarget, 500)
+              .copyWithValue(WindowSetpointRegister.ctrlMode, 1)
+              .copyWithValue(WindowSetpointRegister.tempSetpoint, 245),
+        },
+      );
+      final controller = ScadaController(
+        client: client,
+        configStore: store,
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      await _waitUntil(
+        () =>
+            client.operations.where((call) => call.values != null).length >=
+            windowSetpointCommandBlocks.length,
+      );
+
+      final payloads = client.operations
+          .where((call) => call.values != null)
+          .map((call) => call.values!)
+          .toList(growable: false);
+      expect(payloads, hasLength(windowSetpointCommandBlocks.length));
+      expect(
+        payloads.map((values) => values[2]),
+        orderedEquals(const <int>[
+          5002,
+          5004,
+          5005,
+          5006,
+          5007,
+          5015,
+          5016,
+          5017,
+          5018,
+          5019,
+        ]),
+      );
+      expect(payloads.first, const <int>[1, 101, 5002, 2, 250, 500]);
+      expect(payloads[1][4], 1);
+      expect(payloads[1][6], 245);
+      expect(
+        controller.windowSetpointStatusForModule(101).message,
+        'Auto-resynced after module restart',
+      );
+
+      controller.dispose();
+    });
+
+    test('saved window setpoints are synced on first online status', () async {
+      final client = _OnlineWindowSetpointClient(generation: 77);
+      final store = _FakeConfigStore(
+        config: ScadaConfig.defaults().copyWith(
+          pollIntervals: const PollIntervalsConfig(
+            telemetryMs: 10,
+            diagMs: 60000,
+            commandPollMs: 50,
+            uploadPollMs: 100,
+          ),
+        ),
+        windowDrafts: <int, WindowSetpointDraft>{
+          101: WindowSetpointDraft.initial(moduleId: 101, zoneId: 1, slaveId: 1)
+              .copyWithValue(WindowSetpointRegister.posATarget, 111)
+              .copyWithValue(WindowSetpointRegister.posBTarget, 222),
+        },
+      );
+      final controller = ScadaController(
+        client: client,
+        configStore: store,
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      await _waitUntil(
+        () =>
+            client.operations.where((call) => call.values != null).length >=
+            windowSetpointCommandBlocks.length,
+      );
+
+      final payloads = client.operations
+          .where((call) => call.values != null)
+          .map((call) => call.values!)
+          .toList(growable: false);
+      expect(payloads.first, const <int>[1, 101, 5002, 2, 111, 222]);
+      expect(
+        controller.clientTrace.any((line) => line.contains('first_online')),
+        isTrue,
+      );
+
+      controller.dispose();
+    });
+
+    test('saved window setpoints resync after transport outage', () async {
+      final client = _TransportOutageWindowSetpointClient(generation: 77);
+      final store = _FakeConfigStore(
+        config: ScadaConfig.defaults().copyWith(
+          pollIntervals: const PollIntervalsConfig(
+            telemetryMs: 10,
+            diagMs: 60000,
+            commandPollMs: 50,
+            uploadPollMs: 100,
+          ),
+        ),
+        windowDrafts: <int, WindowSetpointDraft>{
+          101: WindowSetpointDraft.initial(moduleId: 101, zoneId: 1, slaveId: 1)
+              .copyWithValue(WindowSetpointRegister.posATarget, 333)
+              .copyWithValue(WindowSetpointRegister.posBTarget, 444),
+        },
+      );
+      final controller = ScadaController(
+        client: client,
+        configStore: store,
+        logger: _FakeLogger(),
+        topologyStore: _FakeTopologyStore(
+          snapshot: _snapshot(
+            manifest: _manifest(generation: 77, includeSchedule: true),
+          ),
+        ),
+      );
+
+      await controller.init();
+      await _waitUntil(
+        () =>
+            client.operations.where((call) => call.values != null).length >=
+            windowSetpointCommandBlocks.length,
+      );
+
+      client.failNextStatusRead = true;
+      await _waitUntil(
+        () => controller.clientTrace.any(
+          (line) => line.contains('resync session reset reason=poll_error'),
+        ),
+      );
+      expect(client.disconnectCount, 0);
+      await _waitUntil(
+        () =>
+            client.operations.where((call) => call.values != null).length >=
+            windowSetpointCommandBlocks.length * 2,
+      );
+
+      final payloads = client.operations
+          .where((call) => call.values != null)
+          .map((call) => call.values!)
+          .toList(growable: false);
+      expect(payloads[windowSetpointCommandBlocks.length], const <int>[
+        1,
+        101,
+        5002,
+        2,
+        333,
+        444,
+      ]);
+
+      controller.dispose();
+    });
+
+    test('legacy reaction draft at register 243 is ignored', () async {
+      final draft = WindowSetpointDraft.fromJson(<String, dynamic>{
+        'module_id': 101,
+        'zone_id': 1,
+        'slave_id': 1,
+        'values': <String, int>{'243': 5000},
+      });
+
+      expect(draft?.valueFor(WindowSetpointRegister.airTempTarget), 250);
+      expect(draft?.valueFor(WindowSetpointRegister.curtainCtrlMode), 0);
+    });
+
+    test('window writable register model excludes curtain status range', () {
+      expect(windowSetpointRegisters, contains(243));
+      expect(windowSetpointRegisters, contains(266));
+      expect(windowSetpointRegisters, contains(274));
+      expect(windowSetpointRegisters, contains(275));
+      expect(windowSetpointRegisters, contains(276));
+      for (var register = 267; register <= 273; register++) {
+        expect(windowSetpointRegisters, isNot(contains(register)));
+      }
+    });
+
+    test(
+      'lighting feedback fields resolve semantic points from points window',
+      () async {
+        final controller = ScadaController(
+          client: _LightingFeedbackModbusTcpClient(),
+          configStore: _FakeConfigStore(),
+          logger: _FakeLogger(),
+          topologyStore: _FakeTopologyStore(
+            snapshot: _snapshot(
+              manifest: _manifestWithLightingFeedback(generation: 77),
+            ),
+          ),
+        );
+
+        await controller.init();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final fields = controller.lightingFeedbackFieldsForModule(101);
+        expect(
+          fields.map((item) => item.semanticName),
+          orderedEquals(const <String>[
+            'current_dli',
+            'light_output',
+            'light_status_bits',
+          ]),
+        );
+        expect(fields[0].telemetry?.value, closeTo(18.75, 0.001));
+        expect(fields[1].telemetry?.value.round(), 50);
+        expect(fields[2].telemetry?.value.round(), 3);
+
+        controller.dispose();
+      },
+    );
   });
+}
+
+WindowSetpointDraft _dirtyEveryWindowBlock(WindowSetpointDraft draft) {
+  return draft
+      .copyWithValue(WindowSetpointRegister.posATarget, 1)
+      .copyWithValue(WindowSetpointRegister.ctrlMode, 1)
+      .copyWithValue(WindowSetpointRegister.humStep, 1)
+      .copyWithValue(WindowSetpointRegister.rainWindwardPercent, 1)
+      .copyWithValue(WindowSetpointRegister.tempStepMaxIndex, 1)
+      .copyWithValue(WindowSetpointRegister.curtainManualTarget, 1)
+      .copyWithValue(WindowSetpointRegister.curtainRadiationThreshold, 1)
+      .copyWithValue(WindowSetpointRegister.curtainHumLowThreshold, 1)
+      .copyWithValue(WindowSetpointRegister.curtainFaultResetToken, 1)
+      .copyWithValue(WindowSetpointRegister.airTempTarget, 1)
+      .copyWithValue(WindowSetpointRegister.airHumTarget, 1);
 }
 
 TopologyStoreSnapshot _snapshot({required TopologyManifest manifest}) {
@@ -553,6 +1129,7 @@ TopologyManifest _manifest({
   required int generation,
   required bool includeSchedule,
   int scheduleTimeoutMs = 3000,
+  bool includeZone2 = false,
 }) {
   return TopologyManifest.fromJson(<String, dynamic>{
     'schema_version': '2.0',
@@ -570,6 +1147,18 @@ TopologyManifest _manifest({
         'user_param0': 0,
         'user_param1': 0,
       },
+      if (includeZone2)
+        <String, dynamic>{
+          'module_id': 102,
+          'module_type': 1,
+          'bus_type': 1,
+          'bus_index': 0,
+          'slave_id': 2,
+          'zone_id': 2,
+          'capability_mask': 0,
+          'user_param0': 0,
+          'user_param1': 0,
+        },
       <String, dynamic>{
         'module_id': 201,
         'module_type': 2,
@@ -770,15 +1359,22 @@ class _FakeConfigStore extends ConfigStore {
   _FakeConfigStore({
     this.config,
     Map<int, LightingScheduleDraft>? lightingDrafts,
+    Map<int, WindowSetpointDraft>? windowDrafts,
   }) : _lightingDrafts = Map<int, LightingScheduleDraft>.from(
          lightingDrafts ?? const <int, LightingScheduleDraft>{},
+       ),
+       _windowDrafts = Map<int, WindowSetpointDraft>.from(
+         windowDrafts ?? const <int, WindowSetpointDraft>{},
        );
 
   final ScadaConfig? config;
   final Map<int, LightingScheduleDraft> _lightingDrafts;
+  final Map<int, WindowSetpointDraft> _windowDrafts;
 
   Map<int, LightingScheduleDraft> get lightingDrafts =>
       Map<int, LightingScheduleDraft>.unmodifiable(_lightingDrafts);
+  Map<int, WindowSetpointDraft> get windowDrafts =>
+      Map<int, WindowSetpointDraft>.unmodifiable(_windowDrafts);
 
   @override
   Future<ScadaConfig> load() async => config ?? ScadaConfig.defaults();
@@ -792,8 +1388,24 @@ class _FakeConfigStore extends ConfigStore {
   }
 
   @override
-  Future<void> saveLightingDrafts(Map<int, LightingScheduleDraft> drafts) async {
+  Future<void> saveLightingDrafts(
+    Map<int, LightingScheduleDraft> drafts,
+  ) async {
     _lightingDrafts
+      ..clear()
+      ..addAll(drafts);
+  }
+
+  @override
+  Future<Map<int, WindowSetpointDraft>> loadWindowSetpointDrafts() async {
+    return Map<int, WindowSetpointDraft>.from(_windowDrafts);
+  }
+
+  @override
+  Future<void> saveWindowSetpointDrafts(
+    Map<int, WindowSetpointDraft> drafts,
+  ) async {
+    _windowDrafts
       ..clear()
       ..addAll(drafts);
   }
@@ -896,6 +1508,274 @@ class _FakeModbusTcpClient extends ModbusTcpClient {
   @override
   Future<void> dispose() async {
     await _stream.close();
+  }
+}
+
+class _WindowDebugRegisterClient extends _FakeModbusTcpClient {
+  _WindowDebugRegisterClient({required super.generation});
+
+  int debugReads = 0;
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (unitId == 1 && startAddress == 217) {
+      debugReads += 1;
+      return const <int>[0x1234];
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+}
+
+class _WindowSetpointWriteClient extends _FakeModbusTcpClient {
+  _WindowSetpointWriteClient({required super.generation});
+
+  final List<_WriteCall> operations = <_WriteCall>[];
+  int _lastAppliedTrigger = 0;
+  int _lastResult = 2;
+  int _lastIoErr = 0;
+  int _nextResult = 2;
+  int _nextIoErr = 0;
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1240) {
+      final regs = List<int>.filled(24, 0);
+      regs[21] = _lastAppliedTrigger;
+      regs[22] = _lastAppliedTrigger == 0 ? 0 : _lastResult;
+      regs[23] = _lastIoErr;
+      return regs.sublist(0, count);
+    }
+    if (startAddress == 1261) {
+      return <int>[
+        _lastAppliedTrigger,
+        _lastResult,
+        _lastIoErr,
+      ].sublist(0, count);
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+
+  @override
+  Future<void> writeMultipleRegisters({
+    required int unitId,
+    required int startAddress,
+    required List<int> values,
+  }) async {
+    operations.add(
+      _WriteCall(
+        unitId: unitId,
+        startAddress: startAddress,
+        values: List<int>.from(values),
+      ),
+    );
+  }
+
+  @override
+  Future<void> writeSingleRegister({
+    required int unitId,
+    required int address,
+    required int value,
+  }) async {
+    if (address == 1260) {
+      _lastAppliedTrigger = value;
+      _lastResult = _nextResult;
+      _lastIoErr = _nextIoErr;
+      _nextResult = 2;
+      _nextIoErr = 0;
+    }
+    operations.add(
+      _WriteCall(unitId: unitId, startAddress: address, singleValue: value),
+    );
+  }
+}
+
+class _IoErrWindowSetpointWriteClient extends _WindowSetpointWriteClient {
+  _IoErrWindowSetpointWriteClient({required super.generation});
+
+  @override
+  Future<void> writeMultipleRegisters({
+    required int unitId,
+    required int startAddress,
+    required List<int> values,
+  }) async {
+    await super.writeMultipleRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      values: values,
+    );
+    _nextResult = 2;
+    _nextIoErr = 1;
+  }
+}
+
+class _RecoveringWindowSetpointClient extends _WindowSetpointWriteClient {
+  _RecoveringWindowSetpointClient({required super.generation});
+
+  int _statusReadCount = 0;
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1080) {
+      _statusReadCount += 1;
+      final slave1Online = _statusReadCount >= 2;
+      final regs = <int>[
+        ..._slaveStatusBlock(
+          statusFlags: slave1Online ? 0x0001 : 0x0002,
+          dataVersion: slave1Online ? 1 : 9,
+        ),
+        ..._slaveStatusBlock(statusFlags: 0x0001, dataVersion: 1),
+      ];
+      return regs.sublist(0, count);
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+}
+
+class _OnlineWindowSetpointClient extends _WindowSetpointWriteClient {
+  _OnlineWindowSetpointClient({required super.generation});
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1080) {
+      final regs = <int>[
+        ..._slaveStatusBlock(statusFlags: 0x0001, dataVersion: 1),
+        ..._slaveStatusBlock(statusFlags: 0x0001, dataVersion: 1),
+      ];
+      return regs.sublist(0, count);
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+}
+
+class _TransportOutageWindowSetpointClient extends _OnlineWindowSetpointClient {
+  _TransportOutageWindowSetpointClient({required super.generation});
+
+  bool failNextStatusRead = false;
+  int disconnectCount = 0;
+
+  @override
+  Future<void> disconnect() async {
+    disconnectCount += 1;
+  }
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1080 && failNextStatusRead) {
+      failNextStatusRead = false;
+      throw ModbusTcpException('response timeout (1 consecutive)');
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+}
+
+List<int> _slaveStatusBlock({
+  required int statusFlags,
+  required int dataVersion,
+}) {
+  return <int>[statusFlags, 0, 0, 0, 0, dataVersion, 0, 0];
+}
+
+class _WriteCall {
+  const _WriteCall({
+    required this.unitId,
+    required this.startAddress,
+    this.values,
+    this.singleValue,
+  });
+
+  final int unitId;
+  final int startAddress;
+  final List<int>? values;
+  final int? singleValue;
+}
+
+class _DelayedWindowSetpointWriteClient extends _WindowSetpointWriteClient {
+  _DelayedWindowSetpointWriteClient({required super.generation});
+
+  int pollReads = 0;
+  int? _pendingTrigger;
+  int _pendingPolls = 0;
+
+  @override
+  Future<List<int>> readHoldingRegisters({
+    required int unitId,
+    required int startAddress,
+    required int count,
+  }) async {
+    if (startAddress == 1261) {
+      pollReads += 1;
+      if (_pendingTrigger != null) {
+        _pendingPolls += 1;
+        if (_pendingPolls < 2) {
+          return <int>[0, 1, 0].sublist(0, count);
+        }
+        final applied = _pendingTrigger!;
+        _pendingTrigger = null;
+        return <int>[applied, 2, 0].sublist(0, count);
+      }
+    }
+    return super.readHoldingRegisters(
+      unitId: unitId,
+      startAddress: startAddress,
+      count: count,
+    );
+  }
+
+  @override
+  Future<void> writeSingleRegister({
+    required int unitId,
+    required int address,
+    required int value,
+  }) async {
+    if (address == 1260) {
+      _pendingTrigger = value;
+      _pendingPolls = 0;
+    }
+    await super.writeSingleRegister(
+      unitId: unitId,
+      address: address,
+      value: value,
+    );
   }
 }
 
@@ -1468,4 +2348,18 @@ List<int> _pointRow({
     moduleId,
     flags,
   ];
+}
+
+Future<void> _waitUntil(
+  bool Function() condition, {
+  Duration timeout = const Duration(seconds: 2),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    if (condition()) {
+      return;
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 10));
+  }
+  fail('condition was not met within ${timeout.inMilliseconds}ms');
 }

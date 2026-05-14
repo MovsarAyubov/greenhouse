@@ -109,6 +109,62 @@
       "unit": "%",
       "scale_pow10": -1
     },
+    "zone_1.windows_status_bits": {
+      "module_id": 101,
+      "point_id": 10187,
+      "label": "Windows status bits",
+      "unit": "bits",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_267": {
+      "module_id": 101,
+      "point_id": 10167,
+      "label": "Curtain status 267",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_268": {
+      "module_id": 101,
+      "point_id": 10168,
+      "label": "Curtain status 268",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_269": {
+      "module_id": 101,
+      "point_id": 10169,
+      "label": "Curtain status 269",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_270": {
+      "module_id": 101,
+      "point_id": 10170,
+      "label": "Curtain status 270",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_271": {
+      "module_id": 101,
+      "point_id": 10171,
+      "label": "Curtain status 271",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_272": {
+      "module_id": 101,
+      "point_id": 10172,
+      "label": "Curtain status 272",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_1.curtain_status_273": {
+      "module_id": 101,
+      "point_id": 10173,
+      "label": "Curtain status 273",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
     "zone_2.air_temp": {
       "module_id": 102,
       "point_id": 10200,
@@ -189,6 +245,62 @@
       "label": "Curtain position",
       "unit": "%",
       "scale_pow10": -1
+    },
+    "zone_2.windows_status_bits": {
+      "module_id": 102,
+      "point_id": 10287,
+      "label": "Windows status bits",
+      "unit": "bits",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_267": {
+      "module_id": 102,
+      "point_id": 10267,
+      "label": "Curtain status 267",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_268": {
+      "module_id": 102,
+      "point_id": 10268,
+      "label": "Curtain status 268",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_269": {
+      "module_id": 102,
+      "point_id": 10269,
+      "label": "Curtain status 269",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_270": {
+      "module_id": 102,
+      "point_id": 10270,
+      "label": "Curtain status 270",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_271": {
+      "module_id": 102,
+      "point_id": 10271,
+      "label": "Curtain status 271",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_272": {
+      "module_id": 102,
+      "point_id": 10272,
+      "label": "Curtain status 272",
+      "unit": "raw",
+      "scale_pow10": 0
+    },
+    "zone_2.curtain_status_273": {
+      "module_id": 102,
+      "point_id": 10273,
+      "label": "Curtain status 273",
+      "unit": "raw",
+      "scale_pow10": 0
     },
     "weather_1.out_temp": {
       "module_id": 201,

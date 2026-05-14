@@ -124,6 +124,7 @@ class HostRuntime:
             18: (101, current_dli),
             19: (101, light_output),
             20: (101, float(status_bits)),
+            21: (101, 0.0),
         }
         for i in range(POINT_MAX):
             p = POINTS_BASE + i * POINT_STRIDE

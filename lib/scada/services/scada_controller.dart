@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/lighting_schedule_models.dart';
 import '../models/scada_models.dart';
 import '../models/topology_models.dart';
+import '../models/window_setpoint_models.dart';
 import 'command_builder.dart';
 import 'config_store.dart';
 import 'modbus_tcp_client.dart';
@@ -52,6 +53,7 @@ class ScadaController extends ChangeNotifier {
   bool polling = false;
   bool topologyUploading = false;
   bool scheduleSending = false;
+  bool windowSetpointSending = false;
   String? lastError;
   String? uploadStatus;
   String? serverRtcLastError;
@@ -78,18 +80,26 @@ class ScadaController extends ChangeNotifier {
       <int, SlaveStatusSnapshot>{};
   final Map<int, LightingScheduleDraft> _persistedLightingDraftByModuleId =
       <int, LightingScheduleDraft>{};
+  final Map<int, WindowSetpointDraft> _persistedWindowDraftByModuleId =
+      <int, WindowSetpointDraft>{};
   final Map<int, LightingScheduleStatus> _scheduleStatusByModuleId =
       <int, LightingScheduleStatus>{};
+  final Map<int, WindowSetpointStatus> _windowStatusByModuleId =
+      <int, WindowSetpointStatus>{};
   final List<String> _clientTrace = <String>[];
+  final Set<int> _pendingWindowResyncModuleIds = <int>{};
+  final Set<int> _sessionSyncedWindowModuleIds = <int>{};
 
   StreamSubscription<bool>? _connectionSub;
   Timer? _pollTimer;
   int _lightingTriggerCounter = 0;
+  int _windowTriggerCounter = 0;
   int _topologySubmitToken = 100;
   int _pollingPauseDepth = 0;
   DateTime? _lastDiagnosticsPollAt;
   DateTime? _lastSessionRefreshAttemptAt;
   bool _disposed = false;
+  bool _windowResyncRunning = false;
 
   // Use the full Modbus FC3 window now that the server handles large reads
   // without the earlier timeout/stall behavior.
@@ -116,6 +126,10 @@ class ScadaController extends ChangeNotifier {
       return null;
     }
     return _slaveStatusBySlaveId[module.slaveId];
+  }
+
+  RawRegisterSnapshot? windowDebugRegisterForModule(int moduleId) {
+    return null;
   }
 
   String get serverRtcText {
@@ -160,7 +174,9 @@ class ScadaController extends ChangeNotifier {
       topologySnapshot.manifest != null;
 
   bool get canSendCommands =>
-      compatibility.state == ScadaCompatibilityState.ready && !scheduleSending;
+      compatibility.state == ScadaCompatibilityState.ready &&
+      !scheduleSending &&
+      !windowSetpointSending;
 
   List<ModuleSummary> get moduleSummaries => _buildModuleSummaries();
   List<RuntimeModuleTelemetryView> get runtimeTelemetryModules =>
@@ -171,12 +187,16 @@ class ScadaController extends ChangeNotifier {
     _persistedLightingDraftByModuleId
       ..clear()
       ..addAll(await _configStore.loadLightingDrafts());
+    _persistedWindowDraftByModuleId
+      ..clear()
+      ..addAll(await _configStore.loadWindowSetpointDrafts());
     await _logger.init();
     _applyClientConfig();
     _connectionSub = _client.connection.listen((value) {
       connected = value;
       if (!value) {
         _lastSessionRefreshAttemptAt = null;
+        _markWindowResyncSessionUncertain('tcp_disconnected');
         compatibility = CompatibilityStatus(
           state: ScadaCompatibilityState.deviceUnreachable,
           message:
@@ -417,6 +437,24 @@ class ScadaController extends ChangeNotifier {
     return created;
   }
 
+  WindowSetpointStatus windowSetpointStatusForModule(int moduleId) {
+    final existing = _windowStatusByModuleId[moduleId];
+    if (existing != null) {
+      return existing;
+    }
+    final module = topologyResolver?.moduleById(moduleId);
+    if (module == null) {
+      throw StateError('Unknown module_id=$moduleId');
+    }
+    final created = WindowSetpointStatus.initial(
+      moduleId: module.moduleId,
+      zoneId: module.zoneId,
+      slaveId: module.slaveId,
+    ).copyWith(draft: _windowDraftForModule(module: module));
+    _windowStatusByModuleId[moduleId] = created;
+    return created;
+  }
+
   String? scheduleDisabledReasonForModule(int moduleId) {
     if (compatibility.state != ScadaCompatibilityState.ready) {
       return compatibility.message;
@@ -444,6 +482,112 @@ class ScadaController extends ChangeNotifier {
       draft: update(current.draft),
     );
     notifyListeners();
+  }
+
+  void updateWindowSetpointDraft(
+    int moduleId,
+    WindowSetpointDraft Function(WindowSetpointDraft current) update,
+  ) {
+    final current = windowSetpointStatusForModule(moduleId);
+    _windowStatusByModuleId[moduleId] = current.copyWith(
+      draft: update(current.draft),
+    );
+    notifyListeners();
+  }
+
+  String? _windowSetpointsDisabledReasonForModule(int moduleId) {
+    if (compatibility.state != ScadaCompatibilityState.ready) {
+      return compatibility.message;
+    }
+    final resolver = topologyResolver;
+    if (resolver == null) {
+      return 'Local topology manifest is not loaded.';
+    }
+    final module = resolver.moduleById(moduleId);
+    if (module == null) {
+      return 'Selected module is missing in topology.';
+    }
+    if (!module.isZone || module.slaveId <= 0) {
+      return 'Window setpoints are available only for zone modules.';
+    }
+    return null;
+  }
+
+  Future<void> sendWindowSetpointsForModule(
+    int moduleId, {
+    bool forceAllBlocks = false,
+    WindowSetpointDraft? draftOverride,
+    String successMessage = 'Applied',
+  }) async {
+    final disabledReason = _windowSetpointsDisabledReasonForModule(moduleId);
+    final current = windowSetpointStatusForModule(moduleId);
+    if (disabledReason != null) {
+      _windowStatusByModuleId[moduleId] = current.copyWith(
+        phase: WindowSetpointPhase.failed,
+        message: disabledReason,
+      );
+      notifyListeners();
+      return;
+    }
+
+    final module = topologyResolver!.moduleById(moduleId)!;
+    windowSetpointSending = true;
+    _windowStatusByModuleId[moduleId] = current.copyWith(
+      phase: WindowSetpointPhase.pending,
+      lastAttemptAt: DateTime.now(),
+      clearMessage: true,
+    );
+    notifyListeners();
+
+    var sentBlockCount = 0;
+    try {
+      await _runWithPollingPause('window_setpoints', () async {
+        await _ensureMapCompatible();
+        final draft = draftOverride ?? current.draft;
+        final baseline = _windowDraftForModule(module: module);
+        final blocks = forceAllBlocks
+            ? windowSetpointCommandBlocks
+            : _dirtyWindowCommandBlocks(draft: draft, baseline: baseline);
+        sentBlockCount = blocks.length;
+        for (final block in blocks) {
+          final profileId = block.profileIdFor(draft);
+          final trigger = await _sendCommandIngress(
+            targetSlaveId: module.slaveId,
+            targetModuleId: module.moduleId,
+            cmdProfileId: profileId,
+            payload: block.payloadFor(draft),
+            trigger: _nextWindowTrigger,
+            operationName: 'window_setpoints_$profileId',
+          );
+          await _waitForCommandIngressApplied(
+            trigger: trigger,
+            operationName: 'window_setpoints_$profileId',
+          );
+        }
+        await _persistLastSentWindowDraft(
+          module: module,
+          draft: _clearOneShotWindowTokens(draft),
+        );
+      });
+      _windowStatusByModuleId[moduleId] = current.copyWith(
+        phase: WindowSetpointPhase.success,
+        draft: draftOverride == null
+            ? _clearOneShotWindowTokens(current.draft)
+            : current.draft,
+        lastAttemptAt: DateTime.now(),
+        message: sentBlockCount == 0 ? 'No changes' : successMessage,
+      );
+      _sessionSyncedWindowModuleIds.add(moduleId);
+    } catch (e) {
+      _windowStatusByModuleId[moduleId] = current.copyWith(
+        phase: WindowSetpointPhase.failed,
+        lastAttemptAt: DateTime.now(),
+        message: e.toString(),
+      );
+    } finally {
+      windowSetpointSending = false;
+      notifyListeners();
+    }
   }
 
   Future<void> sendScheduleForModule(int moduleId) async {
@@ -681,6 +825,7 @@ class ScadaController extends ChangeNotifier {
         polling ||
         topologyUploading ||
         scheduleSending ||
+        windowSetpointSending ||
         pollingPaused) {
       return;
     }
@@ -706,15 +851,24 @@ class ScadaController extends ChangeNotifier {
     } on _PollingTransportAbort catch (e) {
       lastError = e.message;
       _addClientTrace('poll cycle aborted: ${e.message}');
+      _handlePollingTransportFailure('poll_abort');
     } catch (e) {
       lastError = e.toString();
       _addClientTrace('poll error: $e');
+      if (_isRetryableTransportError(e)) {
+        _handlePollingTransportFailure('poll_error');
+      }
     } finally {
       polling = false;
       if (!_disposed) {
         notifyListeners();
+        _startPendingWindowResync();
       }
     }
+  }
+
+  void _handlePollingTransportFailure(String reason) {
+    _markWindowResyncSessionUncertain(reason);
   }
 
   Future<void> _refreshSessionIfDue({bool force = false}) async {
@@ -781,10 +935,123 @@ class ScadaController extends ChangeNotifier {
     _telemetryByPublishIndex
       ..clear()
       ..addAll(telemetry);
+    final previousStatuses = Map<int, SlaveStatusSnapshot>.from(
+      _slaveStatusBySlaveId,
+    );
     final statuses = await _readSlaveStatuses();
     _slaveStatusBySlaveId
       ..clear()
       ..addAll(statuses);
+    _queueWindowResyncForRecoveredModules(previousStatuses, statuses);
+  }
+
+  void _queueWindowResyncForRecoveredModules(
+    Map<int, SlaveStatusSnapshot> previousStatuses,
+    Map<int, SlaveStatusSnapshot> currentStatuses,
+  ) {
+    final resolver = topologyResolver;
+    if (resolver == null || _persistedWindowDraftByModuleId.isEmpty) {
+      return;
+    }
+    for (final module in resolver.zoneModules) {
+      if (!_persistedWindowDraftByModuleId.containsKey(module.moduleId)) {
+        continue;
+      }
+      final current = currentStatuses[module.slaveId];
+      if (current == null || !current.online || current.stale) {
+        continue;
+      }
+      final previous = previousStatuses[module.slaveId];
+      final firstOnlineThisSession = !_sessionSyncedWindowModuleIds.contains(
+        module.moduleId,
+      );
+      final recovered =
+          previous != null && (!previous.online || previous.stale);
+      final dataVersionReset =
+          previous != null &&
+          previous.online &&
+          !previous.stale &&
+          current.dataVersion < previous.dataVersion;
+      if (firstOnlineThisSession || recovered || dataVersionReset) {
+        _pendingWindowResyncModuleIds.add(module.moduleId);
+        _addClientTrace(
+          'window setpoint resync queued module=${module.moduleId} '
+          'slave=${module.slaveId} reason='
+          '${firstOnlineThisSession ? 'first_online' : (recovered ? 'recovered' : 'data_version_reset')}',
+        );
+      }
+    }
+  }
+
+  void _markWindowResyncSessionUncertain(String reason) {
+    if (_sessionSyncedWindowModuleIds.isEmpty) {
+      return;
+    }
+    _sessionSyncedWindowModuleIds.clear();
+    _addClientTrace('window setpoint resync session reset reason=$reason');
+  }
+
+  void _startPendingWindowResync() {
+    if (_windowResyncRunning ||
+        _pendingWindowResyncModuleIds.isEmpty ||
+        topologyUploading ||
+        scheduleSending ||
+        windowSetpointSending ||
+        polling ||
+        pollingPaused ||
+        compatibility.state != ScadaCompatibilityState.ready) {
+      return;
+    }
+    _windowResyncRunning = true;
+    unawaited(_drainPendingWindowResync());
+  }
+
+  Future<void> _drainPendingWindowResync() async {
+    try {
+      while (!_disposed && _pendingWindowResyncModuleIds.isNotEmpty) {
+        if (topologyUploading ||
+            scheduleSending ||
+            windowSetpointSending ||
+            polling ||
+            pollingPaused ||
+            compatibility.state != ScadaCompatibilityState.ready) {
+          break;
+        }
+        final moduleId = _pendingWindowResyncModuleIds.first;
+        _pendingWindowResyncModuleIds.remove(moduleId);
+        final module = topologyResolver?.moduleById(moduleId);
+        final persistedDraft = _persistedWindowDraftByModuleId[moduleId];
+        if (module == null || persistedDraft == null) {
+          continue;
+        }
+        final draft = _clearOneShotWindowTokens(
+          persistedDraft.rebind(
+            moduleId: module.moduleId,
+            zoneId: module.zoneId,
+            slaveId: module.slaveId,
+          ),
+        );
+        _addClientTrace(
+          'window setpoint resync start module=${module.moduleId} '
+          'slave=${module.slaveId}',
+        );
+        await sendWindowSetpointsForModule(
+          module.moduleId,
+          forceAllBlocks: true,
+          draftOverride: draft,
+          successMessage: 'Auto-resynced after module restart',
+        );
+        final status = _windowStatusByModuleId[module.moduleId];
+        if (status?.phase == WindowSetpointPhase.success) {
+          _sessionSyncedWindowModuleIds.add(module.moduleId);
+        }
+      }
+    } finally {
+      _windowResyncRunning = false;
+      if (!_disposed) {
+        _startPendingWindowResync();
+      }
+    }
   }
 
   Future<Map<int, PointTelemetryValue>> _readPointsRows(
@@ -1005,6 +1272,7 @@ class ScadaController extends ChangeNotifier {
   }
 
   Future<List<int>> _readHoldingWithRetry({
+    int? unitId,
     required int startAddress,
     required int count,
     required String operationName,
@@ -1020,6 +1288,7 @@ class ScadaController extends ChangeNotifier {
       while (offset < count) {
         final chunkCount = (count - offset) > 125 ? 125 : (count - offset);
         final chunk = await _readHoldingWithRetry(
+          unitId: unitId,
           startAddress: startAddress + offset,
           count: chunkCount,
           operationName: '$operationName+$offset',
@@ -1040,7 +1309,7 @@ class ScadaController extends ChangeNotifier {
     for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         return await _client.readHoldingRegisters(
-          unitId: config.deviceConnection.unitId,
+          unitId: unitId ?? config.deviceConnection.unitId,
           startAddress: startAddress,
           count: count,
         );
@@ -1099,6 +1368,7 @@ class ScadaController extends ChangeNotifier {
   }
 
   Future<void> _writeMultipleWithRetry({
+    int? unitId,
     required int startAddress,
     required List<int> values,
     required String operationName,
@@ -1109,7 +1379,7 @@ class ScadaController extends ChangeNotifier {
     for (var attempt = 0; attempt < attempts; attempt++) {
       try {
         await _client.writeMultipleRegisters(
-          unitId: config.deviceConnection.unitId,
+          unitId: unitId ?? config.deviceConnection.unitId,
           startAddress: startAddress,
           values: values,
         );
@@ -1131,6 +1401,91 @@ class ScadaController extends ChangeNotifier {
     }
     throw lastFailure ??
         StateError('Write failed without error: operation=$operationName');
+  }
+
+  Future<int> _sendCommandIngress({
+    required int targetSlaveId,
+    required int targetModuleId,
+    required int cmdProfileId,
+    required List<int> payload,
+    required int Function({required int lastAppliedTrigger}) trigger,
+    required String operationName,
+  }) async {
+    final payloadRegs = <int>[
+      targetSlaveId & 0xFFFF,
+      targetModuleId & 0xFFFF,
+      cmdProfileId & 0xFFFF,
+      payload.length & 0xFFFF,
+      ...payload.map((value) => value & 0xFFFF),
+    ];
+    if (payloadRegs.length > _registerMap.cmdTriggerOffset) {
+      throw StateError(
+        '$operationName payload is too large: '
+        '${payload.length} words exceeds ingress capacity',
+      );
+    }
+
+    final preState = await _readHoldingWithRetry(
+      startAddress: directorySnapshot!.cmdBase,
+      count: _registerMap.expectedCmdBlockSize,
+      operationName: '${operationName}_pre_state',
+    );
+    final lastApplied =
+        preState[_registerMap.cmdLastAppliedTriggerOffset] & 0xFFFF;
+    final nextTrigger = trigger(lastAppliedTrigger: lastApplied);
+
+    await _writeMultipleWithRetry(
+      startAddress: directorySnapshot!.cmdBase,
+      values: payloadRegs,
+      operationName: '${operationName}_payload',
+    );
+    await _writeSingleWithRetry(
+      address: directorySnapshot!.cmdBase + _registerMap.cmdTriggerOffset,
+      value: nextTrigger,
+      operationName: '${operationName}_trigger',
+    );
+    return nextTrigger;
+  }
+
+  Future<void> _waitForCommandIngressApplied({
+    required int trigger,
+    required String operationName,
+  }) async {
+    final deadline = DateTime.now().add(
+      Duration(milliseconds: config.timeouts.commandMs),
+    );
+    while (DateTime.now().isBefore(deadline)) {
+      final regs = await _readHoldingWithRetry(
+        startAddress:
+            directorySnapshot!.cmdBase +
+            _registerMap.cmdLastAppliedTriggerOffset,
+        count: 3,
+        operationName: '${operationName}_poll',
+      );
+      final lastApplied = regs[0] & 0xFFFF;
+      final lastResult = regs[1] & 0xFFFF;
+      final lastIoErr = regs[2] & 0xFFFF;
+      if (lastApplied == trigger &&
+          lastResult == _scheduleResultApplied &&
+          lastIoErr == 0) {
+        return;
+      }
+      if (lastApplied == trigger &&
+          (lastResult != _scheduleResultIdle &&
+              lastResult != _scheduleResultQueued)) {
+        throw StateError(
+          '$operationName rejected: ${lightingResultLabel(lastResult)} '
+          '(io=${lightingIoErrLabel(lastIoErr)})',
+        );
+      }
+      await Future<void>.delayed(
+        Duration(milliseconds: _effectiveSchedulePollIntervalMs),
+      );
+    }
+    throw TimeoutException(
+      '$operationName trigger=$trigger not applied after '
+      '${config.timeouts.commandMs}ms',
+    );
   }
 
   Future<void> _ensureMapCompatible() async {
@@ -1244,6 +1599,21 @@ class ScadaController extends ChangeNotifier {
     return next;
   }
 
+  int _nextWindowTrigger({required int lastAppliedTrigger}) {
+    var next = (_windowTriggerCounter + 1) & 0xFFFF;
+    if (next == 0) {
+      next = 1;
+    }
+    if (next == (lastAppliedTrigger & 0xFFFF)) {
+      next = (next + 1) & 0xFFFF;
+      if (next == 0) {
+        next = 1;
+      }
+    }
+    _windowTriggerCounter = next;
+    return next;
+  }
+
   @override
   void dispose() {
     _disposed = true;
@@ -1308,12 +1678,16 @@ class ScadaController extends ChangeNotifier {
     final resolver = topologyResolver;
     if (resolver == null) {
       _scheduleStatusByModuleId.clear();
+      _windowStatusByModuleId.clear();
       return;
     }
     final validModuleIds = resolver.zoneModules
         .map((item) => item.moduleId)
         .toSet();
     _scheduleStatusByModuleId.removeWhere(
+      (moduleId, _) => !validModuleIds.contains(moduleId),
+    );
+    _windowStatusByModuleId.removeWhere(
       (moduleId, _) => !validModuleIds.contains(moduleId),
     );
     for (final module in resolver.zoneModules) {
@@ -1335,6 +1709,25 @@ class ScadaController extends ChangeNotifier {
             slaveId: module.slaveId,
           ).copyWith(draft: draft);
       _scheduleStatusByModuleId[module.moduleId] = status;
+
+      final existingWindow = _windowStatusByModuleId[module.moduleId];
+      final windowDraft = _windowDraftForModule(
+        module: module,
+        currentDraft: existingWindow?.draft,
+      );
+      final windowStatus =
+          existingWindow?.copyWith(
+            moduleId: module.moduleId,
+            zoneId: module.zoneId,
+            slaveId: module.slaveId,
+            draft: windowDraft,
+          ) ??
+          WindowSetpointStatus.initial(
+            moduleId: module.moduleId,
+            zoneId: module.zoneId,
+            slaveId: module.slaveId,
+          ).copyWith(draft: windowDraft);
+      _windowStatusByModuleId[module.moduleId] = windowStatus;
     }
   }
 
@@ -1357,6 +1750,59 @@ class ScadaController extends ChangeNotifier {
         );
   }
 
+  WindowSetpointDraft _windowDraftForModule({
+    required TopologyModule module,
+    WindowSetpointDraft? currentDraft,
+  }) {
+    final baseDraft =
+        currentDraft ?? _persistedWindowDraftByModuleId[module.moduleId];
+    return (baseDraft ??
+            WindowSetpointDraft.initial(
+              moduleId: module.moduleId,
+              zoneId: module.zoneId,
+              slaveId: module.slaveId,
+            ))
+        .rebind(
+          moduleId: module.moduleId,
+          zoneId: module.zoneId,
+          slaveId: module.slaveId,
+        );
+  }
+
+  WindowSetpointDraft _clearOneShotWindowTokens(WindowSetpointDraft draft) {
+    return draft.copyWithValues(const <int, int>{
+      WindowSetpointRegister.windowAFaultResetToken: 0,
+      WindowSetpointRegister.windowBFaultResetToken: 0,
+      WindowSetpointRegister.curtainFaultResetToken: 0,
+    });
+  }
+
+  List<WindowSetpointCommandBlock> _dirtyWindowCommandBlocks({
+    required WindowSetpointDraft draft,
+    required WindowSetpointDraft baseline,
+  }) {
+    return windowSetpointCommandBlocks
+        .where(
+          (block) => !_samePayload(
+            block.payloadFor(draft),
+            block.payloadFor(baseline),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  bool _samePayload(List<int> a, List<int> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var index = 0; index < a.length; index++) {
+      if ((a[index] & 0xFFFF) != (b[index] & 0xFFFF)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   Future<void> _persistLastSentLightingDraft({
     required TopologyModule module,
     required LightingScheduleDraft draft,
@@ -1372,6 +1818,27 @@ class ScadaController extends ChangeNotifier {
     } catch (e) {
       _addClientTrace(
         'schedule cache save failed module=${module.moduleId}: $e',
+      );
+    }
+  }
+
+  Future<void> _persistLastSentWindowDraft({
+    required TopologyModule module,
+    required WindowSetpointDraft draft,
+  }) async {
+    final persistedDraft = draft.rebind(
+      moduleId: module.moduleId,
+      zoneId: module.zoneId,
+      slaveId: module.slaveId,
+    );
+    _persistedWindowDraftByModuleId[module.moduleId] = persistedDraft;
+    try {
+      await _configStore.saveWindowSetpointDrafts(
+        _persistedWindowDraftByModuleId,
+      );
+    } catch (e) {
+      _addClientTrace(
+        'window setpoint cache save failed module=${module.moduleId}: $e',
       );
     }
   }
